@@ -1,0 +1,10 @@
+@import './colors.css';
+
+.recipes-header {
+    background-color: var(--accent-300);
+    color: #000000;
+    padding: 1rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    margin: 10px;
+}

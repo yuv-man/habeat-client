@@ -1,0 +1,47 @@
+.weekly-header {
+    background-color: #e1f4ee;
+    padding: 1rem;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    margin: 10px;
+}
+
+
+.weekly-plan-header {
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 0 24px;
+}
+
+.weekly-plan-title {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    gap: 4px;
+}
+
+.weekly-plan-description {
+    font-size: 12px;
+    font-weight: 400;
+    color: gray;
+}
+
+.meal-name-text {
+    font-size: 10px;
+    font-weight: 400;
+    color: #374151;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.2;
+    min-height: 24px;
+}
+
+.grid-cell {
+    background-color: #f9fafb;
+    padding: 10px;
+    border-bottom: 1px solid #e5e7eb;
+}

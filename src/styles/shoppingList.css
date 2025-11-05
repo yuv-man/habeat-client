@@ -1,0 +1,11 @@
+@import './colors.css';
+
+.shopping-list-header {
+    background-color: var(--secondary-300);
+    color: #ffffff;
+    padding: 1rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    margin: 10px;
+
+}

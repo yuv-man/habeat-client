@@ -124,6 +124,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // For Google OAuth
       if (provider === 'google') {
         // Initialize Google OAuth for sign-up
+
         const { token } = await userAPI.oauthSignup(provider, 'signup');
         get().setToken(token);
         return;
@@ -132,8 +133,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // For Facebook OAuth
       if (provider === 'facebook') {
         // Initialize Facebook OAuth for sign-up
+
         const { token } = await userAPI.oauthSignup(provider, 'signup');
         get().setToken(token);
+
         return;
       }
       

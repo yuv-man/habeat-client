@@ -1,0 +1,11 @@
+export const commonAllergies = [
+  "Peanuts", "Tree Nuts", "Milk", "Eggs", "Soy", "Fish", "Shellfish", "Wheat", "Other"
+];
+
+export const dietaryOptions = [
+  "Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Keto", "Paleo", "Mediterranean", "Low-Carb"
+];
+
+export const workoutCategories = [
+  "cardio", "strength", "flexibility", "balance", "endurance", "yoga", "pilates", "hiit", "running", "cycling", "swimming", "walking", "bodyweight", "weights", "core", "stretching"
+];

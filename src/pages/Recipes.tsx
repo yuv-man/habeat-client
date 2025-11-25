@@ -1,171 +1,199 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Search, 
-  Clock, 
-  Users, 
-  Heart, 
-  Star,
-  Filter,
-  BookOpen,
-  Camera,
-  Share2
-} from "lucide-react";
+import { Search, Filter, BookOpen, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { mealTypes } from "@/lib/paths";
 import "@/styles/recipes.css";
 import NavBar from "@/components/ui/navbar";
+import MobileHeader from "@/components/ui/MobileHeader";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 import { IRecipe } from "@/types/interfaces";
-
+import FavoriteMeals from "@/components/recipes/FavoriteMeals";
+import RecipeItem from "@/components/recipes/RecipeItem";
 
 const Recipes = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const { user } = useAuthStore();
+  const { user, updateFavorite } = useAuthStore();
   const [recipes, setRecipes] = useState<IRecipe[]>([]);
-  
+  const [isMockData, setIsMockData] = useState(true);
+
   useEffect(() => {
+    if (isMockData) {
+      setRecipes(mockRecipes);
+    }
     const fetchFavorites = async () => {
       const { data } = await userAPI.getFavoritesByUserId(user._id);
       setRecipes(data);
     };
     fetchFavorites();
-  }, []);
+  }, [isMockData]);
 
-    // Mock recipes data
-    const mockRecipes: IRecipe[] = [
+  // Mock recipes data
+  const mockRecipes: IRecipe[] = [
     {
-      id: '1',
-      name: 'Grilled Chicken Salad',
-      description: 'Fresh mixed greens with grilled chicken breast, perfect for weight loss',
-      image: '🥗',
+      id: "1",
+      name: "Grilled Chicken Salad",
+      category: "lunch",
+      description:
+        "Fresh mixed greens with grilled chicken breast, perfect for weight loss",
+      image:
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
       cookTime: 15,
       servings: 2,
       calories: 320,
-      difficulty: 'Easy',
-      tags: ['High Protein', 'Low Carb', 'Gluten Free'],
+      difficulty: "Easy",
+      tags: ["High Protein", "Low Carb", "Gluten Free"],
       rating: 4.8,
       ingredients: [
-        '200g chicken breast',
-        '100g mixed greens',
-        '1 cucumber',
-        '1 tomato',
-        '2 tbsp olive oil',
-        '1 tbsp lemon juice'
+        "200g chicken breast",
+        "100g mixed greens",
+        "1 cucumber",
+        "1 tomato",
+        "2 tbsp olive oil",
+        "1 tbsp lemon juice",
       ],
       instructions: [
-        'Season and grill chicken breast until cooked through',
-        'Dice cucumber and tomato',
-        'Mix olive oil and lemon juice for dressing',
-        'Combine all ingredients and serve'
+        "Season and grill chicken breast until cooked through",
+        "Dice cucumber and tomato",
+        "Mix olive oil and lemon juice for dressing",
+        "Combine all ingredients and serve",
       ],
-      macros: { protein: 35, carbs: 8, fat: 12, fiber: 4 }
+      macros: { protein: 35, carbs: 8, fat: 12, fiber: 4 },
     },
     {
-      id: '2',
-      name: 'Quinoa Power Bowl',
-      description: 'Nutrient-dense bowl with quinoa, roasted vegetables, and tahini dressing',
-      image: '🍲',
+      id: "2",
+      name: "Quinoa Power Bowl",
+      category: "lunch",
+      description:
+        "Nutrient-dense bowl with quinoa, roasted vegetables, and tahini dressing",
+      image:
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
       cookTime: 25,
       servings: 2,
       calories: 450,
-      difficulty: 'Medium',
-      tags: ['Vegan', 'High Fiber', 'Complete Protein'],
+      difficulty: "Medium",
+      tags: ["Vegan", "High Fiber", "Complete Protein"],
       rating: 4.6,
       ingredients: [
-        '1 cup quinoa',
-        '1 sweet potato',
-        '1 zucchini',
-        '1 red bell pepper',
-        '2 tbsp tahini',
-        '1 tbsp maple syrup'
+        "1 cup quinoa",
+        "1 sweet potato",
+        "1 zucchini",
+        "1 red bell pepper",
+        "2 tbsp tahini",
+        "1 tbsp maple syrup",
       ],
       instructions: [
-        'Cook quinoa according to package instructions',
-        'Roast vegetables at 400°F for 20 minutes',
-        'Mix tahini and maple syrup for dressing',
-        'Assemble bowl and drizzle with dressing'
+        "Cook quinoa according to package instructions",
+        "Roast vegetables at 400°F for 20 minutes",
+        "Mix tahini and maple syrup for dressing",
+        "Assemble bowl and drizzle with dressing",
       ],
-      macros: { protein: 16, carbs: 65, fat: 14, fiber: 12 }
+      macros: { protein: 16, carbs: 65, fat: 14, fiber: 12 },
     },
     {
-      id: '3',
-      name: 'Keto Avocado Smoothie',
-      description: 'Creamy low-carb smoothie perfect for breakfast or post-workout',
-      image: '🥤',
+      id: "3",
+      name: "Keto Avocado Smoothie",
+      category: "breakfast",
+      description:
+        "Creamy low-carb smoothie perfect for breakfast or post-workout",
+      image:
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
       cookTime: 5,
       servings: 1,
       calories: 280,
-      difficulty: 'Easy',
-      tags: ['Keto', 'Low Carb', 'Quick'],
+      difficulty: "Easy",
+      tags: ["Keto", "Low Carb", "Quick"],
       rating: 4.9,
       ingredients: [
-        '1 ripe avocado',
-        '1 cup unsweetened almond milk',
-        '1 tbsp MCT oil',
-        '1 tsp vanilla extract',
-        '1 packet stevia',
-        'Ice cubes'
+        "1 ripe avocado",
+        "1 cup unsweetened almond milk",
+        "1 tbsp MCT oil",
+        "1 tsp vanilla extract",
+        "1 packet stevia",
+        "Ice cubes",
       ],
       instructions: [
-        'Add all ingredients to blender',
-        'Blend until smooth and creamy',
-        'Add ice if desired consistency',
-        'Serve immediately'
+        "Add all ingredients to blender",
+        "Blend until smooth and creamy",
+        "Add ice if desired consistency",
+        "Serve immediately",
       ],
-      macros: { protein: 6, carbs: 4, fat: 26, fiber: 10 }
+      macros: { protein: 6, carbs: 4, fat: 26, fiber: 10 },
     },
     {
-      id: '4',
-      name: 'Protein Pancakes',
-      description: 'Fluffy high-protein pancakes perfect for muscle building',
-      image: '🥞',
+      id: "4",
+      name: "Protein Pancakes",
+      category: "breakfast",
+      description: "Fluffy high-protein pancakes perfect for muscle building",
+      image:
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
       cookTime: 10,
       servings: 2,
       calories: 380,
-      difficulty: 'Easy',
-      tags: ['High Protein', 'Post-Workout', 'Gluten Free'],
+      difficulty: "Easy",
+      tags: ["High Protein", "Post-Workout", "Gluten Free"],
       rating: 4.7,
       ingredients: [
-        '2 eggs',
-        '1 banana',
-        '30g protein powder',
-        '1 tbsp almond flour',
-        '1 tsp baking powder',
-        'Cinnamon to taste'
+        "2 eggs",
+        "1 banana",
+        "30g protein powder",
+        "1 tbsp almond flour",
+        "1 tsp baking powder",
+        "Cinnamon to taste",
       ],
       instructions: [
-        'Mash banana and mix with eggs',
-        'Add protein powder and almond flour',
-        'Cook pancakes in non-stick pan',
-        'Serve with fresh berries'
+        "Mash banana and mix with eggs",
+        "Add protein powder and almond flour",
+        "Cook pancakes in non-stick pan",
+        "Serve with fresh berries",
       ],
-      macros: { protein: 28, carbs: 22, fat: 8, fiber: 4 }
-    }
+      macros: { protein: 28, carbs: 22, fat: 8, fiber: 4 },
+    },
   ];
 
   const categories = [
-    { id: 'all', label: 'All Recipes', count: recipes.length },
-    { id: 'breakfast', label: 'Breakfast', count: 12 },
-    { id: 'lunch', label: 'Lunch', count: 18 },
-    { id: 'dinner', label: 'Dinner', count: 24 },
-    { id: 'snacks', label: 'Snacks', count: 15 },
+    { id: "all", label: "All Recipes", count: recipes.length },
+    { id: "breakfast", label: "Breakfast", count: 12 },
+    { id: "lunch", label: "Lunch", count: 18 },
+    { id: "dinner", label: "Dinner", count: 24 },
+    { id: "snacks", label: "Snacks", count: 15 },
   ];
 
-  const filteredRecipes = recipes.filter(recipe =>
-    recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    recipe.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  const filteredRecipes = recipes.filter(
+    (recipe) =>
+      recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.tags.some((tag) =>
+        tag.toLowerCase().includes(searchQuery.toLowerCase())
+      ) ||
+      recipe.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Show FavoriteMeals component on mobile, full recipes page on desktop
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileHeader />
+        <FavoriteMeals recipes={filteredRecipes} />
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50 pt-0 md:pt-16">
+      <MobileHeader />
       <NavBar />
       {/* Header */}
       <div className="recipes-header">
@@ -198,10 +226,18 @@ const Recipes = () => {
 
       {/* Content */}
       <div className="p-6">
-        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+        <Tabs
+          value={selectedCategory}
+          onValueChange={setSelectedCategory}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-5 mb-6">
             {categories.map((category) => (
-              <TabsTrigger key={category.id} value={category.id} className="text-xs">
+              <TabsTrigger
+                key={category.id}
+                value={category.id}
+                className="text-xs"
+              >
                 {category.label}
               </TabsTrigger>
             ))}
@@ -210,82 +246,39 @@ const Recipes = () => {
           <TabsContent value={selectedCategory} className="space-y-6">
             {/* Recipe Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRecipes.map((recipe) => (
-                <Card key={recipe.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="aspect-video bg-gradient-primary flex items-center justify-center text-6xl">
-                    {recipe.image}
-                  </div>
-                  
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-1">{recipe.name}</CardTitle>
-                        <CardDescription className="text-sm">{recipe.description}</CardDescription>
-                      </div>
-                      <Button variant="ghost" size="sm">
-                        <Heart className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {recipe.cookTime}m
-                      </div>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {recipe.servings} servings
-                      </div>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 mr-1 text-yellow-500" />
-                        {recipe.rating}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      {/* Tags */}
-                      {recipe.tags && <div className="flex flex-wrap gap-1">
-                        {recipe.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>}
-
-                      {/* Nutrition Info */}
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                          <div className="font-semibold">{recipe.calories}</div>
-                          <div className="text-xs text-muted-foreground">Calories</div>
-                        </div>
-                        <div className="text-center p-2 bg-gray-50 rounded">
-                          <div className="font-semibold">{recipe.macros.protein}g</div>
-                          <div className="text-xs text-muted-foreground">Protein</div>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex space-x-2">
-                        <Button className="flex-1" size="sm">
-                          View Recipe
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Share2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+              {filteredRecipes.map((recipe) => {
+                const isFavorite =
+                  user?.favoriteMeals?.includes(recipe.id) || false;
+                return (
+                  <RecipeItem
+                    key={recipe.id}
+                    recipe={recipe}
+                    isFavorite={isFavorite}
+                    onFavoriteToggle={async () => {
+                      if (user?._id) {
+                        try {
+                          await updateFavorite(
+                            user._id,
+                            recipe.id,
+                            !isFavorite
+                          );
+                        } catch (error) {
+                          console.error("Failed to update favorite:", error);
+                        }
+                      }
+                    }}
+                  />
+                );
+              })}
             </div>
 
             {filteredRecipes.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">🔍</div>
                 <h3 className="text-lg font-semibold mb-2">No recipes found</h3>
-                <p className="text-muted-foreground">Try adjusting your search or browse different categories</p>
+                <p className="text-muted-foreground">
+                  Try adjusting your search or browse different categories
+                </p>
               </div>
             )}
           </TabsContent>

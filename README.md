@@ -36,6 +36,25 @@ npm i
 npm run dev
 ```
 
+## Test Mode (Frontend Only)
+
+To test the application without a backend connection, you can enable test mode by setting the `VITE_TEST_FRONTEND` environment variable to `"true"`.
+
+Create a `.env` file in the root directory:
+
+```sh
+VITE_TEST_FRONTEND=true
+```
+
+When test mode is enabled:
+
+- Authentication is bypassed
+- A mock user and meal plan are automatically loaded
+- You can navigate all routes without signing in
+- All features work with mock data
+
+**Note:** Remember to set `VITE_TEST_FRONTEND=false` or remove it when you want to connect to the backend.
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

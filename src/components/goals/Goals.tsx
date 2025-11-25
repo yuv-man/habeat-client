@@ -1,0 +1,166 @@
+import React from "react";
+import { Share2, Plus, Scale, Dumbbell, GlassWater, Leaf } from "lucide-react";
+
+export interface Goal {
+  id: string;
+  title: string;
+  description: string;
+  current: number;
+  target: number;
+  unit: string;
+  icon: "run" | "weight" | "workout" | "water" | "veggies";
+  status: "achieved" | "in_progress";
+}
+
+interface GoalsProps {
+  goals?: Goal[];
+  onUpdateProgress?: (goalId: string) => void;
+  onMarkAchieved?: (goalId: string) => void;
+  onAddGoal?: () => void;
+}
+
+const Goals = ({
+  goals = [],
+  onUpdateProgress,
+  onMarkAchieved,
+  onAddGoal,
+}: GoalsProps) => {
+  const getIcon = (iconType: Goal["icon"]) => {
+    const iconClass = "w-6 h-6 text-white";
+    switch (iconType) {
+      case "run":
+        return (
+          <div className="w-12 h-12 bg-green-400 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xl">H</span>
+          </div>
+        );
+      case "weight":
+        return (
+          <div className="w-12 h-12 bg-orange-400 rounded-lg flex items-center justify-center">
+            <Scale className={iconClass} />
+          </div>
+        );
+      case "workout":
+        return (
+          <div className="w-12 h-12 bg-blue-400 rounded-lg flex items-center justify-center">
+            <Dumbbell className={iconClass} />
+          </div>
+        );
+      case "water":
+        return (
+          <div className="w-12 h-12 bg-yellow-400 rounded-lg flex items-center justify-center">
+            <GlassWater className={iconClass} />
+          </div>
+        );
+      case "veggies":
+        return (
+          <div className="w-12 h-12 bg-green-400 rounded-lg flex items-center justify-center">
+            <Leaf className={iconClass} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getProgressPercentage = (current: number, target: number) => {
+    return Math.min((current / target) * 100, 100);
+  };
+
+  const formatValue = (value: number, unit: string) => {
+    if (unit === "times" || unit === "portions") {
+      return `${value} ${unit}`;
+    }
+    return `${value} ${unit}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-white pb-20">
+      {/* Header */}
+      <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-4 py-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">My Goals</h1>
+          <button className="p-2 hover:bg-gray-100 rounded-full transition">
+            <Share2 className="w-5 h-5 text-gray-700" />
+          </button>
+        </div>
+      </div>
+
+      {/* Goals List */}
+      <div className="px-4 py-6 space-y-4">
+        {goals.map((goal) => {
+          const progress = getProgressPercentage(goal.current, goal.target);
+          const isAchieved = goal.status === "achieved";
+
+          return (
+            <div
+              key={goal.id}
+              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            >
+              {/* Icon and Title */}
+              <div className="flex items-start gap-3 mb-3">
+                {getIcon(goal.icon)}
+                <div className="flex-1">
+                  <h2 className="font-bold text-gray-900 text-lg mb-1">
+                    {goal.title}
+                  </h2>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {goal.description}
+                  </p>
+                </div>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    {formatValue(goal.current, goal.unit)}
+                  </span>
+                  <span className="text-sm font-medium text-gray-700">
+                    {formatValue(goal.target, goal.unit)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-green-500 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => onUpdateProgress?.(goal.id)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
+                >
+                  Update Progress
+                </button>
+                <button
+                  onClick={() => onMarkAchieved?.(goal.id)}
+                  className={`flex-1 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm text-white ${
+                    isAchieved
+                      ? "bg-green-500 hover:bg-green-600"
+                      : "bg-orange-500 hover:bg-orange-600"
+                  }`}
+                >
+                  {isAchieved ? "Achieved" : "in progress"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={onAddGoal}
+        className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+    </div>
+  );
+};
+
+export default Goals;

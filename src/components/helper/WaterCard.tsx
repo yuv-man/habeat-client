@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Droplets, Plus } from "lucide-react";
+import { GlassWater, Plus } from "lucide-react";
 import ProgressBar from "@/components/helper/ProgressBar";
 import addCircle from "@/assets/add_circle.svg";
 import waterIcon from "@/assets/water.svg";
@@ -34,14 +34,18 @@ const WaterCard = ({ current, goal, onAddGlass }: WaterCardProps) => {
   };
 
   return (
-    <div className={`mealCard water-container ${showCelebration ? 'celebrate' : ''}`}>
+    <div
+      className={`mealCard water-container ${
+        showCelebration ? "celebrate" : ""
+      }`}
+    >
       <div className="pb-3 flex justify-between items-center p-2">
         <div className="flex items-center gap-3">
           <div className="relative">
             <img src={waterIcon} alt="water" className="w-10 h-10" />
             {showDrop && (
-              <Droplets 
-                className="water-drop absolute top-0 left-1/2 transform -translate-x-1/2 text-blue-500" 
+              <GlassWater
+                className="water-drop absolute top-0 left-1/2 transform -translate-x-1/2 text-blue-500"
                 size={24}
               />
             )}
@@ -50,14 +54,12 @@ const WaterCard = ({ current, goal, onAddGlass }: WaterCardProps) => {
             <div className="flex items-center gap-2">
               <span className="capitalize text-gray-800">Water</span>
             </div>
-            <div className="text-xs text-blue-300">
-              {goal} daily glasses
-            </div>
+            <div className="text-xs text-blue-300">{goal} daily glasses</div>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div 
+            <div
               className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 rounded-full transition-colors duration-200"
               onClick={addGlassClicked}
             >
@@ -67,7 +69,14 @@ const WaterCard = ({ current, goal, onAddGlass }: WaterCardProps) => {
         </div>
       </div>
       <div className="px-4 pb-2">
-        <ProgressBar current={current} goal={goal} color="var(--water)" unit="glasses" icon="" label="" />
+        <ProgressBar
+          current={current}
+          goal={goal}
+          color="var(--water)"
+          unit="glasses"
+          icon=""
+          label=""
+        />
       </div>
     </div>
   );

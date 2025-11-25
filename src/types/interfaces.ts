@@ -1,140 +1,192 @@
 export interface IUser {
-    _id?: string;
-    name: string;
-    email: string;
-    phone?: string;
-    password: string;
-    height: number;
-    weight: number;
-    gender: string;
-    age: number;
-    isPremium: boolean;
-    path: string;
+  _id?: string;
+  name: string;
+  email: string;
+  phone?: string;
+  password: string;
+  height: number;
+  weight: number;
+  gender: string;
+  age: number;
+  isPremium: boolean;
+  path: string;
+  bmr: number;
+  tdee: number;
+  idealWeight: number;
+  allergies: string[];
+  dietaryRestrictions: string[];
+  favoriteMeals: string[];
+  dislikes?: string[];
+  fastingHours?: number; // For 8-16 fasting diet type
+  fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
+}
+
+export interface IMeal {
+  _id: string;
+  icon: string;
+  name: string;
+  // Format: "ingredient_name|portion|unit" (e.g., "chicken_breast|200|g")
+  ingredients?: string[];
+  calories: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  category: string;
+  usageCount?: number;
+  prepTime: number;
+  done: boolean;
+}
+
+export interface IDailyPlan {
+  day:
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday";
+  date: string;
+  meals: {
+    breakfast: IMeal;
+    lunch: IMeal;
+    dinner: IMeal;
+    snacks: IMeal[];
+  };
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  waterIntake: number; // in glasses
+  workouts: { name: string; duration: number; caloriesBurned: number }[]; // number of workouts completed
+  netCalories: number;
+}
+
+export interface IPlanData {
+  userData: IUser;
+  weeklyPlan: { [date: string]: IDailyPlan };
+}
+
+export interface IPlan extends Document {
+  userId: string;
+  title: string;
+  userMetrics: {
     bmr: number;
     tdee: number;
+    targetCalories: number;
     idealWeight: number;
-    allergies: string[];
-    dietaryRestrictions: string[];
-    favoriteMeals: string[];
-    dislikes?: string[];
-  }
-
-  export interface IMeal {
-    _id: string;
-    name: string;
-    // Format: "ingredient_name|portion|unit" (e.g., "chicken_breast|200|g")
-    ingredients?: string[];
-    calories: number;
-    macros: {
+    weightRange: string;
+    dailyMacros: {
       protein: number;
       carbs: number;
       fat: number;
     };
+  };
+  userData: {
+    age: number;
+    gender: "male" | "female";
+    height: number;
+    weight: number;
+    activityLevel: string;
+    path: string;
+    targetWeight?: number;
+    allergies?: string[];
+    dietaryRestrictions?: string[];
+  };
+  weeklyPlan: { [date: string]: IDailyPlan };
+  language: string;
+  generatedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IProgress {
+  userId: string;
+  date: Date;
+  caloriesConsumed: number;
+  caloriesGoal: number;
+  waterGlasses: number;
+  waterGoal: number;
+  workoutsCompleted: number;
+  workoutsGoal: number;
+  mealsCompleted: {
+    breakfast: boolean;
+    lunch: boolean;
+    dinner: boolean;
+    snacks: number; // number of snacks completed
+  };
+  exerciseMinutes: number;
+  weight?: number; // optional daily weight tracking
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IDailyProgress {
+  date: string;
+  planId: string;
+  userId: string;
+  water: {
+    consumed: number;
+    goal: number;
+  };
+  caloriesConsumed: number;
+  caloriesGoal: number;
+  protein: {
+    consumed: number;
+    goal: number;
+  };
+  carbs: {
+    consumed: number;
+    goal: number;
+  };
+  fat: {
+    consumed: number;
+    goal: number;
+  };
+  workouts: {
+    name: string;
     category: string;
-    usageCount?: number;
-    prepTime: number;
+    duration: number;
+    caloriesBurned: number;
     done: boolean;
-}   
-
-  export interface IDailyPlan {
-    day: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-    date: string;
-    meals: {
-      breakfast: IMeal;
-      lunch: IMeal;
-      dinner: IMeal;
-      snacks: IMeal[];
+  }[];
+  meals: {
+    breakfast: IMeal;
+    lunch: IMeal;
+    dinner: IMeal;
+    snacks: IMeal[];
+  };
+  messages: string;
+  stats: {
+    calories: {
+      consumed: number;
+      goal: number;
+      percentage: number;
     };
-    totalCalories: number;
-    totalProtein: number;
-    totalCarbs: number;
-    totalFat: number;
-    waterIntake: number; // in glasses
-    workouts: {name: string, duration: number, caloriesBurned: number}[]; // number of workouts completed
-    netCalories: number; 
-}
-
-export interface IPlanData {
-    userData: IUser;
-    weeklyPlan: IDailyPlan[];
-}
-
-export interface IPlan extends Document {
-    userId: string;
-    title: string;
-    userMetrics: {
-      bmr: number;
-      tdee: number;
-      targetCalories: number;
-      idealWeight: number;
-      weightRange: string;
-      dailyMacros: {
-        protein: number;
-        carbs: number;
-        fat: number;
-      };
-    };
-    userData: {
-      age: number;
-      gender: 'male' | 'female';
-      height: number;
-      weight: number;
-      activityLevel: string;
-      path: string;
-      targetWeight?: number;
-      allergies?: string[];
-      dietaryRestrictions?: string[];
-    };
-    weeklyPlan: IDailyPlan[];
-    language: string;
-    generatedAt: Date;
-    createdAt: Date;
-    updatedAt: Date;
-  }
-
-  export interface IProgress {
-    userId: string;
-    date: Date;
-    caloriesConsumed: number;
-    caloriesGoal: number;
-    waterGlasses: number;
-    waterGoal: number;
-    workoutsCompleted: number;
-    workoutsGoal: number;
-    mealsCompleted: {
-        breakfast: boolean;
-        lunch: boolean;
-        dinner: boolean;
-        snacks: number; // number of snacks completed
-    };
-    exerciseMinutes: number;
-    weight?: number; // optional daily weight tracking
-    notes?: string;
-    createdAt: Date;
-    updatedAt: Date;
-  }
-
-  export interface IDailyProgress {
-    date: string;
-    planId: string;
-    userId: string;
     water: {
       consumed: number;
       goal: number;
+      percentage: number;
     };
-    caloriesConsumed: number;
-    caloriesGoal: number;
-    protein: {
-      consumed: number;
-      goal: number;
-    };
-    carbs: {
-      consumed: number;
-      goal: number;
-    };
-    fat: {
-      consumed: number;
-      goal: number;
+    macros: {
+      protein: {
+        consumed: number;
+        goal: number;
+        percentage: number;
+      };
+      carbs: {
+        consumed: number;
+        goal: number;
+        percentage: number;
+      };
+      fat: {
+        consumed: number;
+        goal: number;
+        percentage: number;
+      };
     };
     workouts: {
       name: string;
@@ -144,103 +196,65 @@ export interface IPlan extends Document {
       done: boolean;
     }[];
     meals: {
-      breakfast: IMeal;
-      lunch: IMeal;
-      dinner: IMeal;
-      snacks: IMeal[];
+      mealsCompleted: number;
+      mealsGoal: number;
+      percentage: number;
     };
     messages: string;
-    stats: {
-      calories: {
-        consumed: number;
-        goal: number;
-        percentage: number;
-      };
-      water: {
-        consumed: number;
-        goal: number;
-        percentage: number;
-      };
-      macros: {
-        protein: {
-          consumed: number;
-          goal: number;
-          percentage: number;
-        };
-        carbs: {
-          consumed: number;
-          goal: number;
-          percentage: number;
-        };
-        fat: {
-          consumed: number;
-          goal: number;
-          percentage: number;
-        };
-      };
-      workouts: {
-        minutes: number;
-        workoutsCompleted: number;
-      }[];
-      meals: {
-        mealsCompleted: number;
-        mealsGoal: number;
-        percentage: number;
-      };
-      messages: string;
-      weight: number;
-    };
-  }
+    weight: number;
+  };
+}
 
-  export interface MealItem {
-    _id: string;
-    name: string;
-    calories: number;
-    macros: {
-      protein: number;
-      carbs: number;
-      fat: number;
-    };
-  }
+export interface MealItem {
+  _id: string;
+  name: string;
+  calories: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+}
 
-  export interface MealData {
-    _id: string;
-    name: string;
-    calories: number;
-    macros: {
-      protein: number;
-      carbs: number;
-      fat: number;
-    };
-    done: boolean;
-    items?: MealItem[]; // For snacks that can have multiple items
-  }
+export interface MealData {
+  _id: string;
+  name: string;
+  calories: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  done: boolean;
+  items?: MealItem[]; // For snacks that can have multiple items
+}
 
-  export interface WorkoutData {
-    name: string;
-    caloriesBurned: string;
-    duration: string;
-    category: string;
-    done?: boolean;
-  }
+export interface WorkoutData {
+  name: string;
+  caloriesBurned: string;
+  duration: string;
+  category: string;
+  done?: boolean;
+}
 
-  export interface IRecipe {
-      id: string;
-      name: string;
-      description: string;
-      image: string;
-      cookTime: number;
-      servings: number;
-      calories: number;
-      difficulty: 'Easy' | 'Medium' | 'Hard';
-      tags: string[];
-      rating: number;
-      ingredients: string[];
-      instructions: string[];
-      macros: {
-        protein: number;
-        carbs: number;
-        fat: number;
-        fiber: number;
-      };
-  }
+export interface IRecipe {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  image: string;
+  cookTime: number;
+  servings: number;
+  calories: number;
+  difficulty: "Easy" | "Medium" | "Hard";
+  tags: string[];
+  rating: number;
+  ingredients: string[];
+  instructions: string[];
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+  };
+}

@@ -84,12 +84,7 @@ export default function FitnessStep({
         <button
           onClick={onSubmit}
           disabled={loading}
-          style={{
-            color: "var(--button-primary-text)",
-            backgroundColor: "var(--button-primary-bg)",
-            boxShadow: "var(--button-shadow-xs)",
-          }}
-          className="w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold opacity-50 border-none rounded-xl transition hover:opacity-100 active:opacity-100 disabled:opacity-40"
+          className="w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold border-none rounded-xl transition bg-green-500 hover:bg-green-600 text-white shadow-lg disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
         >
           {loading ? (
             <Loader className="w-6 h-6 animate-spin" />

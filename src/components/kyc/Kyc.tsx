@@ -120,7 +120,7 @@ export default function KYCFlow() {
     }
   }, []);
 
-  // Save to localStorage whenever data changes
+  // Save Google credential to localStorage
   useEffect(() => {
     if (googleCredential) {
       localStorage.setItem(STORAGE_KEYS.GOOGLE_CREDENTIAL, googleCredential);
@@ -186,10 +186,8 @@ export default function KYCFlow() {
           // Decode the credential to get user info
           const userInfo = decodeGoogleToken(credential);
 
-          // Store the credential and user info
+          // Store the credential (will be saved to localStorage via useEffect)
           setGoogleCredential(credential);
-          // Store in localStorage
-          localStorage.setItem(STORAGE_KEYS.GOOGLE_CREDENTIAL, credential);
 
           setAuthData((prev) => ({
             ...prev,
@@ -299,6 +297,7 @@ export default function KYCFlow() {
         bmr: Math.round(bmr),
         tdee: Math.round(tdee),
         idealWeight: Math.round(idealWeight),
+        workoutFrequency: kycData.workoutFrequency,
         allergies: kycData.allergies,
         dietaryRestrictions: [],
         favoriteMeals: kycData.favoriteFoods,
@@ -334,23 +333,23 @@ export default function KYCFlow() {
         await authStore.handleOAuthCallback(
           "google",
           "signup",
-          googleCredential,
-          undefined,
-          userData
+          googleCredential
         );
       } else {
         throw new Error("Invalid authentication method");
       }
 
-      // Clear localStorage on successful completion
+      // Clear all KYC-related localStorage on successful completion
       localStorage.removeItem(STORAGE_KEYS.GOOGLE_CREDENTIAL);
       localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
       localStorage.removeItem(STORAGE_KEYS.KYC_DATA);
       localStorage.removeItem(STORAGE_KEYS.CUSTOM_INPUTS);
       localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
 
+      console.log("Signup successful, setting step to complete");
       setStep("complete");
     } catch (err: any) {
+      console.error("Signup error:", err);
       setError(err.message || "Failed to complete registration");
     } finally {
       setLoading(false);
@@ -387,6 +386,7 @@ export default function KYCFlow() {
   };
 
   const handleComplete = () => {
+    console.log("handleComplete called, navigating to daily-tracker");
     navigate("/daily-tracker");
   };
 
@@ -501,6 +501,7 @@ export default function KYCFlow() {
       );
 
     case "complete":
+      console.log("Rendering CompleteStep");
       return <CompleteStep onComplete={handleComplete} />;
 
     default:

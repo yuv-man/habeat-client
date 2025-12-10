@@ -8,19 +8,18 @@ import MobileHeader from "@/components/ui/MobileHeader";
 
 const DailyTracker = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuthStore();
+  const { user, plan, loading, token } = useAuthStore();
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Only redirect if not loading, no user, AND no token
+    // If there's a token, we should wait for auth to complete
+    if (!loading && !user && !token) {
       navigate("/register");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, token, navigate]);
 
-  if (!user) {
-    return <div>Redirecting...</div>;
-  }
-
-  if (loading) {
+  // Show loading if still loading OR if we have a token but no user yet
+  if (loading || (token && !user)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -29,6 +28,10 @@ const DailyTracker = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <div>Redirecting...</div>;
   }
 
   return (

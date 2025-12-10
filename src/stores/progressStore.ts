@@ -198,6 +198,7 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
 
     try {
       const response = await userAPI.addWaterGlass(userId, date, 1);
+      const progress = response.data.progress;
       const { todayProgress } = get();
       if (todayProgress) {
         set({
@@ -206,8 +207,7 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
             water: {
               ...todayProgress.water,
               consumed:
-                response.data.water?.consumed ||
-                todayProgress.water.consumed + 1,
+                progress.water?.consumed || todayProgress.water.consumed + 1,
             },
           },
         });

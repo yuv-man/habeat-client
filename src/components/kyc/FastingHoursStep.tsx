@@ -170,12 +170,11 @@ export default function FastingHoursStep({
         <button
           onClick={handleSubmit}
           disabled={loading || !fastingHours || !fastingStartTime}
-          style={{
-            color: "var(--button-primary-text)",
-            backgroundColor: "var(--button-primary-bg)",
-            boxShadow: "var(--button-shadow-xs)",
-          }}
-          className="w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold opacity-50 border-none rounded-xl transition hover:opacity-100 active:opacity-100 disabled:opacity-40"
+          className={`w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold border-none rounded-xl transition ${
+            fastingHours && fastingStartTime
+              ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          } disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:shadow-none`}
         >
           {loading ? (
             <Loader className="w-6 h-6 animate-spin" />

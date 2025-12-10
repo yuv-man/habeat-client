@@ -427,7 +427,7 @@ export default function WeeklyMealPlan() {
     if (!user) return;
     try {
       setIsGenerating(true);
-      await generateMealPlan(user, "en");
+      await generateMealPlan(user, "My Plan", "en");
     } catch (error) {
       console.error("Failed to generate meal plan:", error);
     } finally {

@@ -21,8 +21,12 @@ import FastingClock from "./FastingClock";
 const DailyMealScreen = () => {
   const [currentDate] = useState(new Date());
   const { user, plan, loading, setLoading } = useAuthStore();
-  const { todayProgress, fetchTodayProgress, setTodayProgress } =
-    useProgressStore();
+  const {
+    todayProgress,
+    fetchTodayProgress,
+    setTodayProgress,
+    addWaterGlass: addWaterGlassToStore,
+  } = useProgressStore();
   const [dailyProgress, setDailyProgress] = useState<IDailyProgress | null>(
     null
   );
@@ -72,22 +76,7 @@ const DailyMealScreen = () => {
 
   const addWaterGlass = async () => {
     if (user?._id) {
-      try {
-        const response = await userAPI.addWaterGlass(
-          user._id,
-          currentDate.toISOString(),
-          1
-        );
-        setDailyProgress((prevState) => ({
-          ...prevState,
-          water: {
-            ...prevState.water,
-            consumed: response.data.water.consumed,
-          },
-        }));
-      } catch (error) {
-        console.error("Failed to add water glass:", error);
-      }
+      await addWaterGlassToStore(user._id, currentDate.toISOString());
     }
   };
 

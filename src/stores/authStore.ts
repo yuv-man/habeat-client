@@ -1,43 +1,8 @@
 import { create } from "zustand";
-import { IUser, IPlan, IMeal } from "@/types/interfaces";
+import { IUser, IMeal, AuthState, AuthActions } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockUser, mockPlan } from "@/mocks/planMock";
-
-interface AuthState {
-  user: IUser | null;
-  loading: boolean;
-  token: string | null;
-  plan: IPlan | null;
-}
-
-interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, userData?: IUser) => Promise<void>;
-  logout: () => void;
-  updateProfile: (data: Partial<IUser>) => Promise<void>;
-  setUser: (user: IUser | null) => void;
-  setLoading: (loading: boolean) => void;
-  setToken: (token: string | null) => void;
-  fetchUser: (token: string, onSuccess?: () => void) => Promise<void>;
-  oauthSignin: (provider: string) => Promise<void>;
-  oauthSignup: (provider: string) => Promise<void>;
-  handleOAuthCallback: (
-    provider: string,
-    action: "signin" | "signup",
-    idToken?: string,
-    accessToken?: string,
-    userData?: IUser
-  ) => Promise<void>;
-  guestSignin: (userData: IUser) => void;
-  generateMealPlan: (userData: IUser, language: string) => Promise<void>;
-  updateMealInPlan: (userId: string, date: Date, meal: IMeal) => Promise<void>;
-  updateFavorite: (
-    userId: string,
-    mealId: string,
-    isFavorite: boolean
-  ) => Promise<void>;
-}
 
 type AuthStore = AuthState & AuthActions;
 
@@ -49,25 +14,56 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   token: localStorage.getItem("token"),
 
   // Actions
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    set({ user });
+    // Save user to localStorage (non-sensitive data only)
+    if (user) {
+      const userDataToStore = {
+        _id: user._id,
+        email: user.email,
+        name: user.name,
+        // Don't store sensitive data like password, tokens, etc.
+      };
+      localStorage.setItem("habeat_user", JSON.stringify(userDataToStore));
+    } else {
+      localStorage.removeItem("habeat_user");
+    }
+  },
   setLoading: (loading) => set({ loading }),
+  setPlan: (plan) => {
+    set({ plan });
+    // Save plan to localStorage
+    if (plan) {
+      localStorage.setItem("habeat_plan", JSON.stringify(plan));
+    } else {
+      localStorage.removeItem("habeat_plan");
+    }
+  },
   setToken: (token) => {
     set({ token });
     if (token) {
       localStorage.setItem("token", token);
     } else {
       localStorage.removeItem("token");
+      localStorage.removeItem("habeat_user");
+      localStorage.removeItem("habeat_plan");
     }
   },
 
   fetchUser: async (token: string, onSuccess?: () => void) => {
     try {
       const { user, plan } = await userAPI.fetchUser(token);
-      set({ user, plan });
+      get().setUser(user);
+      get().setPlan(plan);
       onSuccess?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching user:", error);
-      get().logout();
+      // Only logout if it's an auth error (401), not for network errors
+      // This prevents losing session on temporary network issues
+      if (error?.response?.status === 401 || error?.message?.includes("401")) {
+        get().logout();
+      }
+      // For other errors, keep the user data from localStorage
     } finally {
       set({ loading: false });
     }
@@ -79,7 +75,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const token = await userAPI.login(email, password);
       get().setToken(token);
       const { user, plan } = await userAPI.fetchUser(token);
-      set({ user, plan, loading: false });
+      get().setUser(user);
+      get().setPlan(plan);
+      set({ loading: false });
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -95,7 +93,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         userData
       );
       get().setToken(token);
-      set({ user, plan, loading: false });
+      get().setUser(user);
+      get().setPlan(plan);
+      set({ loading: false });
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -105,28 +105,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   oauthSignin: async (provider: string) => {
     try {
       set({ loading: true });
-
-      // For Google OAuth
-      if (provider === "google") {
-        // Initialize Google OAuth for sign-in
-        const { token } = await userAPI.oauthSignin(provider, "signin");
-        get().setToken(token);
-        const { user, plan } = await userAPI.fetchUser(token);
-        set({ user, plan, loading: false });
-        return;
-      }
-
-      // For Facebook OAuth
-      if (provider === "facebook") {
-        // Initialize Facebook OAuth for sign-in
-        const { token } = await userAPI.oauthSignin(provider, "signin");
-        get().setToken(token);
-        const { user, plan } = await userAPI.fetchUser(token);
-        set({ user, plan, loading: false });
-        return;
-      }
-
-      throw new Error(`Unsupported OAuth provider: ${provider}`);
+      // Use redirect flow for all providers (including Google)
+      // Backend handles the OAuth flow, gets the idToken from Google, verifies it, and redirects back
+      const authUrl = await userAPI.initiateOAuth(provider, "signin");
+      window.location.href = authUrl;
+      // Note: loading state will be reset after redirect
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -136,27 +119,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   oauthSignup: async (provider: string) => {
     try {
       set({ loading: true });
-
-      // For Google OAuth
-      if (provider === "google") {
-        // Initialize Google OAuth for sign-up
-
-        const { token } = await userAPI.oauthSignup(provider, "signup");
-        get().setToken(token);
-        return;
-      }
-
-      // For Facebook OAuth
-      if (provider === "facebook") {
-        // Initialize Facebook OAuth for sign-up
-
-        const { token } = await userAPI.oauthSignup(provider, "signup");
-        get().setToken(token);
-
-        return;
-      }
-
-      throw new Error(`Unsupported OAuth provider: ${provider}`);
+      // Initiate OAuth flow for sign-up
+      const authUrl = await userAPI.initiateOAuth(provider, "signup");
+      window.location.href = authUrl;
+      // Note: loading state will be reset after redirect
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -167,25 +133,28 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   handleOAuthCallback: async (
     provider: string,
     action: "signin" | "signup",
-    idToken?: string,
-    accessToken?: string,
-    userData?: IUser
+    userId?: string,
+    accessToken?: string
   ) => {
     try {
       set({ loading: true });
-      const { token, user } =
-        action === "signin"
-          ? await userAPI.oauthSignin(provider, idToken, accessToken)
-          : await userAPI.oauthSignup(provider, idToken, accessToken, userData);
+      const response = await userAPI.oauthAuth(
+        provider,
+        action,
+        userId,
+        accessToken
+      );
+      const { token, user, plan } = response.data;
       get().setToken(token);
+      get().setUser(user);
+      get().setPlan(plan || null);
 
-      // Fetch plan if signing in
-      if (action === "signin") {
-        const { plan } = await userAPI.fetchUser(token);
-        set({ user, plan, loading: false });
-      } else {
-        set({ user, loading: false });
+      // For signin, fetch plan if not returned
+      if (action === "signin" && !plan) {
+        const { plan: fetchedPlan } = await userAPI.fetchUser(token);
+        get().setPlan(fetchedPlan);
       }
+      set({ loading: false });
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -197,14 +166,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ user: userData, loading: false });
   },
 
-  updateProfile: async (data: Partial<IUser>) => {
+  updateProfile: async (id: string, data: Partial<IUser>) => {
     try {
       set({ loading: true });
       const token = get().token;
       if (!token) {
         throw new Error("No token found");
       }
-      const updatedUser = await userAPI.updateUser(token, data as IUser);
+      const updatedUser = await userAPI.updateUser(id, data as IUser);
       set({ user: updatedUser, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -214,13 +183,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   logout: () => {
     get().setToken(null);
-    set({ user: null, loading: false });
+    get().setUser(null);
+    get().setPlan(null);
+    set({ loading: false });
   },
 
-  generateMealPlan: async (userData: IUser, language: string) => {
+  generateMealPlan: async (
+    userData: IUser,
+    planName: string,
+    language: string
+  ) => {
     try {
       set({ loading: true });
-      const { data } = await userAPI.generateMealPlan(userData, language);
+      const { data } = await userAPI.generateMealPlan(
+        userData,
+        planName,
+        language
+      );
 
       set({ plan: data.plan, loading: false });
     } catch (error) {
@@ -263,7 +242,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
 // Initialize user on app start
 if (typeof window !== "undefined") {
-  if (config.testFrontend) {
+  if (config.testFrontend && import.meta.env.VITE_MODE !== "development") {
     // Test mode: use mock user and plan
     useAuthStore.getState().setUser(mockUser);
     useAuthStore.getState().setToken("test_token");
@@ -272,11 +251,46 @@ if (typeof window !== "undefined") {
     useAuthStore.setState({ plan: mockPlan });
   } else {
     const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("habeat_user");
+    const storedPlan = localStorage.getItem("habeat_plan");
+
+    // Load user and plan from localStorage first (for faster initial render)
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        useAuthStore.getState().setUser(user);
+      } catch (err) {
+        console.error("Failed to parse stored user:", err);
+      }
+    }
+
+    if (storedPlan) {
+      try {
+        const plan = JSON.parse(storedPlan);
+        useAuthStore.getState().setPlan(plan);
+      } catch (err) {
+        console.error("Failed to parse stored plan:", err);
+      }
+    }
+
+    // If we have a token, fetch fresh data from server
     if (token) {
       useAuthStore.getState().fetchUser(token, () => {
-        // Auto-navigate to daily tracker if not already there
-        if (window.location.pathname !== "/daily-tracker") {
-          window.location.href = "/daily-tracker";
+        // Only auto-navigate if we're on the home page or auth callback
+        // Don't redirect if user is already on a protected route
+        const currentPath = window.location.pathname;
+        if (currentPath === "/" || currentPath === "/auth/callback") {
+          // Check if user has completed KYC (has plan or other indicators)
+          const state = useAuthStore.getState();
+          if (state.user && state.plan) {
+            window.location.href = "/daily-tracker";
+          } else if (state.user && !state.plan) {
+            // User exists but no plan - redirect to weekly overview to regenerate plan
+            window.location.href = "/weekly-overview";
+          } else {
+            // No user - redirect to register
+            window.location.href = "/register";
+          }
         }
       });
     } else {

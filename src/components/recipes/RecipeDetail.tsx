@@ -1,200 +1,391 @@
-import React, { useState, useEffect } from 'react';
-import { ChefHat, Clock, Users, ShoppingCart, Check, Plus, Minus, Heart, Share2, BookOpen } from 'lucide-react';
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Heart,
+  Share2,
+  Flame,
+  ShoppingCart,
+  Check,
+} from "lucide-react";
+import { IMeal } from "@/types/interfaces";
+import { useAuthStore } from "@/stores/authStore";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import { getMealImageVite } from "@/lib/mealImageHelper";
+import { useNavigate } from "react-router-dom";
 
-// Mock data for demonstration
-const mockRecipe = {
-  id: 1,
-  name: "Mediterranean Quinoa Bowl",
-  image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
-  prepTime: 15,
-  cookTime: 20,
-  servings: 4,
-  difficulty: "Easy",
-  description: "A nutritious and colorful quinoa bowl packed with Mediterranean flavors, fresh vegetables, and a tangy lemon dressing.",
-  ingredients: [
-    { id: 1, name: "Quinoa", amount: "1", unit: "cup", category: "grains" },
-    { id: 2, name: "Cherry tomatoes", amount: "2", unit: "cups", category: "vegetables" },
-    { id: 3, name: "Cucumber", amount: "1", unit: "large", category: "vegetables" },
-    { id: 4, name: "Red onion", amount: "1/2", unit: "medium", category: "vegetables" },
-    { id: 5, name: "Feta cheese", amount: "1/2", unit: "cup", category: "dairy" },
-    { id: 6, name: "Kalamata olives", amount: "1/3", unit: "cup", category: "pantry" },
-    { id: 7, name: "Fresh parsley", amount: "1/4", unit: "cup", category: "herbs" },
-    { id: 8, name: "Olive oil", amount: "3", unit: "tbsp", category: "pantry" },
-    { id: 9, name: "Lemon juice", amount: "2", unit: "tbsp", category: "pantry" },
-    { id: 10, name: "Garlic", amount: "2", unit: "cloves", category: "vegetables" }
-  ],
-  instructions: [
-    "Rinse quinoa and cook according to package instructions. Let cool.",
-    "Dice cucumber, halve cherry tomatoes, and thinly slice red onion.",
-    "Whisk together olive oil, lemon juice, minced garlic, salt, and pepper.",
-    "Combine cooled quinoa with vegetables, feta, and olives.",
-    "Drizzle with dressing and toss gently.",
-    "Garnish with fresh parsley and serve immediately."
-  ],
-  nutrition: {
-    calories: 320,
-    protein: 12,
-    carbs: 45,
-    fat: 14,
-    fiber: 6,
-    sugar: 8
-  },
-  tags: ["Vegetarian", "Mediterranean", "High Fiber", "Gluten-Free"]
+interface RecipeDetailProps {
+  meal: IMeal;
+  onBack: () => void;
+}
+
+// Parse ingredient string format: "ingredient_name|portion|unit"
+const parseIngredient = (ingredient: string) => {
+  const parts = ingredient.split("|");
+  if (parts.length >= 3) {
+    return {
+      name: parts[0].replace(/_/g, " "),
+      amount: parts[1],
+      unit: parts[2],
+    };
+  }
+  // Fallback for simple ingredient strings
+  return {
+    name: ingredient,
+    amount: "",
+    unit: "",
+  };
 };
 
+// Generate mock instructions based on meal name
+const generateInstructions = (mealName: string): string[] => {
+  const name = mealName.toLowerCase();
 
-const RecipeDetail = ({ recipeId, onBack }) => {
-  const [recipe, setRecipe] = useState(mockRecipe);
-  const [servings, setServings] = useState(4);
-  const [isFavorited, setIsFavorited] = useState(false);
+  if (name.includes("salad")) {
+    return [
+      "Wash and prepare all vegetables. Pat dry with a clean towel.",
+      "If using protein (chicken, fish, etc.), season with salt, pepper, and your preferred spices.",
+      "Cook the protein until golden and cooked through. Let it rest for a few minutes.",
+      "Chop all vegetables into bite-sized pieces and place in a large bowl.",
+      "Slice the cooked protein and add to the bowl with vegetables.",
+      "Drizzle with olive oil and lemon juice, then toss gently to combine.",
+      "Season with salt and pepper to taste. Serve immediately.",
+    ];
+  }
 
-  const adjustServings = (newServings) => {
-    if (newServings < 1) return;
-    setServings(newServings);
+  if (name.includes("smoothie") || name.includes("shake")) {
+    return [
+      "Gather all ingredients and add them to a blender.",
+      "Blend on high speed until smooth and creamy, about 30-60 seconds.",
+      "Taste and adjust sweetness if needed.",
+      "Pour into a glass and serve immediately.",
+    ];
+  }
+
+  if (name.includes("soup")) {
+    return [
+      "Heat olive oil in a large pot over medium heat.",
+      "Add onions and garlic, sauté until fragrant and translucent.",
+      "Add vegetables and cook for 5-7 minutes until slightly softened.",
+      "Pour in broth and bring to a boil, then reduce heat and simmer.",
+      "Cook for 20-25 minutes until all vegetables are tender.",
+      "Season with salt, pepper, and herbs to taste. Serve hot.",
+    ];
+  }
+
+  if (
+    name.includes("chicken") ||
+    name.includes("fish") ||
+    name.includes("salmon")
+  ) {
+    return [
+      "Preheat oven to 375°F (190°C). Butterfly each protein piece by slicing horizontally through the thickest part, being careful not to cut all the way through.",
+      "In a medium bowl, combine chopped spinach, feta cheese, cream cheese, minced garlic, and oregano. Season with salt and pepper.",
+      "Spoon the filling mixture into the center of each protein piece. Fold over to enclose the filling and secure with toothpicks if necessary.",
+      "Heat olive oil in an oven-safe skillet over medium-high heat. Sear the protein for 2-3 minutes per side until golden brown.",
+      "Pour chicken broth into the skillet, then transfer the skillet to the preheated oven. Bake for 20-25 minutes, or until the protein is cooked through (internal temperature 165°F/74°C).",
+      "Remove from oven, let rest for a few minutes before serving. Enjoy!",
+    ];
+  }
+
+  if (name.includes("oatmeal") || name.includes("porridge")) {
+    return [
+      "Bring water or milk to a boil in a medium saucepan.",
+      "Add oats and reduce heat to medium-low.",
+      "Cook for 5-7 minutes, stirring occasionally, until creamy.",
+      "Remove from heat and add your toppings.",
+      "Serve warm and enjoy!",
+    ];
+  }
+
+  if (
+    name.includes("egg") ||
+    name.includes("scrambled") ||
+    name.includes("omelet")
+  ) {
+    return [
+      "Crack eggs into a bowl and whisk until well combined.",
+      "Heat butter in a non-stick pan over medium-low heat.",
+      "Pour in eggs and let them set slightly at the edges.",
+      "Gently push eggs from edges to center, letting uncooked egg flow to the pan.",
+      "Continue until eggs are just set but still moist.",
+      "Season with salt and pepper, add any fillings, and serve immediately.",
+    ];
+  }
+
+  // Default instructions
+  return [
+    "Gather and prepare all ingredients. Wash and chop vegetables as needed.",
+    "If using protein, season well with salt, pepper, and your preferred spices.",
+    "Cook the main protein or component according to your preferred method until done.",
+    "Prepare any sides or accompaniments while the main dish cooks.",
+    "Combine all components, adjusting seasoning to taste.",
+    "Plate beautifully and serve while hot. Enjoy your meal!",
+  ];
+};
+
+const RecipeDetail = ({ meal, onBack }: RecipeDetailProps) => {
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { isMealFavorite, toggleFavoriteMeal } = useFavoritesStore();
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(
+    new Set()
+  );
+
+  const isFavorite = isMealFavorite(meal._id);
+  const instructions = generateInstructions(meal.name);
+  const ingredients = meal.ingredients || [];
+
+  const handleFavorite = async () => {
+    if (user?._id) {
+      await toggleFavoriteMeal(user._id, meal._id);
+    }
   };
 
-  const getAdjustedAmount = (originalAmount, originalServings) => {
-    const ratio = servings / originalServings;
-    const numAmount = parseFloat(originalAmount);
-    if (isNaN(numAmount)) return originalAmount;
-    return (numAmount * ratio).toFixed(numAmount % 1 === 0 ? 0 : 1);
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: meal.name,
+          text: `Check out this recipe: ${meal.name}`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.log("Share failed:", err);
+      }
+    }
+  };
+
+  const handleAddToShoppingList = () => {
+    navigate("/shopping-list");
+  };
+
+  const toggleIngredient = (index: number) => {
+    const newChecked = new Set(checkedIngredients);
+    if (newChecked.has(index)) {
+      newChecked.delete(index);
+    } else {
+      newChecked.add(index);
+    }
+    setCheckedIngredients(newChecked);
+  };
+
+  // Generate a note based on the meal
+  const getRecipeNote = () => {
+    const name = meal.name.toLowerCase();
+    if (name.includes("chicken")) {
+      return "This recipe is fantastic for a quick weeknight dinner. I like to add a pinch of red pepper flakes for an extra kick!";
+    }
+    if (name.includes("salad")) {
+      return "For best results, use fresh seasonal vegetables. You can also add nuts or seeds for extra crunch!";
+    }
+    if (name.includes("smoothie")) {
+      return "Pro tip: Freeze your fruits beforehand for an extra thick and creamy smoothie!";
+    }
+    return "Feel free to adjust seasonings and portions to your taste. This recipe works great for meal prep!";
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white">
-      {/* Header */}
-      <div className="relative">
-        <img 
-          src={recipe.image} 
-          alt={recipe.name}
-          className="w-full h-64 object-cover rounded-lg"
+    <div className="min-h-screen bg-white">
+      {/* Hero Image with Overlay */}
+      <div className="relative h-72 sm:h-80">
+        <img
+          src={getMealImageVite(meal.name, meal.icon)}
+          alt={meal.name}
+          className="w-full h-full object-cover"
         />
-        <div className="absolute top-4 right-4 flex gap-2">
-          <button 
-            onClick={() => setIsFavorited(!isFavorited)}
-            className={`p-2 rounded-full backdrop-blur-sm ${
-              isFavorited ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-600'
-            }`}
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+
+        {/* Header Actions */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-center">
+          <button
+            onClick={onBack}
+            className="p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition"
+            aria-label="Go back"
           >
-            <Heart className={`w-5 h-5 ${isFavorited ? 'fill-current' : ''}`} />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <button className="p-2 rounded-full bg-white/80 text-gray-600 backdrop-blur-sm">
-            <Share2 className="w-5 h-5" />
+          <button
+            onClick={handleFavorite}
+            className="p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition"
+            aria-label={
+              isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
+          >
+            <Heart
+              className={`w-5 h-5 ${
+                isFavorite ? "fill-red-500 text-red-500" : ""
+              }`}
+            />
           </button>
+        </div>
+
+        {/* Title on Image */}
+        <div className="absolute bottom-6 left-4 right-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+            {meal.name}
+          </h1>
         </div>
       </div>
 
-      {/* Recipe Info */}
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">{recipe.name}</h1>
-        <p className="text-gray-600 mb-4">{recipe.description}</p>
+      {/* Content */}
+      <div className="px-4 py-6 pb-32">
+        {/* Nutrition Stats Card */}
+        <div className="bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            Nutrition Stats
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                <Flame className="w-5 h-5 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Calories</p>
+                <p className="font-bold text-gray-900">{meal.calories} kcal</p>
+              </div>
+            </div>
 
-        {/* Recipe Stats */}
-        <div className="flex flex-wrap gap-6 mb-6">
-          <div className="flex items-center gap-2 text-gray-600">
-            <Clock className="w-5 h-5" />
-            <span>{recipe.prepTime + recipe.cookTime} mins</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <Users className="w-5 h-5" />
-            <span>{recipe.servings} servings</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
-            <ChefHat className="w-5 h-5" />
-            <span>{recipe.difficulty}</span>
-          </div>
-        </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <span className="text-blue-500 font-bold text-sm">P</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Protein</p>
+                <p className="font-bold text-gray-900">
+                  {meal.macros.protein}g
+                </p>
+              </div>
+            </div>
 
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {recipe.tags.map(tag => (
-            <span key={tag} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-              {tag}
-            </span>
-          ))}
-        </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                <span className="text-yellow-600 font-bold text-sm">F</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Fats</p>
+                <p className="font-bold text-gray-900">{meal.macros.fat}g</p>
+              </div>
+            </div>
 
-        {/* Nutrition Info */}
-        <div className="bg-gray-50 rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-lg mb-3">Nutrition (per serving)</h3>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-green-600">{recipe.nutrition.calories}</div>
-              <div className="text-sm text-gray-600">Calories</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-blue-600">{recipe.nutrition.protein}g</div>
-              <div className="text-sm text-gray-600">Protein</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-orange-600">{recipe.nutrition.carbs}g</div>
-              <div className="text-sm text-gray-600">Carbs</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">{recipe.nutrition.fat}g</div>
-              <div className="text-sm text-gray-600">Fat</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-500">{recipe.nutrition.fiber}g</div>
-              <div className="text-sm text-gray-600">Fiber</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-red-500">{recipe.nutrition.sugar}g</div>
-              <div className="text-sm text-gray-600">Sugar</div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <span className="text-green-600 font-bold text-sm">C</span>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Carbs</p>
+                <p className="font-bold text-gray-900">{meal.macros.carbs}g</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Servings Adjuster */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-semibold text-lg">Ingredients</h3>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">Servings:</span>
-            <button 
-              onClick={() => adjustServings(servings - 1)}
-              className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span className="font-semibold text-lg min-w-[2rem] text-center">{servings}</span>
-            <button 
-              onClick={() => adjustServings(servings + 1)}
-              className="p-1 rounded-full bg-gray-100 hover:bg-gray-200"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        {/* Ingredients Section */}
+        {ingredients.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">
+              Ingredients
+            </h2>
+            <div className="space-y-3">
+              {ingredients.map((ingredient, index) => {
+                const parsed = parseIngredient(ingredient);
+                const isChecked = checkedIngredients.has(index);
 
-        {/* Ingredients */}
-        <div className="bg-white border rounded-lg mb-6">
-          {recipe.ingredients.map(ingredient => (
-            <div key={ingredient.id} className="flex justify-between items-center p-4 border-b last:border-b-0">
-              <span className="text-gray-800">{ingredient.name}</span>
-              <span className="font-medium text-green-600">
-                {getAdjustedAmount(ingredient.amount, recipe.servings)} {ingredient.unit}
-              </span>
+                return (
+                  <button
+                    key={index}
+                    onClick={() => toggleIngredient(index)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition ${
+                      isChecked ? "bg-green-50" : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                  >
+                    <div
+                      className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition ${
+                        isChecked
+                          ? "bg-green-500 border-green-500"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {isChecked && <Check className="w-4 h-4 text-white" />}
+                    </div>
+                    <span
+                      className={`flex-1 text-left ${
+                        isChecked
+                          ? "text-gray-400 line-through"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {parsed.amount && parsed.unit ? (
+                        <>
+                          <span className="font-medium">
+                            {parsed.amount} {parsed.unit}
+                          </span>{" "}
+                          <span className="capitalize">{parsed.name}</span>
+                        </>
+                      ) : (
+                        <span className="capitalize">{parsed.name}</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ))}
-        </div>
+          </div>
+        )}
 
-        {/* Instructions */}
+        {/* Instructions Section */}
         <div className="mb-6">
-          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            Instructions
-          </h3>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Instructions</h2>
           <div className="space-y-4">
-            {recipe.instructions.map((step, index) => (
+            {instructions.map((instruction, index) => (
               <div key={index} className="flex gap-4">
-                <div className="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-semibold">
+                <div className="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                   {index + 1}
                 </div>
-                <p className="text-gray-700 leading-relaxed pt-1">{step}</p>
+                <p className="text-gray-700 leading-relaxed pt-1 flex-1">
+                  {instruction}
+                </p>
               </div>
             ))}
           </div>
         </div>
+
+        {/* Notes Section */}
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
+          <h3 className="text-lg font-bold text-green-800 mb-2">Notes</h3>
+          <p className="text-green-700 leading-relaxed">{getRecipeNote()}</p>
+        </div>
+      </div>
+
+      {/* Fixed Footer Actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-4 flex items-center gap-3">
+        <button
+          onClick={handleAddToShoppingList}
+          className="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl transition flex items-center justify-center gap-2"
+        >
+          <ShoppingCart className="w-5 h-5" />
+          Add to Supermarket List
+        </button>
+
+        <button
+          onClick={handleFavorite}
+          className={`p-3 rounded-xl border-2 transition ${
+            isFavorite
+              ? "bg-red-50 border-red-200 text-red-500"
+              : "border-gray-200 text-gray-400 hover:border-gray-300"
+          }`}
+          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Heart className={`w-5 h-5 ${isFavorite ? "fill-current" : ""}`} />
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="p-3 rounded-xl border-2 border-gray-200 text-gray-400 hover:border-gray-300 transition"
+          aria-label="Share recipe"
+        >
+          <Share2 className="w-5 h-5" />
+        </button>
       </div>
     </div>
   );

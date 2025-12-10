@@ -9,7 +9,7 @@ import type { Goal } from "@/components/goals/Goals";
 
 const GoalsPage = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuthStore();
+  const { user, loading, token } = useAuthStore();
   const [goals, setGoals] = useState<Goal[]>([
     {
       id: "1",
@@ -66,10 +66,11 @@ const GoalsPage = () => {
   ]);
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Only redirect if not loading, no user, AND no token
+    if (!loading && !user && !token) {
       navigate("/register");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, token, navigate]);
 
   const handleUpdateProgress = (goalId: string) => {
     // TODO: Implement update progress modal/dialog

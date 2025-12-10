@@ -258,3 +258,42 @@ export interface IRecipe {
     fiber: number;
   };
 }
+
+export interface AuthState {
+  user: IUser | null;
+  loading: boolean;
+  token: string | null;
+  plan: IPlan | null;
+}
+
+export interface AuthActions {
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, userData?: IUser) => Promise<void>;
+  logout: () => void;
+  updateProfile: (id: string, data: Partial<IUser>) => Promise<void>;
+  setUser: (user: IUser | null) => void;
+  setPlan: (plan: IPlan | null) => void;
+  setLoading: (loading: boolean) => void;
+  setToken: (token: string | null) => void;
+  fetchUser: (token: string, onSuccess?: () => void) => Promise<void>;
+  oauthSignin: (provider: string) => Promise<void>;
+  oauthSignup: (provider: string) => Promise<void>;
+  handleOAuthCallback: (
+    provider: string,
+    action: "signin" | "signup",
+    userId?: string,
+    accessToken?: string
+  ) => Promise<void>;
+  guestSignin: (userData: IUser) => void;
+  generateMealPlan: (
+    userData: IUser,
+    planName: string,
+    language: string
+  ) => Promise<void>;
+  updateMealInPlan: (userId: string, date: Date, meal: IMeal) => Promise<void>;
+  updateFavorite: (
+    userId: string,
+    mealId: string,
+    isFavorite: boolean
+  ) => Promise<void>;
+}

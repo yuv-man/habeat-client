@@ -56,8 +56,10 @@ export const loadGoogleScript = (): Promise<void> => {
 };
 
 // Initialize Google OAuth for sign-in/sign-up
+// The callback receives the credential parameter, which IS the idToken (JWT) from Google
+// This idToken is what you send to your backend for authentication
 export const initGoogleOAuth = async (
-  callback: (credential: string) => void
+  callback: (credential: string) => void // credential = idToken (JWT from Google)
 ): Promise<void> => {
   if (!GOOGLE_CLIENT_ID) {
     throw new Error(
@@ -71,9 +73,13 @@ export const initGoogleOAuth = async (
     throw new Error("Google Identity Services failed to load");
   }
 
+  // Set up Google OAuth with a callback
+  // When user signs in, Google calls this callback with response.credential
+  // The credential IS the idToken (JWT token) that you need
   window.google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
     callback: (response) => {
+      // response.credential is the idToken (JWT) from Google
       callback(response.credential);
     },
   });

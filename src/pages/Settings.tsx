@@ -13,10 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, X, Plus, Save, Loader } from "lucide-react";
+import { ArrowLeft, X, Plus, Save, Loader, LogOut } from "lucide-react";
 import NavBar from "@/components/ui/navbar";
 import BottomNav from "@/components/ui/BottomNav";
 import MobileHeader from "@/components/ui/MobileHeader";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MealTimes {
   breakfast: string;
@@ -26,8 +27,9 @@ interface MealTimes {
 }
 
 const Settings = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, updateProfile, loading } = useAuthStore();
+  const { user, updateProfile, loading, token, logout } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -83,9 +85,13 @@ const Settings = () => {
   };
 
   useEffect(() => {
-    if (!user) {
+    // Only redirect if no user AND no token (not authenticated)
+    if (!user && !token && !loading) {
       navigate("/register");
       return;
+    }
+    if (!user) {
+      return; // Wait for user to load
     }
 
     // Initialize form with user data
@@ -110,7 +116,7 @@ const Settings = () => {
       dinner: "19:00",
       snacks: "15:00",
     });
-  }, [user, navigate]);
+  }, [user, token, loading, navigate]);
 
   const handleSave = async () => {
     if (!user?._id) return;
@@ -137,9 +143,13 @@ const Settings = () => {
         // For now, we'll store them separately or extend the interface
       };
 
-      await updateProfile(updatedUser);
+      await updateProfile(user._id, updatedUser);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      toast({
+        title: "Settings saved successfully!",
+      });
+      navigate("/daily-tracker");
     } catch (err: any) {
       setError(err.message || "Failed to save settings. Please try again.");
     } finally {
@@ -555,6 +565,25 @@ const Settings = () => {
                   Save Changes
                 </>
               )}
+            </Button>
+          </div>
+
+          {/* Logout Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Account</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Sign out of your account on this device.
+            </p>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                logout();
+                navigate("/register");
+              }}
+              className="w-full sm:w-auto"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Log Out
             </Button>
           </div>
         </div>

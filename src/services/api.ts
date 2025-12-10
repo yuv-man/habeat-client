@@ -134,7 +134,7 @@ const signup = async (
     const response: AxiosResponse<{
       data: { user: IUser; plan: IPlan; token: string };
       status: string;
-    }> = await userClient.post("/signup", { email, password, userData });
+    }> = await userClient.post("/auth/signup", { email, password, userData });
     return response.data.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -149,7 +149,7 @@ const fetchUser = async (
 ): Promise<{ user: IUser; plan: IPlan }> => {
   try {
     const response: AxiosResponse<{ data: { user: IUser; plan: IPlan } }> =
-      await userClient.get("/users/me", {
+      await userClient.get("/auth/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
     return response.data.data;
@@ -158,68 +158,55 @@ const fetchUser = async (
   }
 };
 
-const oauthSignin = async (
+const oauthAuth = async (
   provider: string,
-  idToken?: string,
+  action: "signin" | "signup",
+  userId?: string,
   accessToken?: string
-): Promise<{ token: string; user: IUser }> => {
+): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
   try {
-    const payload: any = { provider };
+    // For signup, use the unified /signup endpoint (same as regular signup)
+    if (action === "signup") {
+      const payload: any = {
+        provider,
+        userId,
+        accessToken,
+      };
 
-    if (idToken) {
-      payload.idToken = idToken;
+      const response: AxiosResponse<{
+        data: { user: IUser; plan?: IPlan; token: string };
+      }> = await userClient.post("/auth/signup", payload);
+
+      return {
+        data: {
+          token: response.data.data.token,
+          user: response.data.data.user,
+          plan: response.data.data.plan,
+        },
+      };
     }
 
-    if (accessToken) {
-      payload.accessToken = accessToken;
-    }
+    // For signin, use the OAuth signin endpoint
+    const payload: any = { provider, userId, accessToken };
 
-    const response: AxiosResponse<{ token: string; user: IUser }> =
-      await userClient.post(`/${provider}/signin`, payload);
-    return response.data;
+    const response: AxiosResponse<{
+      data: { token: string; user: IUser; plan?: IPlan };
+    }> = await userClient.post(`/auth/${provider}/signin`, payload);
+    return {
+      data: {
+        token: response.data.data.token,
+        user: response.data.data.user,
+        plan: response.data.data.plan,
+      },
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       throw new Error(
         error.response?.data?.message ||
-          "OAuth sign-in failed. Please try again."
+          `OAuth ${action} failed. Please try again.`
       );
     }
-    throw new Error("An unexpected error occurred during OAuth sign-in.");
-  }
-};
-
-const oauthSignup = async (
-  provider: string,
-  idToken?: string,
-  accessToken?: string,
-  userData?: any
-): Promise<{ token: string; user: IUser }> => {
-  try {
-    const payload: any = { provider };
-
-    if (idToken) {
-      payload.idToken = idToken;
-    }
-
-    if (accessToken) {
-      payload.accessToken = accessToken;
-    }
-
-    if (userData) {
-      payload.userData = userData;
-    }
-
-    const response: AxiosResponse<{ token: string; user: IUser }> =
-      await userClient.post(`/auth/${provider}/signup`, payload);
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.response?.data?.message ||
-          "OAuth sign-up failed. Please try again."
-      );
-    }
-    throw new Error("An unexpected error occurred during OAuth sign-up.");
+    throw new Error(`An unexpected error occurred during OAuth ${action}.`);
   }
 };
 
@@ -228,15 +215,67 @@ const initiateOAuth = async (
   action: "signin" | "signup" = "signin"
 ): Promise<string> => {
   try {
+    // Construct the callback URLs
+    // redirectUri: Backend callback URL where Google will redirect after authentication
+    //   This should be your backend's OAuth callback endpoint
+    // frontendRedirectUri: Frontend callback URL where backend will redirect after processing
+    //   This is where the frontend receives the tokens
+    const frontendBaseURL = window.location.origin;
+    const frontendRedirectUri = `${frontendBaseURL}/auth/callback?provider=${provider}&action=${action}`;
+
+    // Determine backend base URL
+    // If API_URL is a relative path (/api), assume backend is on same origin
+    // If API_URL is a full URL, use that as the base
+    let backendBaseURL: string;
+    if (API_URL.startsWith("http")) {
+      // Full URL (e.g., "http://localhost:5000/api")
+      backendBaseURL = API_URL.replace("/api", "");
+    } else {
+      // Relative path (e.g., "/api") - backend is on same origin
+      backendBaseURL = frontendBaseURL;
+    }
+    const redirectUri = `${backendBaseURL}/auth/${provider}/callback`;
+
+    // IMPORTANT: Backend must return JSON with { authUrl: string }, NOT a 302 redirect
+    // If backend returns a redirect, axios will try to follow it and hit CORS errors
+
+    // Build params object, only including prompt for Google
+    const params: Record<string, string> = {
+      redirectUri,
+      frontendRedirectUri,
+    };
+
+    // Force Google to show account picker so user can choose which account to use
+    if (provider === "google") {
+      params.prompt = "select_account";
+    }
+
     const response: AxiosResponse<{ authUrl: string }> = await userClient.get(
-      `/auth/${provider}`,
+      `/auth/${provider}/${action}`,
       {
-        params: { action },
+        params,
+        // Prevent axios from following redirects (in case backend accidentally redirects)
+        maxRedirects: 0,
+        validateStatus: (status) => status === 200, // Only accept 200 OK
       }
     );
+
+    if (!response.data?.authUrl) {
+      throw new Error("Backend did not return authUrl in response");
+    }
+
     return response.data.authUrl;
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      // If we get a redirect error, the backend is redirecting instead of returning JSON
+      if (
+        error.response?.status === 302 ||
+        error.message.includes("redirected")
+      ) {
+        throw new Error(
+          "Backend is returning a redirect instead of JSON. Please update backend to return { authUrl: string } as JSON response."
+        );
+      }
       throw new Error(
         error.response?.data?.message ||
           "Failed to initiate OAuth. Please try again."
@@ -265,24 +304,40 @@ const getTodayProgress = async (
 
 const generateMealPlan = async (
   userData: IUser,
+  planName: string,
   language: string
 ): Promise<{ data: any }> => {
   const payload = {
-    userData,
     startDate: new Date().toISOString(),
     language,
+    planName: planName ?? "",
     useMock: config.useMock,
   };
   try {
     const response: AxiosResponse<{ data: any }> =
-      await mealGenerationClient.post(`/plan/generate`, payload, {
-        headers: getAuthHeaders(),
-      });
+      await mealGenerationClient.post(
+        `/generate/weekly-meal-plan/${userData._id}`,
+        payload,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.code === "ECONNABORTED") {
+    if (axios.isAxiosError(error)) {
+      if (error.code === "ECONNABORTED") {
+        throw new Error(
+          "Meal plan generation is taking longer than expected. The plan may still be generating in the background. Please wait a moment and refresh the page."
+        );
+      }
+      if (error.response?.status === 504 || error.code === "ETIMEDOUT") {
+        throw new Error(
+          "Server timeout - the meal plan is still being generated. Please wait a few minutes and refresh the page."
+        );
+      }
       throw new Error(
-        "Meal plan generation is taking longer than expected. Please try again."
+        error.response?.data?.message ||
+          "Failed to generate meal plan. Please try again."
       );
     }
     throw new Error("Failed to generate meal plan. Please try again.");
@@ -718,8 +773,7 @@ export const userAPI = {
   login,
   signup,
   fetchUser,
-  oauthSignin,
-  oauthSignup,
+  oauthAuth,
   initiateOAuth,
   getTodayProgress,
   generateMealPlan,

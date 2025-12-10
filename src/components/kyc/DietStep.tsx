@@ -56,7 +56,7 @@ export default function DietStep({
                 }
                 className={`w-full p-6 rounded-2xl border-2 transition flex flex-col items-center gap-3 ${
                   kycData.dietType === diet.name
-                    ? "border-primary-400 bg-accent"
+                    ? "border-green-500 bg-green-50 shadow-md"
                     : "border-gray-200 hover:border-gray-300 bg-white"
                 }`}
               >
@@ -67,7 +67,13 @@ export default function DietStep({
                     {diet.icon}
                   </div>
                 </div>
-                <div className="font-semibold text-gray-900 text-lg">
+                <div
+                  className={`font-semibold text-lg ${
+                    kycData.dietType === diet.name
+                      ? "text-green-700"
+                      : "text-gray-900"
+                  }`}
+                >
                   {diet.name}
                 </div>
               </button>
@@ -78,12 +84,11 @@ export default function DietStep({
         <button
           onClick={onSubmit}
           disabled={loading || !kycData.dietType}
-          style={{
-            color: "var(--button-primary-text)",
-            backgroundColor: "var(--button-primary-bg)",
-            boxShadow: "var(--button-shadow-xs)",
-          }}
-          className="w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold opacity-50 border-none rounded-xl transition hover:opacity-100 active:opacity-100 disabled:opacity-40"
+          className={`w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold border-none rounded-xl transition ${
+            kycData.dietType
+              ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          } disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed`}
         >
           {loading ? (
             <Loader className="w-6 h-6 animate-spin" />

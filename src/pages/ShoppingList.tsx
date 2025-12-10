@@ -14,15 +14,16 @@ import { IngredientInput, aggregateIngredients } from "@/lib/shoppingHelpers";
 
 const ShoppingList = () => {
   const navigate = useNavigate();
-  const { user, plan, loading } = useAuthStore();
+  const { user, plan, loading, token } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Only redirect if not loading, no user, AND no token
+    if (!loading && !user && !token) {
       navigate("/register");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, token, navigate]);
 
   const [ingredients, setIngredients] = useState<IngredientInput[]>([]);
 

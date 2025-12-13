@@ -287,16 +287,14 @@ const initiateOAuth = async (
 
 const getTodayProgress = async (
   userId: string
-): Promise<{
-  data: { progress: IDailyProgress; stats: any; message: string };
-}> => {
+): Promise<{ progress: IDailyProgress; stats: any; message: string }> => {
   try {
     const response: AxiosResponse<{
       data: { progress: IDailyProgress; stats: any; message: string };
     }> = await userClient.get(`/progress/today/${userId}`, {
       headers: getAuthHeaders(),
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error("Failed to get today progress. Please try again.");
   }
@@ -754,7 +752,7 @@ const completeMeal = async (
 ): Promise<{ data: any }> => {
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/progress/${userId}/meals/complete`,
+      `/progress/meal/${userId}/${mealId}`,
       { date, mealType, mealId },
       { headers: getAuthHeaders() }
     );

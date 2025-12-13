@@ -285,7 +285,19 @@ export default function WeeklyMealPlan() {
 
   React.useEffect(() => {
     if (dates.length > 0 && (!selectedDate || !weeklyPlan[selectedDate])) {
-      setSelectedDate(dates[0]);
+      // Try to find today's date in the plan
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+
+      // Check if today exists in the plan dates
+      const todayInPlan = dates.find((d) => d === todayStr);
+
+      if (todayInPlan) {
+        setSelectedDate(todayInPlan);
+      } else {
+        // Fallback to first date if today is not in the plan
+        setSelectedDate(dates[0]);
+      }
     }
   }, [dates.length, selectedDate, weeklyPlan]);
 

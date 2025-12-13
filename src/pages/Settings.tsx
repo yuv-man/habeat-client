@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { IUser } from "@/types/interfaces";
+import { IUser, MealTimes } from "@/types/interfaces";
 import { dietTypes } from "@/components/kyc/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,17 +19,18 @@ import BottomNav from "@/components/ui/BottomNav";
 import MobileHeader from "@/components/ui/MobileHeader";
 import { useToast } from "@/components/ui/use-toast";
 
-interface MealTimes {
-  breakfast: string;
-  lunch: string;
-  dinner: string;
-  snacks: string;
-}
-
 const Settings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, updateProfile, loading, token, logout } = useAuthStore();
+  const {
+    user,
+    updateProfile,
+    loading,
+    token,
+    logout,
+    mealTimes: storeMealTimes,
+    setMealTimes: setStoreMealTimes,
+  } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -53,13 +54,8 @@ const Settings = () => {
   const [newDislike, setNewDislike] = useState("");
   const [newFavoriteMeal, setNewFavoriteMeal] = useState("");
 
-  // Meal times
-  const [mealTimes, setMealTimes] = useState<MealTimes>({
-    breakfast: "08:00",
-    lunch: "12:30",
-    dinner: "19:00",
-    snacks: "15:00",
-  });
+  // Meal times (initialized from store)
+  const [mealTimes, setMealTimes] = useState<MealTimes>(storeMealTimes);
 
   // Diet type
   const [dietType, setDietType] = useState("");
@@ -108,15 +104,9 @@ const Settings = () => {
     // Map user.path to diet type name
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
 
-    // Initialize meal times (if stored in user, otherwise use defaults)
-    // For now, we'll use defaults since meal times aren't in the user interface yet
-    setMealTimes({
-      breakfast: "08:00",
-      lunch: "12:30",
-      dinner: "19:00",
-      snacks: "15:00",
-    });
-  }, [user, token, loading, navigate]);
+    // Initialize meal times from store
+    setMealTimes(storeMealTimes);
+  }, [user, token, loading, navigate, storeMealTimes]);
 
   const handleSave = async () => {
     if (!user?._id) return;
@@ -139,9 +129,10 @@ const Settings = () => {
         favoriteMeals,
         // Map diet type name back to path
         path: dietTypeToPath[dietType] || user.path || "healthy",
-        // Note: Meal times would need to be added to the IUser interface
-        // For now, we'll store them separately or extend the interface
       };
+
+      // Save meal times to store (local only, not to backend)
+      setStoreMealTimes(mealTimes);
 
       await updateProfile(user._id, updatedUser);
       setSuccess(true);

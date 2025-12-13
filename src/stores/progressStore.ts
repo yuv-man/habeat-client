@@ -62,7 +62,7 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
       set({ loading: true, error: null });
       const response = await userAPI.getTodayProgress(userId);
       set({
-        todayProgress: response.data.progress,
+        todayProgress: response.progress,
         loading: false,
       });
     } catch (error: any) {
@@ -137,39 +137,94 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     mealType: string,
     mealId: string
   ) => {
-    if (config.testFrontend) {
-      // Update local state in test mode
+    const updateMealState = () => {
       const { todayProgress } = get();
-      if (
-        todayProgress &&
-        todayProgress.meals[mealType as keyof typeof todayProgress.meals]
-      ) {
-        const meal = todayProgress.meals[
-          mealType as keyof typeof todayProgress.meals
-        ] as any;
+      if (!todayProgress) return;
+
+      const mealData =
+        todayProgress.meals[mealType as keyof typeof todayProgress.meals];
+      if (!mealData) return;
+
+      // Helper to update nutrition values
+      const updateNutrition = (meal: any, isCompleting: boolean) => {
+        const multiplier = isCompleting ? 1 : -1;
+        const calories = meal.calories || 0;
+        const protein = meal.macros?.protein || 0;
+        const fat = meal.macros?.fat || 0;
+        const carbs = meal.macros?.carbs || 0;
+
+        return {
+          caloriesConsumed: Math.max(0, todayProgress.caloriesConsumed + (calories * multiplier)),
+          protein: {
+            ...todayProgress.protein,
+            consumed: Math.max(0, todayProgress.protein.consumed + (protein * multiplier)),
+          },
+          fat: {
+            ...todayProgress.fat,
+            consumed: Math.max(0, todayProgress.fat.consumed + (fat * multiplier)),
+          },
+          carbs: {
+            ...todayProgress.carbs,
+            consumed: Math.max(0, todayProgress.carbs.consumed + (carbs * multiplier)),
+          },
+        };
+      };
+
+      // Handle snacks (array) differently from other meals (single object)
+      if (mealType === "snacks" && Array.isArray(mealData)) {
+        const snackIndex = mealData.findIndex(
+          (snack: any) => snack._id === mealId
+        );
+        if (snackIndex !== -1) {
+          const snack = mealData[snackIndex];
+          const isCompleting = !snack.done;
+          const nutritionUpdates = updateNutrition(snack, isCompleting);
+          
+          const updatedSnacks = [...mealData];
+          updatedSnacks[snackIndex] = {
+            ...updatedSnacks[snackIndex],
+            done: isCompleting,
+          };
+          set({
+            todayProgress: {
+              ...todayProgress,
+              ...nutritionUpdates,
+              meals: {
+                ...todayProgress.meals,
+                snacks: updatedSnacks,
+              },
+            },
+          });
+        }
+      } else {
+        // Single meal (breakfast, lunch, dinner)
+        const meal = mealData as any;
         if (meal && meal._id === mealId) {
-          meal.done = true;
-          set({ todayProgress: { ...todayProgress } });
+          const isCompleting = !meal.done;
+          const nutritionUpdates = updateNutrition(meal, isCompleting);
+          
+          set({
+            todayProgress: {
+              ...todayProgress,
+              ...nutritionUpdates,
+              meals: {
+                ...todayProgress.meals,
+                [mealType]: { ...meal, done: isCompleting },
+              },
+            },
+          });
         }
       }
+    };
+
+    if (config.testFrontend) {
+      updateMealState();
       return;
     }
 
     try {
       await userAPI.completeMeal(userId, date, mealType, mealId);
-      const { todayProgress } = get();
-      if (
-        todayProgress &&
-        todayProgress.meals[mealType as keyof typeof todayProgress.meals]
-      ) {
-        const meal = todayProgress.meals[
-          mealType as keyof typeof todayProgress.meals
-        ] as any;
-        if (meal && meal._id === mealId) {
-          meal.done = true;
-          set({ todayProgress: { ...todayProgress } });
-        }
-      }
+      updateMealState();
     } catch (error: any) {
       set({ error: error.message || "Failed to complete meal" });
     }

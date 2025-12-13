@@ -254,4 +254,92 @@ describe("AuthStore", () => {
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("habeat_plan");
     });
   });
+
+  describe("mealTimes", () => {
+    it("should have default meal times on initialization", async () => {
+      const { useAuthStore } = await import("./authStore");
+      const store = useAuthStore.getState();
+
+      expect(store.mealTimes).toEqual({
+        breakfast: "08:00",
+        lunch: "12:30",
+        dinner: "19:00",
+        snacks: "15:00",
+      });
+    });
+
+    it("should load meal times from localStorage if available", async () => {
+      const customMealTimes = {
+        breakfast: "07:00",
+        lunch: "13:00",
+        dinner: "20:00",
+        snacks: "16:00",
+      };
+      localStorageMock.store["habeat_meal_times"] =
+        JSON.stringify(customMealTimes);
+
+      const { useAuthStore } = await import("./authStore");
+      const store = useAuthStore.getState();
+
+      expect(store.mealTimes).toEqual(customMealTimes);
+    });
+
+    it("should update meal times and save to localStorage", async () => {
+      const { useAuthStore } = await import("./authStore");
+
+      useAuthStore.getState().setMealTimes({ breakfast: "09:00" });
+
+      expect(useAuthStore.getState().mealTimes.breakfast).toBe("09:00");
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        "habeat_meal_times",
+        expect.stringContaining("09:00")
+      );
+    });
+
+    it("should merge partial meal times with existing ones", async () => {
+      const { useAuthStore } = await import("./authStore");
+
+      // Update only breakfast
+      useAuthStore.getState().setMealTimes({ breakfast: "07:30" });
+
+      // Other times should remain default
+      expect(useAuthStore.getState().mealTimes).toEqual({
+        breakfast: "07:30",
+        lunch: "12:30",
+        dinner: "19:00",
+        snacks: "15:00",
+      });
+    });
+
+    it("should update multiple meal times at once", async () => {
+      const { useAuthStore } = await import("./authStore");
+
+      useAuthStore.getState().setMealTimes({
+        breakfast: "06:00",
+        dinner: "18:00",
+      });
+
+      const mealTimes = useAuthStore.getState().mealTimes;
+      expect(mealTimes.breakfast).toBe("06:00");
+      expect(mealTimes.dinner).toBe("18:00");
+      expect(mealTimes.lunch).toBe("12:30"); // unchanged
+      expect(mealTimes.snacks).toBe("15:00"); // unchanged
+    });
+
+    it("should persist meal times across store reloads", async () => {
+      // First import and set
+      const { useAuthStore: store1 } = await import("./authStore");
+      store1.getState().setMealTimes({ lunch: "14:00" });
+
+      // Verify it was saved
+      expect(localStorageMock.store["habeat_meal_times"]).toContain("14:00");
+
+      // Reset modules and reimport
+      vi.resetModules();
+
+      // Second import should load from localStorage
+      const { useAuthStore: store2 } = await import("./authStore");
+      expect(store2.getState().mealTimes.lunch).toBe("14:00");
+    });
+  });
 });

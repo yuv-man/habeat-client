@@ -1,8 +1,35 @@
 import { create } from "zustand";
-import { IUser, IMeal, AuthState, AuthActions } from "@/types/interfaces";
+import {
+  IUser,
+  IMeal,
+  AuthState,
+  AuthActions,
+  MealTimes,
+} from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockUser, mockPlan } from "@/mocks/planMock";
+
+// Default meal times
+const DEFAULT_MEAL_TIMES: MealTimes = {
+  breakfast: "08:00",
+  lunch: "12:30",
+  dinner: "19:00",
+  snacks: "15:00",
+};
+
+// Load meal times from localStorage or use defaults
+const loadMealTimes = (): MealTimes => {
+  try {
+    const stored = localStorage.getItem("habeat_meal_times");
+    if (stored) {
+      return { ...DEFAULT_MEAL_TIMES, ...JSON.parse(stored) };
+    }
+  } catch (err) {
+    console.error("Failed to load meal times:", err);
+  }
+  return DEFAULT_MEAL_TIMES;
+};
 
 type AuthStore = AuthState & AuthActions;
 
@@ -12,6 +39,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   plan: null,
   loading: true,
   token: localStorage.getItem("token"),
+  mealTimes: loadMealTimes(),
 
   // Actions
   setUser: (user) => {
@@ -38,6 +66,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     } else {
       localStorage.removeItem("habeat_plan");
     }
+  },
+  setMealTimes: (mealTimes) => {
+    const currentMealTimes = get().mealTimes;
+    const newMealTimes = { ...currentMealTimes, ...mealTimes };
+    set({ mealTimes: newMealTimes });
+    localStorage.setItem("habeat_meal_times", JSON.stringify(newMealTimes));
   },
   setToken: (token) => {
     set({ token });

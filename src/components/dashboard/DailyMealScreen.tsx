@@ -1,12 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "@/styles/dailyScreen.css";
-import {
-  GlassWater,
-  Flame,
-  Trash2,
-  CheckCircle2,
-  RefreshCw,
-} from "lucide-react";
+import { GlassWater, Flame, Trash2, Check, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyProgress, WorkoutData } from "@/types/interfaces";
 import Loader from "../helper/loader";
@@ -15,63 +10,70 @@ import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
 import MealCard from "./MealCard";
 import { useProgressStore } from "@/stores/progressStore";
+import { useFavoritesStore } from "@/stores/favoritesStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
 import FastingClock from "./FastingClock";
+import NutritionProgressBar from "@/components/helper/NutritionProgressBar";
 
 const DailyMealScreen = () => {
   const [currentDate] = useState(new Date());
-  const { user, plan, loading, setLoading } = useAuthStore();
-  const {
-    todayProgress,
-    fetchTodayProgress,
-    setTodayProgress,
-    addWaterGlass: addWaterGlassToStore,
-  } = useProgressStore();
+
+  // Use selectors to prevent unnecessary re-renders
+  const userId = useAuthStore((state) => state.user?._id);
+  const user = useAuthStore((state) => state.user);
+
+  const todayProgress = useProgressStore((state) => state.todayProgress);
+  const progressLoading = useProgressStore((state) => state.loading);
+  const fetchTodayProgress = useProgressStore(
+    (state) => state.fetchTodayProgress
+  );
+  const setTodayProgress = useProgressStore((state) => state.setTodayProgress);
+  const addWaterGlassToStore = useProgressStore((state) => state.addWaterGlass);
+
+  // Favorites store
+  const fetchFavorites = useFavoritesStore((state) => state.fetchFavorites);
+
+  // Local state for UI updates (synced from store)
   const [dailyProgress, setDailyProgress] = useState<IDailyProgress | null>(
     null
   );
 
-  useEffect(() => {
-    if (plan && user?._id) {
-      getTodayProgress();
-    }
-  }, [plan, currentDate, user?._id]);
+  // Track if we've already fetched to prevent duplicate calls
+  const hasFetchedRef = useRef(false);
 
-  // Sync progress store with local state
+  // Fetch progress and favorites only once when user is available
+  useEffect(() => {
+    if (!userId || hasFetchedRef.current) {
+      return;
+    }
+
+    hasFetchedRef.current = true;
+    fetchTodayProgress(userId);
+    fetchFavorites(userId);
+  }, [userId, fetchTodayProgress, fetchFavorites]);
+
+  // Sync store progress to local state
   useEffect(() => {
     if (todayProgress) {
       setDailyProgress(todayProgress);
     }
   }, [todayProgress]);
+  // Use store's loading state
+  const loading = progressLoading;
 
-  const getTodayProgress = async () => {
-    if (user?._id) {
-      if (config.testFrontend) {
-        const mock = mockDailyProgress as IDailyProgress;
-        setDailyProgress(mock);
-        setTodayProgress(mock);
-        return;
-      }
-      try {
-        setLoading(true);
-        await fetchTodayProgress(user._id);
-      } catch (error) {
-        console.error("Failed to fetch progress:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+  // Get meal times from store
+  const mealTimes = useAuthStore((state) => state.mealTimes);
 
-  // Get meal times (default times if not available)
+  // Get meal time and format to 12-hour
   const getMealTime = (mealType: string) => {
-    const times: { [key: string]: string } = {
-      breakfast: "08:00 AM",
-      lunch: "12:30 PM",
-      dinner: "07:00 PM",
-      snacks: "03:00 PM",
-    };
-    return times[mealType] || "12:00 PM";
+    const time = mealTimes[mealType as keyof typeof mealTimes] || "12:00";
+
+    // Format time to 12-hour format with AM/PM
+    const [hours, minutes] = time.split(":");
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   const addWaterGlass = async () => {
@@ -94,15 +96,17 @@ const DailyMealScreen = () => {
         duration: workout.duration.toString(),
       };
 
+      const updatedWorkouts = dailyProgress.workouts.filter(
+        (_, idx) => idx !== workoutIndex
+      );
+      const updatedProgress = {
+        ...dailyProgress,
+        workouts: updatedWorkouts,
+      };
+
       if (config.testFrontend) {
-        // Update local state in test mode
-        const updatedWorkouts = dailyProgress.workouts.filter(
-          (_, idx) => idx !== workoutIndex
-        );
-        setDailyProgress({
-          ...dailyProgress,
-          workouts: updatedWorkouts,
-        });
+        // Update store in test mode
+        setTodayProgress(updatedProgress);
         return;
       }
 
@@ -112,14 +116,8 @@ const DailyMealScreen = () => {
         workoutData
       );
 
-      // Update local state
-      const updatedWorkouts = dailyProgress.workouts.filter(
-        (_, idx) => idx !== workoutIndex
-      );
-      setDailyProgress({
-        ...dailyProgress,
-        workouts: updatedWorkouts,
-      });
+      // Update store (which syncs to local state)
+      setTodayProgress(updatedProgress);
     } catch (error) {
       console.error("Failed to delete workout:", error);
     }
@@ -141,14 +139,21 @@ const DailyMealScreen = () => {
         done: newDoneState,
       };
 
+      const updatedWorkouts = [...dailyProgress.workouts];
+      updatedWorkouts[workoutIndex] = { ...workout, done: newDoneState };
+      const updatedProgress = {
+        ...dailyProgress,
+        workouts: updatedWorkouts,
+      };
+
       if (config.testFrontend) {
-        // Update local state in test mode
-        const updatedWorkouts = [...dailyProgress.workouts];
-        updatedWorkouts[workoutIndex] = { ...workout, done: newDoneState };
-        setDailyProgress({
-          ...dailyProgress,
-          workouts: updatedWorkouts,
-        });
+        // Update store in test mode
+        setTodayProgress(updatedProgress);
+        if (newDoneState) {
+          toast.success("💪 Well done! Keep crushing it!", {
+            duration: 3000,
+          });
+        }
         return;
       }
 
@@ -158,13 +163,15 @@ const DailyMealScreen = () => {
         workoutData
       );
 
-      // Update local state
-      const updatedWorkouts = [...dailyProgress.workouts];
-      updatedWorkouts[workoutIndex] = { ...workout, done: newDoneState };
-      setDailyProgress({
-        ...dailyProgress,
-        workouts: updatedWorkouts,
-      });
+      // Update store (which syncs to local state)
+      setTodayProgress(updatedProgress);
+
+      // Show encouraging toast when workout is completed
+      if (newDoneState) {
+        toast.success("💪 Well done! Keep crushing it!", {
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error("Failed to complete workout:", error);
     }
@@ -209,99 +216,34 @@ const DailyMealScreen = () => {
               Daily Nutrition Progress
             </h2>
             <div className="space-y-4">
-              {/* Calories */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">Calories</span>
-                  <span className="text-gray-700 font-medium">
-                    {dailyProgress.caloriesConsumed} /{" "}
-                    {dailyProgress.caloriesGoal} kcal
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-orange-500 h-2.5 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(
-                        (dailyProgress.caloriesConsumed /
-                          dailyProgress.caloriesGoal) *
-                          100,
-                        100
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Proteins */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">Proteins</span>
-                  <span className="text-gray-700 font-medium">
-                    {dailyProgress.protein.consumed} /{" "}
-                    {dailyProgress.protein.goal} g
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-purple-400 h-2.5 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(
-                        (dailyProgress.protein.consumed /
-                          dailyProgress.protein.goal) *
-                          100,
-                        100
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Fats */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">Fats</span>
-                  <span className="text-gray-700 font-medium">
-                    {dailyProgress.fat.consumed} / {dailyProgress.fat.goal} g
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-blue-500 h-2.5 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(
-                        (dailyProgress.fat.consumed / dailyProgress.fat.goal) *
-                          100,
-                        100
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Carbs */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-700">Carbs</span>
-                  <span className="text-gray-700 font-medium">
-                    {dailyProgress.carbs.consumed} / {dailyProgress.carbs.goal}{" "}
-                    g
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-red-500 h-2.5 rounded-full transition-all"
-                    style={{
-                      width: `${Math.min(
-                        (dailyProgress.carbs.consumed /
-                          dailyProgress.carbs.goal) *
-                          100,
-                        100
-                      )}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+              <NutritionProgressBar
+                label="Calories"
+                consumed={dailyProgress.caloriesConsumed}
+                goal={dailyProgress.caloriesGoal}
+                unit="kcal"
+                color="orange"
+              />
+              <NutritionProgressBar
+                label="Proteins"
+                consumed={dailyProgress.protein.consumed}
+                goal={dailyProgress.protein.goal}
+                unit="g"
+                color="purple"
+              />
+              <NutritionProgressBar
+                label="Fats"
+                consumed={dailyProgress.fat.consumed}
+                goal={dailyProgress.fat.goal}
+                unit="g"
+                color="blue"
+              />
+              <NutritionProgressBar
+                label="Carbs"
+                consumed={dailyProgress.carbs.consumed}
+                goal={dailyProgress.carbs.goal}
+                unit="g"
+                color="red"
+              />
             </div>
           </div>
 
@@ -397,7 +339,7 @@ const DailyMealScreen = () => {
                     key={index}
                     className="flex items-center gap-3 py-3 border-b border-gray-200"
                   >
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                       <img
                         src={getWorkoutImageVite(workout.name)}
                         alt={workout.name}
@@ -411,9 +353,8 @@ const DailyMealScreen = () => {
                             parent &&
                             !parent.querySelector(".emoji-fallback")
                           ) {
-                            const fallback = document.createElement("div");
-                            fallback.className =
-                              "emoji-fallback text-lg absolute inset-0 flex items-center justify-center";
+                            const fallback = document.createElement("span");
+                            fallback.className = "emoji-fallback text-xl";
                             fallback.textContent = "💪";
                             parent.appendChild(fallback);
                           }
@@ -452,17 +393,21 @@ const DailyMealScreen = () => {
                       </button>
                       <button
                         onClick={() => handleCompleteWorkout(index)}
-                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        className={`p-0.5 rounded-full transition-all duration-200 ${
+                          workout.done ?? false
+                            ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
+                            : "bg-gray-100 hover:bg-gray-200"
+                        }`}
                         aria-label={
                           workout.done
                             ? "Mark as incomplete"
                             : "Mark as complete"
                         }
                       >
-                        <CheckCircle2
-                          className={`w-4 h-4 ${
+                        <Check
+                          className={`w-3.5 h-3.5 transition-all duration-200 ${
                             workout.done ?? false
-                              ? "fill-green-500 text-green-500"
+                              ? "text-white stroke-[3]"
                               : "text-gray-400 stroke-2"
                           }`}
                         />

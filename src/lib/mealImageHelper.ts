@@ -99,6 +99,11 @@ const availableImages = [
   "vietnamese-spring-rolls",
   "waffles-with-honey",
   "yogurt-parfait-with-granola",
+  "beef-and-bean-chili",
+  "baked-cod-with-quinoa",
+  "whole-wheat-pasta-with-ground-chicken-marinara",
+  "whole-wheat-pasta-with-ground-beef-marinara",
+  "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -173,9 +178,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-with-broccoli",
     "teriyaki-salmon-on-a-plate",
   ],
-  fish: ["grilled-fish-fillet", "fish-tacos"],
+  fish: ["grilled-fish-fillet", "fish-tacos", "baked-cod-with-quinoa"],
   teriyaki: ["teriyaki-salmon-on-a-plate"],
-
+  cod: ["baked-cod-with-quinoa"],
   // Eggs
   egg: [
     "scrambled-eggs-and-toast",
@@ -219,16 +224,37 @@ const keywordMappings: { [key: string]: string[] } = {
     "spaghetti-aglio-e-olio",
     "spaghetti-bolognese",
     "spaghetti-in-tomato-sauce",
+    "whole-wheat-pasta-with-ground-chicken-marinara",
+    "whole-wheat-pasta-with-ground-beef-marinara",
+    "lasagna",
+    "ravioli-with-sauce",
+    "gnocchi-in-mushroom-sauce",
   ],
   spaghetti: [
     "spaghetti-aglio-e-olio",
     "spaghetti-bolognese",
     "spaghetti-in-tomato-sauce",
+    "pasta",
   ],
   bolognese: ["spaghetti-bolognese"],
+  carbonara: ["pasta", "spaghetti-aglio-e-olio"],
+  alfredo: ["pasta", "gnocchi-with-white-sauce"],
+  marinara: [
+    "whole-wheat-pasta-with-ground-chicken-marinara",
+    "whole-wheat-pasta-with-ground-beef-marinara",
+    "spaghetti-in-tomato-sauce",
+  ],
+  penne: ["pasta"],
+  fettuccine: ["pasta"],
+  linguine: ["pasta", "shrimp-pasta"],
+  tagliatelle: ["pasta", "spaghetti-bolognese"],
+  rigatoni: ["pasta"],
+  macaroni: ["pasta"],
   lasagna: ["lasagna"],
   ravioli: ["ravioli-with-sauce"],
   gnocchi: ["gnocchi-in-mushroom-sauce", "gnocchi-with-white-sauce"],
+  aglio: ["spaghetti-aglio-e-olio"],
+  olio: ["spaghetti-aglio-e-olio"],
 
   // Rice dishes
   rice: [
@@ -262,9 +288,10 @@ const keywordMappings: { [key: string]: string[] } = {
   nachos: ["nachos"],
 
   // Meat dishes
+  beef: ["beef-and-bean-chili"],
   steak: ["steak-with-mashed-potatoes", "steak-and-roasted-vegetables"],
   meatballs: ["meat-balls"],
-  meat: ["meat-balls", "spare-ribs"],
+  meat: ["meat-balls", "spare-ribs", "beef-and-bean-chili"],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],
   turkey: ["turkey-sandwich", "turkey-stirfry"],
@@ -307,7 +334,11 @@ const keywordMappings: { [key: string]: string[] } = {
   pudding: ["chia-pudding"],
 
   // Sandwiches & Wraps
-  sandwich: ["tuna-salad-sandwich", "turkey-sandwich"],
+  sandwich: [
+    "tuna-salad-sandwich",
+    "turkey-sandwich",
+    "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
+  ],
   wrap: ["avocado-chicken-wrap", "grilled-vegetable-wrap"],
 
   // Shrimp
@@ -315,36 +346,198 @@ const keywordMappings: { [key: string]: string[] } = {
   shrimps: ["shrimps-pad-thai"],
 };
 
+// Common words to ignore in matching (low-value words)
+const stopWords = new Set([
+  "with",
+  "and",
+  "the",
+  "on",
+  "in",
+  "a",
+  "an",
+  "of",
+  "for",
+  "to",
+  "topped",
+  "served",
+  "side",
+  "fresh",
+  "homemade",
+  "delicious",
+  "grilled",
+  "baked",
+  "fried",
+  "roasted",
+]);
+
+// High-value specific keywords that should get priority matching
+const specificKeywords = new Set([
+  "pasta",
+  "spaghetti",
+  "lasagna",
+  "ravioli",
+  "gnocchi",
+  "risotto",
+  "bolognese",
+  "carbonara",
+  "alfredo",
+  "marinara",
+  "pizza",
+  "burger",
+  "tacos",
+  "burrito",
+  "sushi",
+  "ramen",
+  "pho",
+  "curry",
+  "biryani",
+  "shakshuka",
+  "falafel",
+  "hummus",
+  "salmon",
+  "chicken",
+  "beef",
+  "steak",
+  "turkey",
+  "duck",
+  "shrimp",
+  "tuna",
+  "cod",
+  "mussels",
+  "pancakes",
+  "waffles",
+  "crepes",
+  "oatmeal",
+  "porridge",
+  "smoothie",
+  "salad",
+  "soup",
+  "sandwich",
+  "wrap",
+  "omelette",
+  "schnitzel",
+  "nachos",
+  "dumplings",
+  "noodles",
+  "quinoa",
+  "couscous",
+]);
+
 /**
- * Extract keywords from meal name
+ * Extract keywords from meal name, filtering out stop words
  */
 const extractKeywords = (mealName: string): string[] => {
   const normalized = mealName.toLowerCase().trim();
-  const words = normalized.split(/[\s-]+/).filter((word) => word.length > 2);
+  const words = normalized
+    .split(/[\s\-_,]+/)
+    .filter((word) => word.length > 2 && !stopWords.has(word));
   return words;
 };
 
 /**
- * Find best matching image based on keywords
+ * Normalize string for comparison (remove dashes, lowercase)
  */
-const findBestMatch = (keywords: string[]): string | null => {
+const normalizeForComparison = (str: string): string => {
+  return str.toLowerCase().replace(/[-_\s]+/g, "");
+};
+
+/**
+ * Check if image name matches the full meal name closely
+ */
+const getExactMatchScore = (mealName: string, imageName: string): number => {
+  const normalizedMeal = normalizeForComparison(mealName);
+  const normalizedImage = normalizeForComparison(imageName);
+
+  // Perfect match
+  if (normalizedMeal === normalizedImage) {
+    return 100;
+  }
+
+  // Meal name contains entire image name or vice versa
+  if (normalizedMeal.includes(normalizedImage)) {
+    return 50 + (normalizedImage.length / normalizedMeal.length) * 30;
+  }
+  if (normalizedImage.includes(normalizedMeal)) {
+    return 50 + (normalizedMeal.length / normalizedImage.length) * 30;
+  }
+
+  return 0;
+};
+
+/**
+ * Find best matching image based on keywords with improved scoring
+ */
+const findBestMatch = (
+  keywords: string[],
+  originalMealName: string
+): string | null => {
   const imageScores: { [key: string]: number } = {};
 
-  // Score each image based on keyword matches
-  keywords.forEach((keyword) => {
+  // First, check for exact/close matches with the full meal name
+  availableImages.forEach((image) => {
+    const exactScore = getExactMatchScore(originalMealName, image);
+    if (exactScore > 0) {
+      imageScores[image] = exactScore;
+    }
+  });
+
+  // If we have a very high exact match, return it immediately
+  const topExactMatch = Object.entries(imageScores).find(
+    ([, score]) => score >= 70
+  );
+  if (topExactMatch) {
+    return topExactMatch[0];
+  }
+
+  // Score based on keyword mappings with priority for specific keywords
+  keywords.forEach((keyword, index) => {
     const matchingImages = keywordMappings[keyword];
     if (matchingImages) {
-      matchingImages.forEach((image) => {
-        imageScores[image] = (imageScores[image] || 0) + 1;
+      // Earlier keywords in the meal name are often more important
+      const positionBonus = Math.max(0, 3 - index);
+      // Specific keywords get higher scores
+      const specificBonus = specificKeywords.has(keyword) ? 10 : 0;
+
+      matchingImages.forEach((image, imageIndex) => {
+        // First image in the mapping is often the most relevant
+        const orderBonus = Math.max(0, 3 - imageIndex);
+        const score = 5 + positionBonus + specificBonus + orderBonus;
+        imageScores[image] = (imageScores[image] || 0) + score;
       });
     }
   });
 
-  // Also check for direct matches in image names
+  // Direct keyword matches in image names (very important!)
   keywords.forEach((keyword) => {
     availableImages.forEach((image) => {
-      if (image.includes(keyword) || keyword.includes(image.split("-")[0])) {
-        imageScores[image] = (imageScores[image] || 0) + 2; // Higher score for direct matches
+      const imageWords = image.split("-");
+
+      // Check if any word in image exactly matches the keyword
+      if (imageWords.some((word) => word === keyword)) {
+        // Strong bonus for exact word match
+        const bonus = specificKeywords.has(keyword) ? 25 : 15;
+        imageScores[image] = (imageScores[image] || 0) + bonus;
+      } else if (image.includes(keyword)) {
+        // Partial match bonus
+        const bonus = specificKeywords.has(keyword) ? 12 : 6;
+        imageScores[image] = (imageScores[image] || 0) + bonus;
+      }
+
+      // Check if keyword contains image word (for compound matches)
+      imageWords.forEach((word) => {
+        if (word.length > 3 && keyword.includes(word)) {
+          imageScores[image] = (imageScores[image] || 0) + 4;
+        }
+      });
+    });
+  });
+
+  // Bonus for matching multiple keywords
+  keywords.forEach((keyword) => {
+    availableImages.forEach((image) => {
+      const matchCount = keywords.filter((k) => image.includes(k)).length;
+      if (matchCount > 1) {
+        imageScores[image] = (imageScores[image] || 0) + matchCount * 8;
       }
     });
   });
@@ -385,8 +578,8 @@ export const getMealImage = (
     return fallbackIcon || "https://via.placeholder.com/80";
   }
 
-  // Find best matching image
-  const matchedImage = findBestMatch(keywords);
+  // Find best matching image (pass original name for exact matching)
+  const matchedImage = findBestMatch(keywords, mealName);
 
   if (matchedImage) {
     // Return path that Vite can resolve
@@ -430,8 +623,8 @@ export const getMealImageVite = (
     return fallbackIcon || "https://via.placeholder.com/80";
   }
 
-  // Find best matching image
-  const matchedImage = findBestMatch(keywords);
+  // Find best matching image (pass original name for exact matching)
+  const matchedImage = findBestMatch(keywords, mealName);
 
   if (matchedImage) {
     // Try to get the image from the glob import

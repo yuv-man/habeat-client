@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   Heart,
-  CheckCircle2,
+  Check,
   BookOpen,
   RefreshCw,
   Clock,
@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useProgressStore } from "@/stores/progressStore";
@@ -44,7 +45,18 @@ const MealCard = ({
 
   const handleFavorite = async () => {
     if (user?._id) {
+      const wasAlreadyFavorite = isFavorite;
       await toggleFavoriteMeal(user._id, meal._id);
+
+      if (wasAlreadyFavorite) {
+        toast.success("Removed from favorites", {
+          duration: 2000,
+        });
+      } else {
+        toast.success("❤️ Added to favorites!", {
+          duration: 2000,
+        });
+      }
     }
   };
 
@@ -118,15 +130,19 @@ const MealCard = ({
 
             <button
               onClick={handleComplete}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              className={`p-0.5 rounded-full transition-all duration-200 ${
+                isCompleted
+                  ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
+                  : "bg-gray-100 hover:bg-gray-200"
+              }`}
               aria-label={
                 isCompleted ? "Mark as incomplete" : "Mark as complete"
               }
             >
-              <CheckCircle2
-                className={`w-4 h-4 ${
+              <Check
+                className={`w-3.5 h-3.5 transition-all duration-200 ${
                   isCompleted
-                    ? "fill-green-500 text-green-500"
+                    ? "text-white stroke-[3]"
                     : "text-gray-400 stroke-2"
                 }`}
               />
@@ -169,14 +185,16 @@ const MealCard = ({
         {/* Done Button - Always Visible */}
         <button
           onClick={handleComplete}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+          className={`p-1 rounded-full transition-all duration-200 flex-shrink-0 ${
+            isCompleted
+              ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
+              : "bg-gray-100 hover:bg-gray-200"
+          }`}
           aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
         >
-          <CheckCircle2
-            className={`w-5 h-5 ${
-              isCompleted
-                ? "fill-green-500 text-green-500"
-                : "text-gray-400 stroke-2"
+          <Check
+            className={`w-4 h-4 transition-all duration-200 ${
+              isCompleted ? "text-white stroke-[3]" : "text-gray-400 stroke-2"
             }`}
           />
         </button>

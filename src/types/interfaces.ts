@@ -69,7 +69,8 @@ export interface IPlanData {
   weeklyPlan: { [date: string]: IDailyPlan };
 }
 
-export interface IPlan extends Document {
+export interface IPlan {
+  _id: string;
   userId: string;
   title: string;
   userMetrics: {
@@ -259,11 +260,19 @@ export interface IRecipe {
   };
 }
 
+export interface MealTimes {
+  breakfast: string;
+  lunch: string;
+  dinner: string;
+  snacks: string;
+}
+
 export interface AuthState {
   user: IUser | null;
   loading: boolean;
   token: string | null;
   plan: IPlan | null;
+  mealTimes: MealTimes;
 }
 
 export interface AuthActions {
@@ -275,6 +284,7 @@ export interface AuthActions {
   setPlan: (plan: IPlan | null) => void;
   setLoading: (loading: boolean) => void;
   setToken: (token: string | null) => void;
+  setMealTimes: (mealTimes: Partial<MealTimes>) => void;
   fetchUser: (token: string, onSuccess?: () => void) => Promise<void>;
   oauthSignin: (provider: string) => Promise<void>;
   oauthSignup: (provider: string) => Promise<void>;

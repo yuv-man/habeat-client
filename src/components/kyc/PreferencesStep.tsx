@@ -5,7 +5,7 @@ import {
   CustomInputs,
   allergies,
   dislikes,
-  favoriteFoods,
+  foodPreferences,
 } from "./types.tsx";
 
 interface PreferencesStepProps {
@@ -173,15 +173,15 @@ export default function PreferencesStep({
 
           <div>
             <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Favorite Foods
+              Food Preferences
             </h3>
             <div className="flex flex-wrap gap-2 mb-4">
-              {favoriteFoods.map((item) => (
+              {foodPreferences.map((item) => (
                 <button
                   key={item}
-                  onClick={() => onToggleOption("favoriteFoods", item)}
+                  onClick={() => onToggleOption("foodPreferences", item)}
                   className={`px-4 py-2 rounded-full font-medium transition text-sm ${
-                    kycData.favoriteFoods.includes(item)
+                    kycData.foodPreferences.includes(item)
                       ? "bg-purple-500 text-white"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
@@ -193,33 +193,35 @@ export default function PreferencesStep({
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Add favorite food..."
-                value={customInputs.favoriteFood}
+                placeholder="Add food preference..."
+                value={customInputs.foodPreference}
                 onChange={(e) =>
                   setCustomInputs((prev) => ({
                     ...prev,
-                    favoriteFood: e.target.value,
+                    foodPreference: e.target.value,
                   }))
                 }
                 onKeyPress={(e) =>
                   e.key === "Enter" &&
-                  onAddCustomItem("favoriteFoods", "favoriteFood")
+                  onAddCustomItem("foodPreferences", "foodPreference")
                 }
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
               />
               <button
-                onClick={() => onAddCustomItem("favoriteFoods", "favoriteFood")}
+                onClick={() =>
+                  onAddCustomItem("foodPreferences", "foodPreference")
+                }
                 className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition text-sm"
               >
                 Add
               </button>
             </div>
-            {kycData.favoriteFoods.length > 0 && (
+            {kycData.foodPreferences.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-3">
-                {kycData.favoriteFoods.map((item) => (
+                {kycData.foodPreferences.map((item) => (
                   <button
                     key={item}
-                    onClick={() => onToggleOption("favoriteFoods", item)}
+                    onClick={() => onToggleOption("foodPreferences", item)}
                     className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs hover:bg-purple-200 transition flex items-center gap-1"
                   >
                     {item} ✕

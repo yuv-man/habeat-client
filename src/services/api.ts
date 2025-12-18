@@ -7,6 +7,7 @@ import {
   IDailyProgress,
   WorkoutData,
 } from "../types/interfaces";
+import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
 
 const API_URL = config.baseURL;
@@ -429,19 +430,12 @@ const addWaterGlass = async (
 
 const addWorkout = async (
   userId: string,
-  date: string,
   workout: WorkoutData
 ): Promise<{ data: any }> => {
-  const dailyDate = new Date(date);
-  dailyDate.setHours(0, 0, 0, 0);
-  const payload = {
-    date: dailyDate.toISOString(),
-    workout,
-    useMock: config.useMock,
-  };
+  const payload = { ...workout, useMock: config.useMock };
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/plan/${userId}/add-workout`,
+      `/plan/${userId}/workout`,
       payload,
       { headers: getAuthHeaders() }
     );
@@ -465,7 +459,7 @@ const updateWorkout = async (
   };
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/plan/${userId}/update-workout`,
+      `/plan/${userId}/workout`,
       payload,
       { headers: getAuthHeaders() }
     );
@@ -484,9 +478,7 @@ const deleteWorkout = async (
   dailyDate.setHours(0, 0, 0, 0);
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/plan/${userId}/delete-workout/day=${dailyDate.toISOString()}/workout=${
-        workout.name
-      }`,
+      `/plan/${userId}/workout/${date}/${workout.name}`,
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -530,7 +522,7 @@ const updateFavorite = async (
   };
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/users/${userId}/favorites`,
+      `/users/${userId}/favorite-meals`,
       payload,
       { headers: getAuthHeaders() }
     );
@@ -548,7 +540,7 @@ const updateFavorite = async (
 const getFavoritesByUserId = async (userId: string): Promise<{ data: any }> => {
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/users/${userId}/favorites`,
+      `/users/${userId}/favorite-meals`,
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -558,13 +550,20 @@ const getFavoritesByUserId = async (userId: string): Promise<{ data: any }> => {
 };
 
 // Shopping Bag API
-const getShoppingList = async (userId: string): Promise<{ data: any }> => {
+const getShoppingList = async (
+  userId: string,
+  planId: string
+): Promise<{ ingredients: IngredientInput[] }> => {
   try {
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/shopping/${userId}`,
-      { headers: getAuthHeaders() }
+    const response: AxiosResponse<{
+      data: { ingredients: IngredientInput[] };
+    }> = await userClient.get(
+      `/meals/${userId}/shopping-list?planId=${planId}`,
+      {
+        headers: getAuthHeaders(),
+      }
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     throw new Error("Failed to get shopping list. Please try again.");
   }
@@ -762,6 +761,66 @@ const completeMeal = async (
   }
 };
 
+// Meal criteria interface for AI suggestions
+export interface MealCriteria {
+  category: "breakfast" | "lunch" | "dinner" | "snack";
+  targetCalories: number;
+  dietaryRestrictions: string[];
+  preferences: string[];
+  dislikes: string[];
+}
+
+// AI Meal Suggestions
+const getAIMealSuggestions = async (
+  userId: string,
+  mealCriteria: MealCriteria,
+  aiRules?: string
+): Promise<{ data: { meals: IMeal[] } }> => {
+  try {
+    const response: AxiosResponse<{ data: { meals: IMeal[] } }> =
+      await mealGenerationClient.post(
+        `/generate/meal-suggestions/${userId}`,
+        { mealCriteria, aiRules },
+        { headers: getAuthHeaders() }
+      );
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.message ||
+          "Failed to get AI suggestions. Please try again."
+      );
+    }
+    throw new Error("Failed to get AI suggestions. Please try again.");
+  }
+};
+
+// Change meal in plan (for weekly/daily view)
+const changeMealInPlan = async (
+  userId: string,
+  planId: string,
+  date: string,
+  mealType: string,
+  newMeal: IMeal,
+  snackIndex?: number // Index of snack to change (only for mealType "snacks")
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.put(
+      `/plan/${userId}/meal-replace/${planId}`,
+      {
+        date,
+        mealType,
+        newMeal,
+        ...(snackIndex !== undefined && { snackIndex }),
+      },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to change meal. Please try again.");
+  }
+};
+
 export const userAPI = {
   getAllUsers,
   getUserById,
@@ -802,4 +861,7 @@ export const userAPI = {
   getProgressHistory,
   updateDailyProgress,
   completeMeal,
+  // Meal Changes
+  getAIMealSuggestions,
+  changeMealInPlan,
 };

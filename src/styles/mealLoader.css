@@ -1,0 +1,131 @@
+.meal-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  font-family: sans-serif;
+}
+
+/* Pot Styling */
+.pot-body {
+  width: 60px;
+  height: 45px;
+  background: #374151; /* Dark Slate Gray */
+  border-radius: 0 0 20px 20px;
+  position: relative;
+  border-top: 5px solid #111827;
+}
+
+/* Steam Animation */
+.steam-lines {
+  display: flex;
+  justify-content: space-around;
+  width: 50px;
+  margin-bottom: 8px;
+  margin-left: 5px;
+}
+
+.steam {
+  width: 5px;
+  height: 15px;
+  background: #d1d5db;
+  border-radius: 10px;
+  animation: evaporate 2s infinite ease-in-out;
+}
+
+.steam:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.steam:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes evaporate {
+  0% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-10px) scaleX(1.2);
+  }
+  100% {
+    transform: translateY(-25px) scaleX(0.5);
+    opacity: 0;
+  }
+}
+
+/* Text Transitions */
+.status-title {
+  margin-top: 1.5rem;
+  font-size: 1.4rem;
+  color: #1f2937;
+  font-weight: 600;
+  min-height: 1.5em; /* Prevents layout jump when text changes */
+}
+
+.sub-text {
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+/* Small inline loader for buttons */
+.meal-loader-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pot-small {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pot-body-small {
+  width: 18px;
+  height: 12px;
+  background: currentColor;
+  border-radius: 0 0 6px 6px;
+  position: relative;
+}
+
+.steam-lines-small {
+  display: flex;
+  justify-content: space-around;
+  width: 14px;
+  margin-bottom: 2px;
+}
+
+.steam-small {
+  width: 2px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 4px;
+  opacity: 0.7;
+  animation: evaporate-small 1.2s infinite ease-in-out;
+}
+
+.steam-small:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.steam-small:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes evaporate-small {
+  0% {
+    transform: translateY(0) scaleX(1);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-3px) scaleX(1.1);
+  }
+  100% {
+    transform: translateY(-6px) scaleX(0.6);
+    opacity: 0;
+  }
+}

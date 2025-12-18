@@ -11,17 +11,19 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
-import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useProgressStore } from "@/stores/progressStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { getMealImageVite } from "@/lib/mealImageHelper";
+import ChangeMealModal from "@/components/modals/ChangeMealModal";
 
 interface MealCardProps {
   meal: IMeal;
   mealType: string;
   mealTime: string;
-  onSwap?: () => void;
+  date: string; // Date in YYYY-MM-DD format for API calls
+  snackIndex?: number; // Index of snack (for snacks only)
+  onMealChange?: (newMeal: IMeal) => void;
   onViewRecipe?: () => void;
   isSnack?: boolean;
 }
@@ -30,40 +32,49 @@ const MealCard = ({
   meal,
   mealType,
   mealTime,
-  onSwap,
+  date,
+  snackIndex,
+  onMealChange,
   onViewRecipe,
   isSnack = false,
 }: MealCardProps) => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { isMealFavorite, toggleFavoriteMeal } = useFavoritesStore();
+  const { user, updateFavorite } = useAuthStore();
   const { completeMeal, todayProgress } = useProgressStore();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isFavorite = isMealFavorite(meal._id);
+  // Get meal ID with fallback for compatibility
+  const mealId = meal._id || (meal as any).id || "";
+
+  // Check if meal is in user.favoriteMeals array
+  const isFavorite = user?.favoriteMeals?.includes(mealId) || false;
   const isCompleted = meal.done || false;
 
   const handleFavorite = async () => {
-    if (user?._id) {
+    if (user?._id && mealId) {
       const wasAlreadyFavorite = isFavorite;
-      await toggleFavoriteMeal(user._id, meal._id);
+      try {
+        await updateFavorite(user._id, mealId, !wasAlreadyFavorite);
 
-      if (wasAlreadyFavorite) {
-        toast.success("Removed from favorites", {
-          duration: 2000,
-        });
-      } else {
-        toast.success("❤️ Added to favorites!", {
-          duration: 2000,
-        });
+        if (wasAlreadyFavorite) {
+          toast.success("Removed from favorites", {
+            duration: 2000,
+          });
+        } else {
+          toast.success("❤️ Added to favorites!", {
+            duration: 2000,
+          });
+        }
+      } catch (error) {
+        toast.error("Failed to update favorite");
       }
     }
   };
 
   const handleComplete = async () => {
-    if (user?._id && todayProgress) {
+    if (user?._id && todayProgress && mealId) {
       const date = todayProgress.date;
-      await completeMeal(user._id, date, mealType, meal._id);
+      await completeMeal(user._id, date, mealType, mealId);
     }
   };
 
@@ -72,13 +83,16 @@ const MealCard = ({
       onViewRecipe();
     } else {
       // Navigate to recipe detail page if available
-      navigate(`/recipes/${meal._id}`);
+      navigate(`/recipes/${mealId}`);
     }
   };
 
-  const handleSwap = () => {
-    if (onSwap) {
-      onSwap();
+  const handleMealChange = (newMeal: IMeal) => {
+    if (onMealChange) {
+      onMealChange(newMeal);
+      toast.success(`Meal changed to ${newMeal.name}`, {
+        duration: 2000,
+      });
     }
   };
 
@@ -120,13 +134,20 @@ const MealCard = ({
               />
             </button>
 
-            <button
-              onClick={handleSwap}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Swap snack"
+            <ChangeMealModal
+              currentMeal={meal}
+              mealType={mealType}
+              date={date}
+              snackIndex={isSnack ? snackIndex : undefined}
+              onMealChange={handleMealChange}
             >
-              <RefreshCw className="w-4 h-4 text-gray-400 stroke-2" />
-            </button>
+              <button
+                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Swap snack"
+              >
+                <RefreshCw className="w-4 h-4 text-gray-400 stroke-2" />
+              </button>
+            </ChangeMealModal>
 
             <button
               onClick={handleComplete}
@@ -182,22 +203,42 @@ const MealCard = ({
           </div>
         </div>
 
-        {/* Done Button - Always Visible */}
-        <button
-          onClick={handleComplete}
-          className={`p-1 rounded-full transition-all duration-200 flex-shrink-0 ${
-            isCompleted
-              ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
-              : "bg-gray-100 hover:bg-gray-200"
-          }`}
-          aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
-        >
-          <Check
-            className={`w-4 h-4 transition-all duration-200 ${
-              isCompleted ? "text-white stroke-[3]" : "text-gray-400 stroke-2"
+        {/* Action Buttons - Always Visible */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Favorite Button */}
+          <button
+            onClick={handleFavorite}
+            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label={
+              isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
+          >
+            <Heart
+              className={`w-4 h-4 transition-all duration-200 ${
+                isFavorite
+                  ? "fill-red-500 text-red-500"
+                  : "text-gray-400 stroke-2"
+              }`}
+            />
+          </button>
+
+          {/* Done Button */}
+          <button
+            onClick={handleComplete}
+            className={`p-1 rounded-full transition-all duration-200 ${
+              isCompleted
+                ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
+                : "bg-gray-100 hover:bg-gray-200"
             }`}
-          />
-        </button>
+            aria-label={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+          >
+            <Check
+              className={`w-4 h-4 transition-all duration-200 ${
+                isCompleted ? "text-white stroke-[3]" : "text-gray-400 stroke-2"
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Expandable Section */}
@@ -223,38 +264,31 @@ const MealCard = ({
           </div>
 
           {/* Action Buttons - Inside Fold */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <button
-              onClick={handleFavorite}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label={
-                isFavorite ? "Remove from favorites" : "Add to favorites"
-              }
-            >
-              <Heart
-                className={`w-5 h-5 ${
-                  isFavorite
-                    ? "fill-red-500 text-red-500"
-                    : "text-gray-400 stroke-2"
-                }`}
-              />
-            </button>
-
+          <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100">
             <button
               onClick={handleViewRecipe}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
               aria-label="View recipe"
             >
               <BookOpen className="w-5 h-5 text-gray-400 stroke-2" />
+              <span className="text-sm text-gray-600">Recipe</span>
             </button>
 
-            <button
-              onClick={handleSwap}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Swap meal"
+            <ChangeMealModal
+              currentMeal={meal}
+              mealType={mealType}
+              date={date}
+              snackIndex={isSnack ? snackIndex : undefined}
+              onMealChange={handleMealChange}
             >
-              <RefreshCw className="w-5 h-5 text-gray-400 stroke-2" />
-            </button>
+              <button
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                aria-label="Swap meal"
+              >
+                <RefreshCw className="w-5 h-5 text-gray-400 stroke-2" />
+                <span className="text-sm text-gray-600">Swap</span>
+              </button>
+            </ChangeMealModal>
           </div>
         </div>
       )}

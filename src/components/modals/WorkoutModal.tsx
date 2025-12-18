@@ -2,8 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { workoutCategories } from "@/lib/dietry";
 import { Activity, Clock, Flame } from "lucide-react";
 import { WorkoutData } from "@/types/interfaces";
@@ -14,19 +26,24 @@ interface WorkoutModalProps {
 }
 
 const INITIAL_WORKOUT_DATA: WorkoutData = {
-  name: '',
-  caloriesBurned: '',
-  duration: '',
-  category: '',
+  name: "",
+  caloriesBurned: 0,
+  duration: 0,
+  category: "",
+  time: "12:00",
 };
 
 const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [workoutData, setWorkoutData] = useState<WorkoutData>(INITIAL_WORKOUT_DATA);
+  const [workoutData, setWorkoutData] =
+    useState<WorkoutData>(INITIAL_WORKOUT_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateWorkoutData = (field: keyof WorkoutData, value: string) => {
-    setWorkoutData(prev => ({ ...prev, [field]: value }));
+  const updateWorkoutData = (
+    field: keyof WorkoutData,
+    value: string | number
+  ) => {
+    setWorkoutData((prev) => ({ ...prev, [field]: value }));
   };
 
   const resetForm = () => {
@@ -34,19 +51,25 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
   };
 
   const isFormValid = () => {
-    return Object.values(workoutData).every(value => value.trim() !== '');
+    return (
+      workoutData.name.trim() !== "" &&
+      workoutData.category !== "" &&
+      workoutData.caloriesBurned > 0 &&
+      workoutData.duration > 0 &&
+      workoutData.time !== ""
+    );
   };
 
   const handleSubmit = async () => {
     if (!isFormValid()) return;
-    
+
     setIsSubmitting(true);
     try {
       await onWorkoutAdd(workoutData);
       resetForm();
       setIsOpen(false);
     } catch (error) {
-      console.error('Failed to add workout:', error);
+      console.error("Failed to add workout:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -62,9 +85,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -72,8 +93,14 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
             Add New Workout
           </DialogTitle>
         </DialogHeader>
-        
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+
+        <form
+          className="space-y-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSubmit();
+          }}
+        >
           <div className="space-y-2">
             <Label htmlFor="workout-name" className="text-sm font-medium">
               Workout Name
@@ -82,7 +109,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
               id="workout-name"
               placeholder="e.g., Running, Weight Training, Yoga"
               value={workoutData.name}
-              onChange={(e) => updateWorkoutData('name', e.target.value)}
+              onChange={(e) => updateWorkoutData("name", e.target.value)}
               className="h-11"
             />
           </div>
@@ -91,9 +118,9 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
             <Label htmlFor="workout-category" className="text-sm font-medium">
               Category
             </Label>
-            <Select 
-              value={workoutData.category} 
-              onValueChange={(value) => updateWorkoutData('category', value)}
+            <Select
+              value={workoutData.category}
+              onValueChange={(value) => updateWorkoutData("category", value)}
             >
               <SelectTrigger id="workout-category" className="h-11">
                 <SelectValue placeholder="Select workout category" />
@@ -108,9 +135,29 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label
+              htmlFor="workout-time"
+              className="text-sm font-medium flex items-center gap-1"
+            >
+              <Clock className="w-4 h-4 text-green-500" />
+              Time
+            </Label>
+            <Input
+              id="workout-time"
+              type="time"
+              value={workoutData.time || "12:00"}
+              onChange={(e) => updateWorkoutData("time", e.target.value)}
+              className="h-11"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="workout-calories" className="text-sm font-medium flex items-center gap-1">
+              <Label
+                htmlFor="workout-calories"
+                className="text-sm font-medium flex items-center gap-1"
+              >
                 <Flame className="w-4 h-4 text-orange-500" />
                 Calories Burned
               </Label>
@@ -119,14 +166,22 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
                 type="number"
                 placeholder="150"
                 min="1"
-                value={workoutData.caloriesBurned}
-                onChange={(e) => updateWorkoutData('caloriesBurned', e.target.value)}
+                value={workoutData.caloriesBurned || ""}
+                onChange={(e) =>
+                  updateWorkoutData(
+                    "caloriesBurned",
+                    parseInt(e.target.value) || 0
+                  )
+                }
                 className="h-11"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="workout-duration" className="text-sm font-medium flex items-center gap-1">
+              <Label
+                htmlFor="workout-duration"
+                className="text-sm font-medium flex items-center gap-1"
+              >
                 <Clock className="w-4 h-4 text-blue-500" />
                 Duration (min)
               </Label>
@@ -135,8 +190,10 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
                 type="number"
                 placeholder="30"
                 min="1"
-                value={workoutData.duration}
-                onChange={(e) => updateWorkoutData('duration', e.target.value)}
+                value={workoutData.duration || ""}
+                onChange={(e) =>
+                  updateWorkoutData("duration", parseInt(e.target.value) || 0)
+                }
                 className="h-11"
               />
             </div>
@@ -163,7 +220,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
                   Adding...
                 </>
               ) : (
-                'Add Workout'
+                "Add Workout"
               )}
             </Button>
           </div>

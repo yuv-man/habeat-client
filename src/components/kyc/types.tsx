@@ -22,7 +22,7 @@ export interface KYCData {
   workoutFrequency: number;
   allergies: string[];
   dislikes: string[];
-  favoriteFoods: string[];
+  foodPreferences: string[];
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
 }
@@ -30,7 +30,7 @@ export interface KYCData {
 export interface CustomInputs {
   allergy: string;
   dislike: string;
-  favoriteFood: string;
+  foodPreference: string;
 }
 
 export interface DietType {
@@ -74,7 +74,7 @@ export const dislikes = [
   "Artichoke",
 ];
 
-export const favoriteFoods = [
+export const foodPreferences = [
   "Pizza",
   "Pasta",
   "Sushi",

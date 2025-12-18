@@ -34,6 +34,7 @@ describe("MealCard", () => {
     meal: mockBreakfast,
     mealType: "breakfast",
     mealTime: "8:00 AM",
+    date: "2024-12-17",
     onSwap: vi.fn(),
     onViewRecipe: vi.fn(),
   };
@@ -87,6 +88,8 @@ describe("MealCard", () => {
       meal: mockSnack,
       mealType: "snacks",
       mealTime: "3:00 PM",
+      date: "2024-12-17",
+      snackIndex: 0,
       onSwap: vi.fn(),
       isSnack: true,
     };

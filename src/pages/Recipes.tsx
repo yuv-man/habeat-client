@@ -4,34 +4,51 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, BookOpen, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { mealTypes } from "@/lib/paths";
 import "@/styles/recipes.css";
 import NavBar from "@/components/ui/navbar";
 import MobileHeader from "@/components/ui/MobileHeader";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
-import { IRecipe } from "@/types/interfaces";
+import { IRecipe, IMeal } from "@/types/interfaces";
 import FavoriteMeals from "@/components/recipes/FavoriteMeals";
 import RecipeItem from "@/components/recipes/RecipeItem";
+import { toast } from "sonner";
+import config from "@/services/config";
 
 const Recipes = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const { user, updateFavorite } = useAuthStore();
+  const [favoriteMeals, setFavoriteMeals] = useState<IMeal[]>([]);
   const [recipes, setRecipes] = useState<IRecipe[]>([]);
-  const [isMockData, setIsMockData] = useState(true);
+  const [loading, setLoading] = useState(false);
 
+  // Fetch favorite meals from API
   useEffect(() => {
-    if (isMockData) {
-      setRecipes(mockRecipes);
-    }
-    const fetchFavorites = async () => {
-      const { data } = await userAPI.getFavoritesByUserId(user._id);
-      setRecipes(data);
+    const fetchFavoriteMeals = async () => {
+      if (!user?._id) return;
+
+      setLoading(true);
+      try {
+        if (config.testFrontend) {
+          // Use mock data in test mode
+          setFavoriteMeals([]);
+          setRecipes(mockRecipes);
+        } else {
+          const response = await userAPI.getFavoritesByUserId(user._id);
+          // The API returns the actual meal objects
+          setFavoriteMeals(response.data.favoriteMeals || response.data || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch favorite meals:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchFavorites();
-  }, [isMockData]);
+
+    fetchFavoriteMeals();
+  }, [user?._id]);
 
   // Mock recipes data
   const mockRecipes: IRecipe[] = [
@@ -173,6 +190,30 @@ const Recipes = () => {
       recipe.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Convert favorite meals to recipe format for display
+  const favoriteMealsAsRecipes: IRecipe[] = favoriteMeals.map((meal) => ({
+    id: meal._id,
+    _id: meal._id,
+    name: meal.name,
+    category: meal.category || "meal",
+    description: "",
+    image: meal.icon || "",
+    cookTime: meal.prepTime || 0,
+    servings: 1,
+    calories: meal.calories,
+    difficulty: "Easy" as const,
+    tags: [],
+    rating: 0,
+    ingredients: meal.ingredients || [],
+    instructions: [],
+    macros: {
+      protein: meal.macros?.protein || 0,
+      carbs: meal.macros?.carbs || 0,
+      fat: meal.macros?.fat || 0,
+      fiber: 0,
+    },
+  }));
+
   // Show FavoriteMeals component on mobile, full recipes page on desktop
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -186,7 +227,7 @@ const Recipes = () => {
     return (
       <>
         <MobileHeader />
-        <FavoriteMeals recipes={filteredRecipes} />
+        <FavoriteMeals recipes={favoriteMealsAsRecipes} />
       </>
     );
   }
@@ -247,23 +288,32 @@ const Recipes = () => {
             {/* Recipe Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRecipes.map((recipe) => {
+                // Handle both id and _id for compatibility
+                const recipeId = recipe._id || recipe.id;
+                // Check if meal is in user.favoriteMeals
                 const isFavorite =
-                  user?.favoriteMeals?.includes(recipe.id) || false;
+                  user?.favoriteMeals?.includes(recipeId) || false;
                 return (
                   <RecipeItem
-                    key={recipe.id}
+                    key={recipeId}
                     recipe={recipe}
                     isFavorite={isFavorite}
                     onFavoriteToggle={async () => {
-                      if (user?._id) {
+                      if (user?._id && recipeId) {
                         try {
-                          await updateFavorite(
-                            user._id,
-                            recipe.id,
-                            !isFavorite
-                          );
+                          await updateFavorite(user._id, recipeId, !isFavorite);
+                          if (isFavorite) {
+                            toast.success("Removed from favorites", {
+                              duration: 2000,
+                            });
+                          } else {
+                            toast.success("❤️ Added to favorites!", {
+                              duration: 2000,
+                            });
+                          }
                         } catch (error) {
                           console.error("Failed to update favorite:", error);
+                          toast.error("Failed to update favorite");
                         }
                       }
                     }}

@@ -1,12 +1,22 @@
 import { Clock } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
+import ChangeMealModal from "@/components/modals/ChangeMealModal";
 
 interface TableMealItemProps {
   meal: IMeal;
-  onSwap: () => void;
+  mealType: string;
+  date: string; // Date in YYYY-MM-DD format
+  snackIndex?: number; // Index of snack (for snacks only)
+  onMealChange: (newMeal: IMeal) => void;
 }
 
-const TableMealItem = ({ meal, onSwap }: TableMealItemProps) => (
+const TableMealItem = ({
+  meal,
+  mealType,
+  date,
+  snackIndex,
+  onMealChange,
+}: TableMealItemProps) => (
   <div className="flex flex-col gap-1">
     <div className="flex items-start justify-between gap-2">
       <div className="flex-1 min-w-0">
@@ -26,12 +36,17 @@ const TableMealItem = ({ meal, onSwap }: TableMealItemProps) => (
           )}
         </div>
       </div>
-      <button
-        onClick={onSwap}
-        className="text-green-500 hover:bg-green-50 px-2 py-1 rounded text-xs font-medium transition flex-shrink-0"
+      <ChangeMealModal
+        currentMeal={meal}
+        mealType={mealType}
+        date={date}
+        snackIndex={mealType === "snacks" ? snackIndex : undefined}
+        onMealChange={onMealChange}
       >
-        Change
-      </button>
+        <button className="text-green-500 hover:bg-green-50 px-2 py-1 rounded text-xs font-medium transition flex-shrink-0">
+          Change
+        </button>
+      </ChangeMealModal>
     </div>
   </div>
 );

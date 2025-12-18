@@ -15,15 +15,17 @@ export interface IUser {
   idealWeight: number;
   allergies: string[];
   dietaryRestrictions: string[];
-  favoriteMeals: string[];
+  favoriteMeals?: string[]; // Array of meal IDs that user has liked
+  foodPreferences: string[];
   dislikes?: string[];
+  profilePicture?: string; // Base64 encoded profile picture or URL
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
 }
 
 export interface IMeal {
   _id: string;
-  icon: string;
+  icon?: string;
   name: string;
   // Format: "ingredient_name|portion|unit" (e.g., "chicken_breast|200|g")
   ingredients?: string[];
@@ -60,7 +62,13 @@ export interface IDailyPlan {
   totalCarbs: number;
   totalFat: number;
   waterIntake: number; // in glasses
-  workouts: { name: string; duration: number; caloriesBurned: number }[]; // number of workouts completed
+  workouts: {
+    name: string;
+    duration: number;
+    caloriesBurned: number;
+    date?: string;
+    time?: string;
+  }[]; // number of workouts completed
   netCalories: number;
 }
 
@@ -153,6 +161,8 @@ export interface IDailyProgress {
     duration: number;
     caloriesBurned: number;
     done: boolean;
+    date?: string;
+    time?: string;
   }[];
   meals: {
     breakfast: IMeal;
@@ -195,6 +205,8 @@ export interface IDailyProgress {
       duration: number;
       caloriesBurned: number;
       done: boolean;
+      date?: string;
+      time?: string;
     }[];
     meals: {
       mealsCompleted: number;
@@ -232,14 +244,17 @@ export interface MealData {
 
 export interface WorkoutData {
   name: string;
-  caloriesBurned: string;
-  duration: string;
+  caloriesBurned: number;
+  duration: number;
   category: string;
   done?: boolean;
+  date?: string;
+  time?: string;
 }
 
 export interface IRecipe {
   id: string;
+  _id?: string; // MongoDB ObjectId (optional, for compatibility)
   name: string;
   category: string;
   description: string;
@@ -306,4 +321,11 @@ export interface AuthActions {
     mealId: string,
     isFavorite: boolean
   ) => Promise<void>;
+}
+
+export interface IngredientInput {
+  name: string;
+  amount: string;
+  category: string;
+  done: boolean;
 }

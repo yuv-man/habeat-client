@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Search, ShoppingBag as ShoppingBagIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { IMeal, IPlan } from "@/types/interfaces";
+import { IngredientInput } from "@/lib/shoppingHelpers";
 import BottomNav from "@/components/ui/BottomNav";
 import NavBar from "@/components/ui/navbar";
 import MobileHeader from "@/components/ui/MobileHeader";
@@ -10,7 +10,6 @@ import { userAPI } from "@/services/api";
 import { mockShoppingIngredients } from "@/mocks/shoppingListMock";
 import config from "@/services/config";
 import ShoppingBag from "@/components/shopping/ShoppingBag";
-import { IngredientInput, aggregateIngredients } from "@/lib/shoppingHelpers";
 
 const ShoppingList = () => {
   const navigate = useNavigate();
@@ -28,101 +27,37 @@ const ShoppingList = () => {
   const [ingredients, setIngredients] = useState<IngredientInput[]>([]);
 
   useEffect(() => {
-    if (config.testFrontend || !plan) {
-      // Use mock data in test mode or if no plan
-      setIngredients(mockShoppingIngredients);
-      setIsLoading(false);
-    } else if (plan) {
-      const extractedIngredients = getIngredientsFromPlan(plan);
-      setIngredients(extractedIngredients);
-      setIsLoading(false);
-    }
-  }, [plan]);
-
-  interface IngredientInfo {
-    name: string;
-    portion: number;
-    unit: string;
-  }
-
-  interface AggregatedIngredient {
-    name: string;
-    totalPortion: number;
-    unit: string;
-  }
-
-  const parseIngredient = (ingredient: string): IngredientInfo | null => {
-    const parts = ingredient.split("|");
-    if (parts.length !== 3) return null;
-
-    return {
-      name: parts[0],
-      portion: parseFloat(parts[1]),
-      unit: parts[2],
-    };
-  };
-
-  const getIngredientsFromPlan = (plan: IPlan): IngredientInput[] => {
-    const weeklyPlanArray = Object.values(plan.weeklyPlan);
-    const ingredientsWithSources = weeklyPlanArray.reduce<
-      { ingredient: string }[]
-    >((acc, day) => {
-      const collectFromMeal = (meal: IMeal | undefined) => {
-        if (!meal?.ingredients) return [];
-        return meal.ingredients.map((ingredient) => ({ ingredient }));
-      };
-
-      const breakfastIngredients = collectFromMeal(day.meals.breakfast);
-      const lunchIngredients = collectFromMeal(day.meals.lunch);
-      const dinnerIngredients = collectFromMeal(day.meals.dinner);
-      const snackIngredients =
-        day.meals.snacks?.reduce((snackAcc, snack) => {
-          return [...snackAcc, ...collectFromMeal(snack)];
-        }, [] as { ingredient: string }[]) || [];
-
-      return [
-        ...acc,
-        ...breakfastIngredients,
-        ...lunchIngredients,
-        ...dinnerIngredients,
-        ...snackIngredients,
-      ];
-    }, []);
-
-    const aggregatedIngredients = ingredientsWithSources.reduce<
-      Record<string, AggregatedIngredient>
-    >((acc, { ingredient }) => {
-      const parsed = parseIngredient(ingredient);
-      if (!parsed) return acc;
-
-      if (!acc[parsed.name]) {
-        acc[parsed.name] = {
-          name: parsed.name,
-          totalPortion: parsed.portion,
-          unit: parsed.unit,
-        };
-      } else {
-        if (acc[parsed.name].unit === parsed.unit) {
-          acc[parsed.name].totalPortion += parsed.portion;
+    const fetchShoppingList = async () => {
+      if (config.testFrontend || !plan) {
+        // Use mock data in test mode or if no plan
+        setIngredients(mockShoppingIngredients as IngredientInput[]);
+        setIsLoading(false);
+      } else if (plan && user?._id && plan._id) {
+        try {
+          const ingredients = await getShoppingList(user._id, plan._id);
+          setIngredients(ingredients as IngredientInput[]);
+        } catch (error) {
+          console.error("Failed to fetch shopping list:", error);
+        } finally {
+          setIsLoading(false);
         }
       }
+    };
+    fetchShoppingList();
+  }, [plan, user?._id]);
 
-      return acc;
-    }, {});
-
-    // Convert to IngredientInput array
-    return Object.values(aggregatedIngredients).map(
-      ({ name, totalPortion, unit }) => ({
-        name: name.split("_").join(" "),
-        amount: `${totalPortion} ${unit}`,
-      })
-    );
+  const getShoppingList = async (
+    userId: string,
+    planId: string
+  ): Promise<IngredientInput[]> => {
+    const response = await userAPI.getShoppingList(userId, planId);
+    return response.ingredients as IngredientInput[];
   };
 
-  const toggleItem = (categoryIndex: number, itemId: string) => {
+  const toggleItem = (itemName: string) => {
     // This will be handled by ShoppingBag component's internal state
     // or we can manage it here if needed
-    console.log("Toggle item:", categoryIndex, itemId);
+    console.log("Toggle item:", itemName);
   };
 
   // Filter ingredients by search query

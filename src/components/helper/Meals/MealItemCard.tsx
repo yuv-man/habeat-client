@@ -9,7 +9,6 @@ import UnFavoriteIcon from "@/assets/favorite-empty.svg?react";
 import ChangePortionIcon from "@/assets/swap.svg?react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Plus } from "lucide-react";
-import MealModal from "@/components/modals/MealModal";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI } from "@/services/api";
 
@@ -29,10 +28,12 @@ interface MealItemCardProps {
   onComplete: (e: React.MouseEvent, isCompleted: boolean) => void;
 }
 
-const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
+const MealItemCard = ({ item, mealType, onComplete }: MealItemCardProps) => {
   const { user, updateFavorite } = useAuthStore();
   const [isCompleted, setIsCompleted] = useState(item.done);
-  const [isFavorite, setIsFavorite] = useState(user.favoriteMeals.includes(item._id));
+  const [isFavorite, setIsFavorite] = useState(
+    user.favoriteMeals.includes(item._id)
+  );
   const [showActions, setShowActions] = useState(false);
 
   // Update favorite state when user changes
@@ -44,12 +45,12 @@ const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setShowActions(false);
       }
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
   const favoriteClicked = async () => {
@@ -58,7 +59,7 @@ const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
       await updateFavorite(user._id, item._id, newFavoriteState);
       setIsFavorite(newFavoriteState); // Only update state after successful API call
     } catch (error) {
-      console.error('Failed to update favorite:', error);
+      console.error("Failed to update favorite:", error);
       // State remains unchanged if the API call fails
     }
   };
@@ -78,7 +79,11 @@ const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
     console.log(itemId);
   };
 
-  const onMealAdd = (meal: { name: string; calories: string; type: string }) => {
+  const onMealAdd = (meal: {
+    name: string;
+    calories: string;
+    type: string;
+  }) => {
     console.log(meal);
   };
 
@@ -87,25 +92,43 @@ const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
       <div className="flex justify-between">
         <div className="mealItemCardHeader">
           <div className="mealItemCardHeaderText">{item.name}</div>
-          <div onClick={(e: React.MouseEvent) => onCompleteClicked(e)} className="mealItemCardHeaderCheck">
-            {isCompleted ? <img src={checkCircle} alt="check circle" className="w-4 h-4" /> : <img src={uncheckedIcon} alt="check circle" className="w-4 h-4" />}
+          <div
+            onClick={(e: React.MouseEvent) => onCompleteClicked(e)}
+            className="mealItemCardHeaderCheck"
+          >
+            {isCompleted ? (
+              <img src={checkCircle} alt="check circle" className="w-4 h-4" />
+            ) : (
+              <img src={uncheckedIcon} alt="check circle" className="w-4 h-4" />
+            )}
           </div>
         </div>
         <div className="flex flex-row gap-2 justify-between items-center">
           <div className="add-to-favourites" onClick={favoriteClicked}>
-            {isFavorite ? <FavoriteIcon className="w-4 h-4" /> : <UnFavoriteIcon className="w-4 h-4" />}
+            {isFavorite ? (
+              <FavoriteIcon className="w-4 h-4" />
+            ) : (
+              <UnFavoriteIcon className="w-4 h-4" />
+            )}
           </div>
           <div className="relative">
-            <div className="change-portion" onClick={() => setShowActions(!showActions)}>
+            <div
+              className="change-portion"
+              onClick={() => setShowActions(!showActions)}
+            >
               <ChangePortionIcon className="w-4 h-4 text-red-500" />
             </div>
             {/* Action Buttons aligned with change button */}
-            <div className={`absolute top-full right-0 mt-1 transition-all duration-200 z-50 ${
-              showActions ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
-            }`}>
+            <div
+              className={`absolute top-full right-0 mt-1 transition-all duration-200 z-50 ${
+                showActions
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 scale-95 pointer-events-none"
+              }`}
+            >
               <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 space-y-2 min-w-[120px]">
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="ghost"
                   className="w-full justify-start text-xs h-8 px-2 hover:bg-gray-50 text-gray-700 hover:text-gray-900"
                   onClick={() => onSurpriseMe(item._id)}
@@ -113,22 +136,14 @@ const MealItemCard = ({ item, mealType, onComplete}: MealItemCardProps) => {
                   <Sparkles className="h-3 w-3 mr-2 text-yellow-500" />
                   Surprise Me
                 </Button>
-                <MealModal onMealAdd={onMealAdd}>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    className="w-full justify-start text-xs h-8 px-2 hover:bg-gray-50 text-gray-700 hover:text-gray-900"
-                  >
-                    <Plus className="h-3 w-3 mr-2" />
-                    Add Manually
-                  </Button>
-                </MealModal>
               </div>
             </div>
           </div>
-          {mealType === 'snacks' && <div className="mealItemCardRemove">
-            <img src={removeIcon} alt="remove" className="w-4 h-4" />
-          </div>}
+          {mealType === "snacks" && (
+            <div className="mealItemCardRemove">
+              <img src={removeIcon} alt="remove" className="w-4 h-4" />
+            </div>
+          )}
         </div>
       </div>
 

@@ -48,14 +48,18 @@ export const useFavoritesStore = create<FavoritesStore>()(
 
         try {
           set({ loading: true, error: null });
-          const [recipesResponse, mealsResponse] = await Promise.all([
-            userAPI.getFavoriteRecipes(userId),
+          const [mealsResponse] = await Promise.all([
+            //userAPI.getFavoriteRecipes(userId),
             userAPI.getFavoritesByUserId(userId),
           ]);
 
+          // Backend returns favoriteMeals array (not mealIds)
           set({
-            favoriteRecipes: recipesResponse.data.recipes || [],
-            favoriteMealIds: mealsResponse.data.mealIds || [],
+            //favoriteRecipes: recipesResponse.data.recipes || [],
+            favoriteMealIds:
+              mealsResponse.data.favoriteMeals ||
+              mealsResponse.data.mealIds ||
+              [],
             loading: false,
           });
         } catch (error: any) {
@@ -144,6 +148,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
       },
 
       isMealFavorite: (mealId: string) => {
+        if (!mealId) return false;
         return get().favoriteMealIds.includes(mealId);
       },
     }),

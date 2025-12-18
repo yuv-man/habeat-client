@@ -104,6 +104,15 @@ const availableImages = [
   "whole-wheat-pasta-with-ground-chicken-marinara",
   "whole-wheat-pasta-with-ground-beef-marinara",
   "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
+  "chicken-and-vegetable-skewers-couscous",
+  "baked-salmon-with-roasted-sweet-potatoes",
+  "berry-greek-yogurt-parfait",
+  "lean-beef-stir-fry-with-brown-rice",
+  "chicken-and-veggie-whole-wheat-wrap",
+  "green-power-smoothie",
+  "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
+  "chicken-pad-see-ew",
+  "chicken-teriyaki-bowl-with-brown-rice",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -159,6 +168,10 @@ const keywordMappings: { [key: string]: string[] } = {
     "butter-chicken-and-rice",
     "barbeque-chicken-wings",
     "avocado-chicken-wrap",
+    "chicken-and-vegetable-skewers-couscous",
+    "chicken-and-veggie-whole-wheat-wrap",
+    "chicken-pad-see-ew",
+    "chicken-teriyaki-bowl-with-brown-rice",
   ],
   wings: ["barbeque-chicken-wings"],
   curry: [
@@ -177,9 +190,18 @@ const keywordMappings: { [key: string]: string[] } = {
     "grilled-salmon-with-veggies",
     "salmon-with-broccoli",
     "teriyaki-salmon-on-a-plate",
+    "baked-salmon-with-roasted-sweet-potatoes",
   ],
-  fish: ["grilled-fish-fillet", "fish-tacos", "baked-cod-with-quinoa"],
-  teriyaki: ["teriyaki-salmon-on-a-plate"],
+  fish: [
+    "grilled-fish-fillet",
+    "fish-tacos",
+    "baked-cod-with-quinoa",
+    "baked-salmon-with-roasted-sweet-potatoes",
+  ],
+  teriyaki: [
+    "teriyaki-salmon-on-a-plate",
+    "chicken-teriyaki-bowl-with-brown-rice",
+  ],
   cod: ["baked-cod-with-quinoa"],
   // Eggs
   egg: [
@@ -262,6 +284,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "rice-with-curry",
     "tofu-and-rice-noodles",
     "chicken-fried-rice",
+    "chicken-teriyaki-bowl-with-brown-rice",
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
@@ -269,11 +292,17 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // Asian dishes
   pad: ["pad-thai", "shrimps-pad-thai"],
-  thai: ["pad-thai", "shrimps-pad-thai", "thai-green-curry"],
+  thai: [
+    "pad-thai",
+    "shrimps-pad-thai",
+    "thai-green-curry",
+    "chicken-pad-see-ew",
+  ],
   noodles: [
     "tofu-and-rice-noodles",
     "beef-and-broccoli-with-noodles",
     "stirfried-noodles",
+    "chicken-pad-see-ew",
   ],
   stir: ["stirfried-noodles", "veggie-stir-fry", "turkey-stirfry"],
   ramen: ["ramen-bowl"],
@@ -288,10 +317,20 @@ const keywordMappings: { [key: string]: string[] } = {
   nachos: ["nachos"],
 
   // Meat dishes
-  beef: ["beef-and-bean-chili"],
-  steak: ["steak-with-mashed-potatoes", "steak-and-roasted-vegetables"],
+  beef: ["beef-and-bean-chili", "lean-beef-stir-fry-with-brown-rice"],
+  steak: [
+    "steak-with-mashed-potatoes",
+    "steak-and-roasted-vegetables",
+    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
+  ],
   meatballs: ["meat-balls"],
-  meat: ["meat-balls", "spare-ribs", "beef-and-bean-chili"],
+  meat: [
+    "meat-balls",
+    "spare-ribs",
+    "beef-and-bean-chili",
+    "lean-beef-stir-fry-with-brown-rice",
+    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
+  ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],
   turkey: ["turkey-sandwich", "turkey-stirfry"],
@@ -323,13 +362,22 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-breast-and-sweet-potato",
     "steak-with-mashed-potatoes",
     "duck-leg-with-mush-potatos",
+    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
   ],
   fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries"],
 
   // Smoothies & Yogurt
-  smoothie: ["smoothie", "smoothie-bowl-with-banana-and-kiwi"],
+  smoothie: [
+    "smoothie",
+    "smoothie-bowl-with-banana-and-kiwi",
+    "green-power-smoothie",
+  ],
   yogurt: ["greek-yogurt-topped-with-granola", "yogurt-parfait-with-granola"],
-  granola: ["greek-yogurt-topped-with-granola", "yogurt-parfait-with-granola"],
+  granola: [
+    "greek-yogurt-topped-with-granola",
+    "yogurt-parfait-with-granola",
+    "berry-greek-yogurt-parfait",
+  ],
   chia: ["chia-pudding"],
   pudding: ["chia-pudding"],
 
@@ -339,7 +387,11 @@ const keywordMappings: { [key: string]: string[] } = {
     "turkey-sandwich",
     "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
   ],
-  wrap: ["avocado-chicken-wrap", "grilled-vegetable-wrap"],
+  wrap: [
+    "avocado-chicken-wrap",
+    "grilled-vegetable-wrap",
+    "chicken-and-veggie-whole-wheat-wrap",
+  ],
 
   // Shrimp
   shrimp: ["shrimp-pasta", "shrimps-pad-thai"],
@@ -421,6 +473,8 @@ const specificKeywords = new Set([
   "noodles",
   "quinoa",
   "couscous",
+  "yogurt",
+  "granola",
 ]);
 
 /**

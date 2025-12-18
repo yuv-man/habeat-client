@@ -122,6 +122,7 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // HIIT
   hiit: ["hiit"],
+  hit: ["hiit"],
   "high intensity": ["hiit"],
   "high-intensity": ["hiit"],
   interval: ["hiit"],

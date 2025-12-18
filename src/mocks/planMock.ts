@@ -252,6 +252,7 @@ export const mockUser: IUser = {
   idealWeight: 70,
   allergies: [],
   dietaryRestrictions: [],
-  favoriteMeals: ["Pizza", "Pasta", "Sushi"],
+  favoriteMeals: [],
+  foodPreferences: ["Pizza", "Pasta", "Sushi"],
   dislikes: [],
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { IUser, MealTimes } from "@/types/interfaces";
@@ -13,7 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, X, Plus, Save, Loader, LogOut } from "lucide-react";
+import {
+  ArrowLeft,
+  X,
+  Plus,
+  Save,
+  Loader,
+  LogOut,
+  Check,
+  Camera,
+  User,
+} from "lucide-react";
 import NavBar from "@/components/ui/navbar";
 import BottomNav from "@/components/ui/BottomNav";
 import MobileHeader from "@/components/ui/MobileHeader";
@@ -22,6 +32,7 @@ import { useToast } from "@/components/ui/use-toast";
 const Settings = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     user,
     updateProfile,
@@ -39,6 +50,10 @@ const Settings = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
+    null
+  );
 
   // Physical attributes
   const [weight, setWeight] = useState("");
@@ -49,10 +64,10 @@ const Settings = () => {
   // Preferences
   const [allergies, setAllergies] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState<string[]>([]);
-  const [favoriteMeals, setFavoriteMeals] = useState<string[]>([]);
+  const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
   const [newAllergy, setNewAllergy] = useState("");
   const [newDislike, setNewDislike] = useState("");
-  const [newFavoriteMeal, setNewFavoriteMeal] = useState("");
+  const [newFoodPreference, setNewFoodPreference] = useState("");
 
   // Meal times (initialized from store)
   const [mealTimes, setMealTimes] = useState<MealTimes>(storeMealTimes);
@@ -94,19 +109,56 @@ const Settings = () => {
     setName(user.name || "");
     setEmail(user.email || "");
     setPhone(user.phone || "");
+    setProfilePicture(user.profilePicture || null);
     setWeight(user.weight?.toString() || "");
     setHeight(user.height?.toString() || "");
     setAge(user.age?.toString() || "");
     setGender(user.gender || "");
     setAllergies(user.allergies || []);
     setDislikes(user.dislikes || []);
-    setFavoriteMeals(user.favoriteMeals || []);
+    setFoodPreferences(user.foodPreferences || []);
     // Map user.path to diet type name
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
 
     // Initialize meal times from store
     setMealTimes(storeMealTimes);
   }, [user, token, loading, navigate, storeMealTimes]);
+
+  const handleProfilePictureChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setProfilePictureFile(file);
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSave = async () => {
     if (!user?._id) return;
@@ -126,10 +178,15 @@ const Settings = () => {
         gender: gender || user.gender,
         allergies,
         dislikes,
-        favoriteMeals,
+        foodPreferences,
         // Map diet type name back to path
         path: dietTypeToPath[dietType] || user.path || "healthy",
       };
+
+      // If there's a new profile picture, add it (base64 for now)
+      if (profilePicture && profilePicture !== user.profilePicture) {
+        updatedUser.profilePicture = profilePicture;
+      }
 
       // Save meal times to store (local only, not to backend)
       setStoreMealTimes(mealTimes);
@@ -170,18 +227,18 @@ const Settings = () => {
     setDislikes(dislikes.filter((d) => d !== dislike));
   };
 
-  const addFavoriteMeal = () => {
+  const addFoodPreference = () => {
     if (
-      newFavoriteMeal.trim() &&
-      !favoriteMeals.includes(newFavoriteMeal.trim())
+      newFoodPreference.trim() &&
+      !foodPreferences.includes(newFoodPreference.trim())
     ) {
-      setFavoriteMeals([...favoriteMeals, newFavoriteMeal.trim()]);
-      setNewFavoriteMeal("");
+      setFoodPreferences([...foodPreferences, newFoodPreference.trim()]);
+      setNewFoodPreference("");
     }
   };
 
-  const removeFavoriteMeal = (meal: string) => {
-    setFavoriteMeals(favoriteMeals.filter((m) => m !== meal));
+  const removeFoodPreference = (foodPreference: string) => {
+    setFoodPreferences(foodPreferences.filter((fp) => fp !== foodPreference));
   };
 
   const updateMealTime = (mealType: keyof MealTimes, time: string) => {
@@ -193,7 +250,7 @@ const Settings = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600">Loading settings...</p>
+          <p className="text-gray-600 text-sm">Loading settings...</p>
         </div>
       </div>
     );
@@ -204,51 +261,90 @@ const Settings = () => {
       <MobileHeader />
       <NavBar currentView="daily" />
 
-      <div className="max-w-4xl mx-auto px-4 py-6 pt-14 md:pt-6">
+      <div className="max-w-2xl mx-auto px-4 py-4 pt-14 md:pt-4">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 mb-3">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-gray-100 rounded-full transition"
+            className="p-1.5 hover:bg-gray-100 rounded-full transition"
             aria-label="Go back"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-4 h-4 text-gray-600" />
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-lg font-bold text-gray-900">Settings</h1>
         </div>
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-4 text-sm">
             Settings saved successfully!
           </div>
         )}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg mb-4 text-sm">
             {error}
           </div>
         )}
 
-        <div className="space-y-6">
-          {/* Profile Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+        <div className="space-y-3">
+          {/* Profile Picture & Basic Info Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Profile Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Profile Picture */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border-2 border-gray-200">
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-8 h-8 text-gray-400" />
+                  )}
+                </div>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm hover:bg-emerald-600 transition"
+                >
+                  <Camera className="w-3 h-3 text-white" />
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureChange}
+                  className="hidden"
+                />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-gray-600">
+                  Click the camera icon to upload a profile picture
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Max size: 5MB • JPG, PNG, GIF
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="name" className="text-sm font-medium">
+                <Label htmlFor="name" className="text-xs font-medium">
                   Name
                 </Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="email" className="text-sm font-medium">
+                <Label htmlFor="email" className="text-xs font-medium">
                   Email
                 </Label>
                 <Input
@@ -256,11 +352,11 @@ const Settings = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="phone" className="text-sm font-medium">
+                <Label htmlFor="phone" className="text-xs font-medium">
                   Phone (Optional)
                 </Label>
                 <Input
@@ -268,20 +364,20 @@ const Settings = () => {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Physical Attributes Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Physical Attributes
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <Label htmlFor="weight" className="text-sm font-medium">
+                <Label htmlFor="weight" className="text-xs font-medium">
                   Weight (kg)
                 </Label>
                 <Input
@@ -289,13 +385,13 @@ const Settings = () => {
                   type="number"
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                   min="0"
                   step="0.1"
                 />
               </div>
               <div>
-                <Label htmlFor="height" className="text-sm font-medium">
+                <Label htmlFor="height" className="text-xs font-medium">
                   Height (cm)
                 </Label>
                 <Input
@@ -303,12 +399,12 @@ const Settings = () => {
                   type="number"
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                   min="0"
                 />
               </div>
               <div>
-                <Label htmlFor="age" className="text-sm font-medium">
+                <Label htmlFor="age" className="text-xs font-medium">
                   Age
                 </Label>
                 <Input
@@ -316,17 +412,17 @@ const Settings = () => {
                   type="number"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                   min="0"
                 />
               </div>
               <div>
-                <Label htmlFor="gender" className="text-sm font-medium">
+                <Label htmlFor="gender" className="text-xs font-medium">
                   Gender
                 </Label>
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select gender" />
+                  <SelectTrigger className="mt-1 h-9 text-sm">
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
@@ -338,39 +434,40 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Diet Type Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Diet Type</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dietTypes.map((diet) => (
-                <button
-                  key={diet.name}
-                  onClick={() => setDietType(diet.name)}
-                  className={`p-4 rounded-lg border-2 transition flex flex-col items-center gap-2 ${
-                    dietType === diet.name
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <div className={`${diet.color} p-3 rounded-full`}>
-                    <div className="w-12 h-12 flex items-center justify-center">
-                      {diet.icon}
-                    </div>
-                  </div>
-                  <span className="font-medium text-gray-900 text-sm">
+          {/* Diet Type Section - Redesigned as horizontal chips */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              Diet Type
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {dietTypes.map((diet) => {
+                const isSelected = dietType === diet.name;
+                return (
+                  <button
+                    key={diet.name}
+                    onClick={() => setDietType(diet.name)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      isSelected
+                        ? "bg-emerald-500 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3" />}
                     {diet.name}
-                  </span>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Meal Times Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Meal Times</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+              Meal Times
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <Label htmlFor="breakfast-time" className="text-sm font-medium">
+                <Label htmlFor="breakfast-time" className="text-xs font-medium">
                   Breakfast
                 </Label>
                 <Input
@@ -378,11 +475,11 @@ const Settings = () => {
                   type="time"
                   value={mealTimes.breakfast}
                   onChange={(e) => updateMealTime("breakfast", e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="lunch-time" className="text-sm font-medium">
+                <Label htmlFor="lunch-time" className="text-xs font-medium">
                   Lunch
                 </Label>
                 <Input
@@ -390,11 +487,11 @@ const Settings = () => {
                   type="time"
                   value={mealTimes.lunch}
                   onChange={(e) => updateMealTime("lunch", e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="dinner-time" className="text-sm font-medium">
+                <Label htmlFor="dinner-time" className="text-xs font-medium">
                   Dinner
                 </Label>
                 <Input
@@ -402,11 +499,11 @@ const Settings = () => {
                   type="time"
                   value={mealTimes.dinner}
                   onChange={(e) => updateMealTime("dinner", e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
               <div>
-                <Label htmlFor="snacks-time" className="text-sm font-medium">
+                <Label htmlFor="snacks-time" className="text-xs font-medium">
                   Snacks
                 </Label>
                 <Input
@@ -414,28 +511,28 @@ const Settings = () => {
                   type="time"
                   value={mealTimes.snacks}
                   onChange={(e) => updateMealTime("snacks", e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-9 text-sm"
                 />
               </div>
             </div>
           </div>
 
           {/* Preferences Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">
               Preferences
             </h2>
 
             {/* Allergies */}
-            <div className="mb-6">
-              <Label className="text-sm font-medium mb-2 block">
+            <div className="mb-4">
+              <Label className="text-xs font-medium mb-1.5 block">
                 Allergies
               </Label>
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {allergies.map((allergy) => (
                   <div
                     key={allergy}
-                    className="bg-red-100 text-red-700 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
+                    className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
                   >
                     <span>{allergy}</span>
                     <button
@@ -452,22 +549,31 @@ const Settings = () => {
                   value={newAllergy}
                   onChange={(e) => setNewAllergy(e.target.value)}
                   placeholder="Add allergy"
+                  className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addAllergy()}
                 />
-                <Button type="button" variant="outline" onClick={addAllergy}>
-                  <Plus className="w-4 h-4" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addAllergy}
+                  size="sm"
+                  className="h-8 px-2"
+                >
+                  <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
 
             {/* Dislikes */}
-            <div className="mb-6">
-              <Label className="text-sm font-medium mb-2 block">Dislikes</Label>
-              <div className="flex flex-wrap gap-2 mb-2">
+            <div className="mb-4">
+              <Label className="text-xs font-medium mb-1.5 block">
+                Dislikes
+              </Label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {dislikes.map((dislike) => (
                   <div
                     key={dislike}
-                    className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
+                    className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
                   >
                     <span>{dislike}</span>
                     <button
@@ -484,28 +590,35 @@ const Settings = () => {
                   value={newDislike}
                   onChange={(e) => setNewDislike(e.target.value)}
                   placeholder="Add dislike"
+                  className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addDislike()}
                 />
-                <Button type="button" variant="outline" onClick={addDislike}>
-                  <Plus className="w-4 h-4" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addDislike}
+                  size="sm"
+                  className="h-8 px-2"
+                >
+                  <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
 
-            {/* Favorite Meals */}
+            {/* Food Preferences */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">
-                Favorite Meals
+              <Label className="text-xs font-medium mb-1.5 block">
+                Food Preferences
               </Label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {favoriteMeals.map((meal) => (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {foodPreferences.map((foodPreference) => (
                   <div
-                    key={meal}
-                    className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full flex items-center gap-2 text-sm"
+                    key={foodPreference}
+                    className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
                   >
-                    <span>{meal}</span>
+                    <span>{foodPreference}</span>
                     <button
-                      onClick={() => removeFavoriteMeal(meal)}
+                      onClick={() => removeFoodPreference(foodPreference)}
                       className="hover:text-purple-900"
                     >
                       <X className="w-3 h-3" />
@@ -515,67 +628,78 @@ const Settings = () => {
               </div>
               <div className="flex gap-2">
                 <Input
-                  value={newFavoriteMeal}
-                  onChange={(e) => setNewFavoriteMeal(e.target.value)}
-                  placeholder="Add favorite meal"
-                  onKeyPress={(e) => e.key === "Enter" && addFavoriteMeal()}
+                  value={newFoodPreference}
+                  onChange={(e) => setNewFoodPreference(e.target.value)}
+                  placeholder="Add food preference"
+                  className="h-8 text-sm"
+                  onKeyPress={(e) => e.key === "Enter" && addFoodPreference()}
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={addFavoriteMeal}
+                  onClick={addFoodPreference}
+                  size="sm"
+                  className="h-8 px-2"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                 </Button>
               </div>
             </div>
           </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end gap-3 pb-6">
+          {/* Save Buttons - Now before logout */}
+          <div className="flex justify-end gap-2 pt-1">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => navigate(-1)}
               disabled={isSaving}
+              className="h-9"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSave}
               disabled={isSaving || loading}
-              className="min-w-[120px]"
+              size="sm"
+              className="h-9 min-w-[100px]"
             >
               {isSaving ? (
                 <>
-                  <Loader className="w-4 h-4 animate-spin mr-2" />
+                  <Loader className="w-3.5 h-3.5 animate-spin mr-1.5" />
                   Saving...
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  <Save className="w-3.5 h-3.5 mr-1.5" />
+                  Save
                 </>
               )}
             </Button>
           </div>
 
-          {/* Logout Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Account</h2>
-            <p className="text-gray-600 text-sm mb-4">
-              Sign out of your account on this device.
-            </p>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                logout();
-                navigate("/register");
-              }}
-              className="w-full sm:w-auto"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Log Out
-            </Button>
+          {/* Account Section - Now at the end */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-2">
+              Account
+            </h2>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-600 text-xs">
+                Sign out of your account on this device.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  logout();
+                  navigate("/register");
+                }}
+                className="h-8 text-xs"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                Log Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>

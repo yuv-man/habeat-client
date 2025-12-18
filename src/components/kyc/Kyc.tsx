@@ -49,13 +49,13 @@ export default function KYCFlow() {
     workoutFrequency: 3,
     allergies: [],
     dislikes: [],
-    favoriteFoods: [],
+    foodPreferences: [],
   });
 
   const [customInputs, setCustomInputs] = useState<CustomInputs>({
     allergy: "",
     dislike: "",
-    favoriteFood: "",
+    foodPreference: "",
   });
 
   // Load from localStorage on mount
@@ -149,7 +149,7 @@ export default function KYCFlow() {
     if (
       customInputs.allergy ||
       customInputs.dislike ||
-      customInputs.favoriteFood
+      customInputs.foodPreference
     ) {
       localStorage.setItem(
         STORAGE_KEYS.CUSTOM_INPUTS,
@@ -300,7 +300,7 @@ export default function KYCFlow() {
         workoutFrequency: kycData.workoutFrequency,
         allergies: kycData.allergies,
         dietaryRestrictions: [],
-        favoriteMeals: kycData.favoriteFoods,
+        foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
         isPremium: false,
       };

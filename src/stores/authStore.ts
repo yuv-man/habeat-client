@@ -263,12 +263,38 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     mealId: string,
     isFavorite: boolean
   ) => {
+    const currentUser = get().user;
+
+    // Optimistically update local state
+    if (currentUser) {
+      const currentFavorites = currentUser.favoriteMeals || [];
+      const updatedFavorites = isFavorite
+        ? [...currentFavorites, mealId]
+        : currentFavorites.filter((id: string) => id !== mealId);
+
+      const updatedUser = { ...currentUser, favoriteMeals: updatedFavorites };
+      set({ user: updatedUser });
+
+      // Save to localStorage
+      localStorage.setItem("habeat_user", JSON.stringify(updatedUser));
+    }
+
+    // Skip API call in test mode
+    if (config.testFrontend) {
+      return;
+    }
+
     try {
-      set({ loading: true });
       const { data } = await userAPI.updateFavorite(userId, mealId, isFavorite);
-      set({ user: data, loading: false });
+      // Update with server response
+      set({ user: data });
+      localStorage.setItem("habeat_user", JSON.stringify(data));
     } catch (error) {
-      set({ loading: false });
+      // Revert on error
+      if (currentUser) {
+        set({ user: currentUser });
+        localStorage.setItem("habeat_user", JSON.stringify(currentUser));
+      }
       throw error;
     }
   },

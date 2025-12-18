@@ -1,79 +1,114 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Check } from "lucide-react";
-import { ShoppingCategory, ShoppingItem } from "@/mocks/shoppingListMock";
-import { categorizeIngredients, IngredientInput } from "@/lib/shoppingHelpers";
+import { IngredientInput } from "@/lib/shoppingHelpers";
 
 interface ShoppingBagProps {
   ingredients: IngredientInput[];
-  onItemToggle?: (categoryIndex: number, itemId: string) => void;
+  onItemToggle?: (itemName: string) => void;
 }
 
+// Generate a consistent color for a category based on its name
+const getCategoryColor = (category: string): string => {
+  const colors = [
+    "text-green-600",
+    "text-red-500",
+    "text-amber-600",
+    "text-orange-500",
+    "text-blue-500",
+    "text-purple-500",
+    "text-pink-500",
+    "text-teal-500",
+    "text-indigo-500",
+    "text-cyan-500",
+  ];
+
+  // Simple hash function to get consistent color per category
+  let hash = 0;
+  for (let i = 0; i < category.length; i++) {
+    hash = category.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+};
+
 const ShoppingBag = ({ ingredients, onItemToggle }: ShoppingBagProps) => {
-  const [categorizedData, setCategorizedData] = useState<ShoppingCategory[]>(
-    []
-  );
+  const [items, setItems] = useState<IngredientInput[]>([]);
 
   useEffect(() => {
-    const categorized = categorizeIngredients(ingredients);
-    setCategorizedData(categorized);
+    setItems(ingredients);
   }, [ingredients]);
 
-  const handleToggle = (categoryIndex: number, itemId: string) => {
-    setCategorizedData((prev) => {
-      const newData = [...prev];
-      const item = newData[categoryIndex].items.find(
-        (item) => item.id === itemId
-      );
-      if (item) {
-        item.checked = !item.checked;
+  // Group ingredients by their actual category
+  const groupedByCategory = useMemo(() => {
+    const grouped: Record<string, IngredientInput[]> = {};
+
+    for (const item of items) {
+      const category = item.category || "Other";
+      if (!grouped[category]) {
+        grouped[category] = [];
       }
-      return newData;
+      grouped[category].push(item);
+    }
+
+    return grouped;
+  }, [items]);
+
+  // Get categories sorted alphabetically (with "Other" at the end)
+  const sortedCategories = useMemo(() => {
+    const categories = Object.keys(groupedByCategory);
+
+    return categories.sort((a, b) => {
+      if (a === "Other") return 1;
+      if (b === "Other") return -1;
+      return a.localeCompare(b);
     });
-    onItemToggle?.(categoryIndex, itemId);
+  }, [groupedByCategory]);
+
+  const handleToggle = (itemName: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.name === itemName ? { ...item, done: !item.done } : item
+      )
+    );
+    onItemToggle?.(itemName);
   };
 
   return (
     <div className="space-y-6">
-      {categorizedData.map((category, categoryIndex) => (
+      {sortedCategories.map((category) => (
         <div
-          key={category.category}
+          key={category}
           className="bg-white rounded-lg shadow-sm border border-gray-100 p-4"
         >
           <h2
-            className={`font-bold text-lg mb-4 ${
-              category.color === "orange"
-                ? "text-orange-500"
-                : "text-yellow-500"
-            }`}
+            className={`font-bold text-lg mb-4 ${getCategoryColor(category)}`}
           >
-            {category.category}
+            {category}
           </h2>
           <div className="space-y-0">
-            {category.items.map((item, itemIndex) => (
-              <div key={item.id}>
+            {groupedByCategory[category].map((item, itemIndex) => (
+              <div key={item.name}>
                 <div className="flex items-center gap-3 py-3">
                   <button
-                    onClick={() => handleToggle(categoryIndex, item.id)}
+                    onClick={() => handleToggle(item.name)}
                     className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                      item.checked
+                      item.done
                         ? "bg-green-500 border-green-500"
                         : "bg-white border-gray-300"
                     }`}
                   >
-                    {item.checked && <Check className="w-3 h-3 text-white" />}
+                    {item.done && <Check className="w-3 h-3 text-white" />}
                   </button>
                   <span
                     className={`flex-1 text-sm ${
-                      item.checked
-                        ? "line-through text-gray-400"
-                        : "text-gray-900"
+                      item.done ? "line-through text-gray-400" : "text-gray-900"
                     }`}
                   >
-                    {item.name}
+                    {item.name.replace(/_/g, " ")}
                   </span>
                   <span className="text-sm text-gray-600">{item.amount}</span>
                 </div>
-                {itemIndex < category.items.length - 1 && (
+                {itemIndex < groupedByCategory[category].length - 1 && (
                   <div className="border-b border-gray-200"></div>
                 )}
               </div>

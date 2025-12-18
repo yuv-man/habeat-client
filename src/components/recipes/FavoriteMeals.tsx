@@ -3,6 +3,7 @@ import { Home, Calendar, Heart, ShoppingBag, Target } from "lucide-react";
 import { IRecipe } from "@/types/interfaces";
 import RecipeItem from "./RecipeItem";
 import { useAuthStore } from "@/stores/authStore";
+import { toast } from "sonner";
 
 const FavoriteMeals = ({ recipes }: { recipes: IRecipe[] }) => {
   const navigate = useNavigate();
@@ -21,19 +22,31 @@ const FavoriteMeals = ({ recipes }: { recipes: IRecipe[] }) => {
       <div className="px-4 pb-4">
         <div className="grid grid-cols-2 gap-4">
           {recipes.map((recipe) => {
-            const isFavorite =
-              user?.favoriteMeals?.includes(recipe.id) || false;
+            // Handle both id and _id for compatibility
+            const recipeId = recipe._id || recipe.id;
+            // Check if meal is in user.favoriteMeals
+            const isFavorite = user?.favoriteMeals?.includes(recipeId) || false;
             return (
               <RecipeItem
-                key={recipe.id}
+                key={recipeId}
                 recipe={recipe}
                 isFavorite={isFavorite}
                 onFavoriteToggle={async () => {
-                  if (user?._id) {
+                  if (user?._id && recipeId) {
                     try {
-                      await updateFavorite(user._id, recipe.id, !isFavorite);
+                      await updateFavorite(user._id, recipeId, !isFavorite);
+                      if (isFavorite) {
+                        toast.success("Removed from favorites", {
+                          duration: 2000,
+                        });
+                      } else {
+                        toast.success("❤️ Added to favorites!", {
+                          duration: 2000,
+                        });
+                      }
                     } catch (error) {
                       console.error("Failed to update favorite:", error);
+                      toast.error("Failed to update favorite");
                     }
                   }
                 }}

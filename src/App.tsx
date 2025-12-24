@@ -8,11 +8,13 @@ import Registration from "./pages/Registration";
 import DailyTracker from "./pages/DailyTracker";
 import WeeklyOverview from "./pages/WeeklyOverview";
 import Goals from "./pages/Goals";
+import GoalDetailPage from "./pages/GoalDetailPage";
 import Recipes from "./pages/Recipes";
 import RecipeDetailPage from "./pages/RecipeDetailPage";
 import NotFound from "./pages/NotFound";
 import ShoppingList from "./pages/ShoppingList";
 import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
 import OAuthCallback from "./components/auth/OAuthCallback";
 
 const queryClient = new QueryClient();
@@ -29,10 +31,12 @@ const App = () => (
           <Route path="/daily-tracker" element={<DailyTracker />} />
           <Route path="/weekly-overview" element={<WeeklyOverview />} />
           <Route path="/goals" element={<Goals />} />
+          <Route path="/goals/:goalId" element={<GoalDetailPage />} />
           <Route path="/recipes" element={<Recipes />} />
           <Route path="/recipes/:recipeId" element={<RecipeDetailPage />} />
           <Route path="/shopping-list" element={<ShoppingList />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

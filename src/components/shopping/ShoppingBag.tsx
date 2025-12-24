@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import { IngredientInput } from "@/lib/shoppingHelpers";
 
 interface ShoppingBagProps {
   ingredients: IngredientInput[];
-  onItemToggle?: (itemName: string) => void;
+  onItemToggle?: (item: IngredientInput) => void;
+  onItemDelete?: (itemName: string) => void;
 }
 
 // Generate a consistent color for a category based on its name
@@ -31,7 +32,11 @@ const getCategoryColor = (category: string): string => {
   return colors[index];
 };
 
-const ShoppingBag = ({ ingredients, onItemToggle }: ShoppingBagProps) => {
+const ShoppingBag = ({
+  ingredients,
+  onItemToggle,
+  onItemDelete,
+}: ShoppingBagProps) => {
   const [items, setItems] = useState<IngredientInput[]>([]);
 
   useEffect(() => {
@@ -64,13 +69,18 @@ const ShoppingBag = ({ ingredients, onItemToggle }: ShoppingBagProps) => {
     });
   }, [groupedByCategory]);
 
-  const handleToggle = (itemName: string) => {
+  const handleToggle = (item: IngredientInput) => {
     setItems((prev) =>
-      prev.map((item) =>
-        item.name === itemName ? { ...item, done: !item.done } : item
+      prev.map((ing) =>
+        ing.name === item.name ? { ...ing, done: !ing.done } : ing
       )
     );
-    onItemToggle?.(itemName);
+    onItemToggle?.({ ...item, done: !item.done });
+  };
+
+  const handleDelete = (itemName: string) => {
+    setItems((prev) => prev.filter((item) => item.name !== itemName));
+    onItemDelete?.(itemName);
   };
 
   return (
@@ -90,7 +100,7 @@ const ShoppingBag = ({ ingredients, onItemToggle }: ShoppingBagProps) => {
               <div key={item.name}>
                 <div className="flex items-center gap-3 py-3">
                   <button
-                    onClick={() => handleToggle(item.name)}
+                    onClick={() => handleToggle(item)}
                     className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                       item.done
                         ? "bg-green-500 border-green-500"
@@ -106,7 +116,16 @@ const ShoppingBag = ({ ingredients, onItemToggle }: ShoppingBagProps) => {
                   >
                     {item.name.replace(/_/g, " ")}
                   </span>
-                  <span className="text-sm text-gray-600">{item.amount}</span>
+                  <span className="text-sm text-gray-600 mr-2">
+                    {item.amount}
+                  </span>
+                  <button
+                    onClick={() => handleDelete(item.name)}
+                    className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                    aria-label={`Delete ${item.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
                 {itemIndex < groupedByCategory[category].length - 1 && (
                   <div className="border-b border-gray-200"></div>

@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import Goals from "@/components/goals/Goals";
-import BottomNav from "@/components/ui/BottomNav";
-import NavBar from "@/components/ui/navbar";
-import MobileHeader from "@/components/ui/MobileHeader";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import type { Goal } from "@/components/goals/Goals";
 
 const GoalsPage = () => {
@@ -66,14 +64,12 @@ const GoalsPage = () => {
   ]);
 
   useEffect(() => {
-    // Only redirect if not loading, no user, AND no token
     if (!loading && !user && !token) {
       navigate("/register");
     }
   }, [user, loading, token, navigate]);
 
   const handleUpdateProgress = (goalId: string) => {
-    // TODO: Implement update progress modal/dialog
     console.log("Update progress for goal:", goalId);
   };
 
@@ -91,7 +87,6 @@ const GoalsPage = () => {
   };
 
   const handleAddGoal = () => {
-    // TODO: Implement add goal modal/dialog
     console.log("Add new goal");
   };
 
@@ -111,17 +106,14 @@ const GoalsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white pb-20 md:pb-0 pt-14 md:pt-16">
-      <MobileHeader />
-      <NavBar />
+    <DashboardLayout bgColor="bg-white" showNavBar={true}>
       <Goals
         goals={goals}
         onUpdateProgress={handleUpdateProgress}
         onMarkAchieved={handleMarkAchieved}
         onAddGoal={handleAddGoal}
       />
-      <BottomNav />
-    </div>
+    </DashboardLayout>
   );
 };
 

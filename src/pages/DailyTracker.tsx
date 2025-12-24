@@ -2,23 +2,18 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import DailyMealScreen from "@/components/dashboard/DailyMealScreen";
-import NavBar from "@/components/ui/navbar";
-import BottomNav from "@/components/ui/BottomNav";
-import MobileHeader from "@/components/ui/MobileHeader";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 const DailyTracker = () => {
   const navigate = useNavigate();
-  const { user, plan, loading, token } = useAuthStore();
+  const { user, loading, token } = useAuthStore();
 
   useEffect(() => {
-    // Only redirect if not loading, no user, AND no token
-    // If there's a token, we should wait for auth to complete
     if (!loading && !user && !token) {
       navigate("/register");
     }
   }, [user, loading, token, navigate]);
 
-  // Show loading if still loading OR if we have a token but no user yet
   if (loading || (token && !user)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -35,20 +30,9 @@ const DailyTracker = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-14 md:pt-16 pb-20 md:pb-0">
-      <MobileHeader />
-      <NavBar
-        currentView="daily"
-        onViewChange={(view) => {
-          if (view === "weekly") {
-            navigate("/weekly-overview");
-          }
-        }}
-      />
-      {/* Content */}
+    <DashboardLayout currentView="daily">
       <DailyMealScreen />
-      <BottomNav />
-    </div>
+    </DashboardLayout>
   );
 };
 

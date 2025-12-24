@@ -36,8 +36,8 @@ const RecipeItem = ({
       <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center overflow-hidden">
         {/* Meal Image */}
         <img
-          src={getMealImageVite(recipe.name, recipe.image)}
-          alt={recipe.name}
+          src={getMealImageVite(recipe.mealName)}
+          alt={recipe.mealName}
           className="w-full h-full object-cover"
           onError={(e) => {
             // Show emoji fallback if image fails to load
@@ -86,14 +86,14 @@ const RecipeItem = ({
       {/* Content Section */}
       <div className="p-3">
         <h3 className="font-bold text-gray-900 text-sm mb-3 line-clamp-2">
-          {recipe.name}
+          {recipe.mealName}
         </h3>
 
         {/* Nutritional Info */}
         <div className="space-y-1.5 mb-4">
           <div className="flex items-center gap-2 text-xs text-gray-700">
             <Leaf className="w-4 h-4 text-green-400 flex-shrink-0" />
-            <span>{recipe.calories} kcal</span>
+            <span>{recipe.macros.calories} kcal</span>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-700">
             <Package className="w-4 h-4 text-green-400 flex-shrink-0" />
@@ -107,7 +107,7 @@ const RecipeItem = ({
 
         {/* View Recipe Button - Light green background */}
         <button
-          onClick={() => navigate(`/recipes/${recipe.id}`)}
+          onClick={() => navigate(`/recipes/${recipe.mealId}`)}
           className="w-full bg-green-500 hover:bg-green-600 text-white font-medium text-sm py-2.5 px-4 rounded-lg transition-colors"
         >
           View Recipe

@@ -40,6 +40,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   loading: true,
   token: localStorage.getItem("token"),
   mealTimes: loadMealTimes(),
+  favoriteMealsData: [],
+  favoriteMealsLoaded: false,
 
   // Actions
   setUser: (user) => {
@@ -219,7 +221,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     get().setToken(null);
     get().setUser(null);
     get().setPlan(null);
-    set({ loading: false });
+    set({ loading: false, favoriteMealsData: [], favoriteMealsLoaded: false });
+    localStorage.removeItem("habeat_favorite_meals");
   },
 
   generateMealPlan: async (
@@ -264,6 +267,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     isFavorite: boolean
   ) => {
     const currentUser = get().user;
+    const currentFavoriteMealsData = get().favoriteMealsData;
 
     // Optimistically update local state
     if (currentUser) {
@@ -274,6 +278,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       const updatedUser = { ...currentUser, favoriteMeals: updatedFavorites };
       set({ user: updatedUser });
+
+      // Also update favoriteMealsData if removing
+      if (!isFavorite) {
+        const updatedMealsData = currentFavoriteMealsData.filter(
+          (meal) => meal._id !== mealId
+        );
+        set({ favoriteMealsData: updatedMealsData });
+        localStorage.setItem(
+          "habeat_favorite_meals",
+          JSON.stringify(updatedMealsData)
+        );
+      }
 
       // Save to localStorage
       localStorage.setItem("habeat_user", JSON.stringify(updatedUser));
@@ -289,13 +305,52 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Update with server response
       set({ user: data });
       localStorage.setItem("habeat_user", JSON.stringify(data));
+
+      // Refetch favorite meals data to get the updated list with full meal objects
+      if (isFavorite) {
+        // Only refetch when adding a new favorite to get the full meal data
+        await get().fetchFavoriteMeals(userId);
+      }
     } catch (error) {
       // Revert on error
       if (currentUser) {
         set({ user: currentUser });
         localStorage.setItem("habeat_user", JSON.stringify(currentUser));
       }
+      set({ favoriteMealsData: currentFavoriteMealsData });
+      localStorage.setItem(
+        "habeat_favorite_meals",
+        JSON.stringify(currentFavoriteMealsData)
+      );
       throw error;
+    }
+  },
+
+  setFavoriteMealsData: (meals) => {
+    set({ favoriteMealsData: meals, favoriteMealsLoaded: true });
+    localStorage.setItem("habeat_favorite_meals", JSON.stringify(meals));
+  },
+
+  fetchFavoriteMeals: async (userId: string) => {
+    // Skip if already loaded and not forcing refresh
+    if (get().favoriteMealsLoaded && get().favoriteMealsData.length > 0) {
+      return;
+    }
+
+    // Skip API call in test mode
+    if (config.testFrontend) {
+      set({ favoriteMealsLoaded: true });
+      return;
+    }
+
+    try {
+      const response = await userAPI.getFavoritesByUserId(userId);
+      const meals = response.data.favoriteMeals || response.data || [];
+      set({ favoriteMealsData: meals, favoriteMealsLoaded: true });
+      localStorage.setItem("habeat_favorite_meals", JSON.stringify(meals));
+    } catch (error) {
+      console.error("Failed to fetch favorite meals:", error);
+      set({ favoriteMealsLoaded: true }); // Mark as loaded even on error to prevent infinite retries
     }
   },
 }));
@@ -330,6 +385,20 @@ if (typeof window !== "undefined") {
         useAuthStore.getState().setPlan(plan);
       } catch (err) {
         console.error("Failed to parse stored plan:", err);
+      }
+    }
+
+    // Load favorite meals from localStorage
+    const storedFavoriteMeals = localStorage.getItem("habeat_favorite_meals");
+    if (storedFavoriteMeals) {
+      try {
+        const favoriteMeals = JSON.parse(storedFavoriteMeals);
+        useAuthStore.setState({
+          favoriteMealsData: favoriteMeals,
+          favoriteMealsLoaded: true,
+        });
+      } catch (err) {
+        console.error("Failed to parse stored favorite meals:", err);
       }
     }
 

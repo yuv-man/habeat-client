@@ -20,6 +20,7 @@ import mealPlanIcon from "@/assets/add_plan.svg";
 import WeeklyPlanTable from "./WeeklyPlanTable";
 import WorkoutModal from "@/components/modals/WorkoutModal";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
+import AddSnackModal from "@/components/modals/AddSnackModal";
 
 // Components
 const MacroCard = ({
@@ -97,7 +98,7 @@ const MealItem = ({
       <div className="font-medium text-gray-900">{meal.name}</div>
       <div className="flex items-center gap-3 text-gray-500 text-xs mt-0.5">
         <span>{meal.calories} kcal</span>
-        {meal.prepTime > 0 && (
+        {!isSnack && meal.prepTime > 0 && (
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {meal.prepTime} min
@@ -160,27 +161,23 @@ const ExerciseItem = ({
   </div>
 );
 
-const WaterIntake = ({
-  consumed,
-  goal,
-}: {
-  consumed: number;
-  goal: number;
-}) => (
+const WaterIntake = ({ goal }: { goal: number }) => (
   <div className="py-4 border-b border-gray-200">
     <div className="flex items-center gap-2 mb-2">
       <GlassWater className="w-5 h-5 text-blue-500" />
-      <span className="text-gray-900 font-medium">Water Intake</span>
-      <span className="text-gray-600 text-sm ml-auto">
-        {consumed} / {goal} glasses
-      </span>
+      <span className="text-gray-900 font-medium">Water Target</span>
     </div>
-    <div className="w-full bg-gray-200 rounded-full h-2">
-      <div
-        className="bg-green-500 h-2 rounded-full transition-all"
-        style={{ width: `${(consumed / goal) * 100}%` }}
-      ></div>
+    <div className="flex flex-wrap gap-1">
+      {Array.from({ length: goal }).map((_, index) => (
+        <div
+          key={index}
+          className="w-7 h-7 rounded-md border border-blue-200 bg-blue-50 flex items-center justify-center"
+        >
+          <GlassWater className="w-4 h-4 text-blue-400" />
+        </div>
+      ))}
     </div>
+    <p className="text-xs text-gray-500 mt-1">{goal} glasses daily target</p>
   </div>
 );
 
@@ -267,25 +264,36 @@ const DayContent = ({
         <Plus className="w-4 h-4" />
         <span>Add Snack</span>
       </button>
-      {dayData.workouts.map((workout, idx) => (
-        <ExerciseItem
-          key={idx}
-          workout={workout}
-          onDelete={() => onDeleteWorkout(workout as WorkoutData)}
-        />
-      ))}
+      {(() => {
+        const actualWorkouts = dayData.workouts.filter(
+          (w) => !w.name?.toLowerCase().includes("rest")
+        );
+        const hasOnlyRestDay =
+          dayData.workouts.length > 0 && actualWorkouts.length === 0;
+
+        if (hasOnlyRestDay || dayData.workouts.length === 0) {
+          return (
+            <div className="py-3 border-b border-gray-200 text-gray-500 text-sm text-center">
+              Rest Day
+            </div>
+          );
+        }
+
+        return actualWorkouts.map((workout, idx) => (
+          <ExerciseItem
+            key={idx}
+            workout={workout}
+            onDelete={() => onDeleteWorkout(workout as WorkoutData)}
+          />
+        ));
+      })()}
       <WorkoutModal onWorkoutAdd={onAddWorkout}>
         <button className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition">
           <Plus className="w-4 h-4" />
           <span>Add Workout</span>
         </button>
       </WorkoutModal>
-      {dayData.workouts.length === 0 && (
-        <div className="py-3 border-b border-gray-200 text-gray-500 text-sm text-center">
-          Rest Day
-        </div>
-      )}
-      <WaterIntake consumed={dayData.waterIntake} goal={8} />
+      <WaterIntake goal={8} />
     </div>
   );
 };
@@ -305,6 +313,11 @@ export default function WeeklyMealPlan() {
     mealType: string;
   } | null>(null);
   const [isMealEditModalOpen, setIsMealEditModalOpen] = useState(false);
+
+  // Add Snack Modal state
+  const [showAddSnackModal, setShowAddSnackModal] = useState(false);
+  const [addSnackDate, setAddSnackDate] = useState<string>("");
+  const [isAddingSnack, setIsAddingSnack] = useState(false);
 
   // Check if plan is expired (all dates are in the past)
   const isPlanExpired = React.useMemo(() => {
@@ -395,16 +408,19 @@ export default function WeeklyMealPlan() {
     }
   };
 
-  const handleDeleteSnack = async (snackId: string) => {
-    if (!selectedDate || !currentDay || !user) return;
+  const handleDeleteSnack = async (snackId: string, date?: string) => {
+    const targetDate = date || selectedDate;
+    if (!targetDate || !plan || !user) return;
 
-    const date = new Date(selectedDate);
-    const dateKey = date.toISOString().split("T")[0];
+    const dateKey = targetDate;
     const updatedPlan = { ...plan };
     const dayPlan = updatedPlan?.weeklyPlan[dateKey];
 
     if (dayPlan) {
-      // Remove snack from array
+      // Store original snacks for rollback
+      const originalSnacks = [...dayPlan.meals.snacks];
+
+      // Remove snack from array (optimistic update)
       dayPlan.meals.snacks = dayPlan.meals.snacks.filter(
         (s) => (s._id || "") !== snackId
       );
@@ -412,15 +428,55 @@ export default function WeeklyMealPlan() {
       // Update the plan in the store
       useAuthStore.setState({ plan: updatedPlan });
 
-      // Call API to update plan (TODO: Add API endpoint for updating daily plan)
-      // For now, we'll just update the local state
+      try {
+        // Call API to delete snack
+        await userAPI.deleteSnack(plan._id, dateKey, snackId);
+      } catch (error) {
+        console.error("Failed to delete snack:", error);
+        // Rollback on error
+        dayPlan.meals.snacks = originalSnacks;
+        useAuthStore.setState({ plan: updatedPlan });
+      }
     }
   };
 
-  const handleAddSnack = async () => {
-    if (!selectedDate || !currentDay || !user) return;
-    // TODO: Open modal to add snack or use AI to suggest
-    console.log("Add snack clicked");
+  const handleAddSnack = (date?: string) => {
+    const targetDate = date || selectedDate;
+    if (!targetDate || !user || !plan) return;
+    setAddSnackDate(targetDate);
+    setShowAddSnackModal(true);
+  };
+
+  const handleConfirmAddSnack = async (snackName: string) => {
+    if (!snackName.trim() || !addSnackDate || !plan) return;
+
+    setIsAddingSnack(true);
+    try {
+      // Call API to add snack
+      const response = await userAPI.addSnack(
+        plan._id,
+        addSnackDate,
+        snackName.trim()
+      );
+
+      // Update local state with the new snack
+      if (response.data?.snack) {
+        const updatedPlan = { ...plan };
+        const dayPlan = updatedPlan.weeklyPlan[addSnackDate];
+        if (dayPlan) {
+          dayPlan.meals.snacks = [...dayPlan.meals.snacks, response.data.snack];
+          useAuthStore.setState({ plan: updatedPlan });
+        }
+      }
+
+      // Close modal and reset
+      setShowAddSnackModal(false);
+      setAddSnackDate("");
+    } catch (error) {
+      console.error("Failed to add snack:", error);
+    } finally {
+      setIsAddingSnack(false);
+    }
   };
 
   const handleDeleteWorkout = async (workout: WorkoutData) => {
@@ -655,22 +711,8 @@ export default function WeeklyMealPlan() {
           weeklyPlan={weeklyPlan}
           dates={dates}
           onMealChange={handleMealChange}
-          onDeleteSnack={(date, snackId) => {
-            const prevSelected = selectedDate;
-            setSelectedDate(date);
-            setTimeout(() => {
-              handleDeleteSnack(snackId);
-              setSelectedDate(prevSelected);
-            }, 0);
-          }}
-          onAddSnack={(date) => {
-            const prevSelected = selectedDate;
-            setSelectedDate(date);
-            setTimeout(() => {
-              handleAddSnack();
-              setSelectedDate(prevSelected);
-            }, 0);
-          }}
+          onDeleteSnack={(date, snackId) => handleDeleteSnack(snackId, date)}
+          onAddSnack={(date) => handleAddSnack(date)}
           onDeleteWorkout={(date, workout) => {
             const prevSelected = selectedDate;
             setSelectedDate(date);
@@ -723,7 +765,7 @@ export default function WeeklyMealPlan() {
                   handleMealChange(selectedDate, mealType, newMeal)
                 }
                 onDeleteSnack={handleDeleteSnack}
-                onAddSnack={handleAddSnack}
+                onAddSnack={() => handleAddSnack(selectedDate)}
                 onDeleteWorkout={handleDeleteWorkout}
                 onAddWorkout={handleAddWorkout}
                 date={new Date(selectedDate)}
@@ -798,6 +840,18 @@ export default function WeeklyMealPlan() {
           </Card>
         </div>
       )}
+
+      {/* Add Snack Modal */}
+      <AddSnackModal
+        isOpen={showAddSnackModal}
+        onClose={() => {
+          setShowAddSnackModal(false);
+          setAddSnackDate("");
+        }}
+        onAdd={handleConfirmAddSnack}
+        date={addSnackDate}
+        loading={isAddingSnack}
+      />
     </div>
   );
 }

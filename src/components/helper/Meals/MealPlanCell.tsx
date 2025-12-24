@@ -74,10 +74,12 @@ const MealPlanCell = memo(
             <img src={fireIcon} alt="fire" />
             <p>{meal.calories}</p>
           </div>
-          <div className="info-container time">
-            <img src={clockIcon} alt="clock" />
-            <p>{meal.prepTime}</p>
-          </div>
+          {meal.category?.toLowerCase() !== "snack" && (
+            <div className="info-container time">
+              <img src={clockIcon} alt="clock" />
+              <p>{meal.prepTime}</p>
+            </div>
+          )}
         </div>
       </div>
     );

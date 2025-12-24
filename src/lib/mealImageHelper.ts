@@ -28,6 +28,7 @@ const availableImages = [
   "chicken-fajitas",
   "chicken-parmesan",
   "chicken-salad",
+  "chicken-noodle-soup",
   "chinese-dumplings",
   "couscous-salad",
   "crepes-topped-with-strawberries",
@@ -113,6 +114,8 @@ const availableImages = [
   "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
   "chicken-pad-see-ew",
   "chicken-teriyaki-bowl-with-brown-rice",
+  "power-berry-nut-muesli-bowl",
+  "whole-wheat-pancakes-with-fruit",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -125,6 +128,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lentil-soup-with-whole-grain-bread",
     "pho-soup",
     "gulash-soup",
+    "chicken-noodle-soup",
   ],
   vegetable: [
     "vegetable-soup",
@@ -155,7 +159,7 @@ const keywordMappings: { [key: string]: string[] } = {
   quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
   buddha: ["buddha-salad"],
   couscous: ["couscous-salad"],
-  fruit: ["fruit-salad"],
+  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit"],
 
   // Chicken dishes
   chicken: [
@@ -221,8 +225,14 @@ const keywordMappings: { [key: string]: string[] } = {
   cereal: ["cereal-with-milk"],
   waffles: ["waffles-with-honey"],
   waffle: ["waffles-with-honey"],
-  pancakes: ["pancakes-with-berries-and-syrup"],
-  pancake: ["pancakes-with-berries-and-syrup"],
+  pancakes: [
+    "pancakes-with-berries-and-syrup",
+    "whole-wheat-pancakes-with-fruit",
+  ],
+  pancake: [
+    "pancakes-with-berries-and-syrup",
+    "whole-wheat-pancakes-with-fruit",
+  ],
   crepes: ["crepes-topped-with-strawberries"],
   crepe: ["crepes-topped-with-strawberries"],
   muffin: ["muffin"],
@@ -371,12 +381,18 @@ const keywordMappings: { [key: string]: string[] } = {
     "smoothie",
     "smoothie-bowl-with-banana-and-kiwi",
     "green-power-smoothie",
+    "power-berry-nut-muesli-bowl",
   ],
-  yogurt: ["greek-yogurt-topped-with-granola", "yogurt-parfait-with-granola"],
+  yogurt: [
+    "greek-yogurt-topped-with-granola",
+    "yogurt-parfait-with-granola",
+    "power-berry-nut-muesli-bowl",
+  ],
   granola: [
     "greek-yogurt-topped-with-granola",
     "yogurt-parfait-with-granola",
     "berry-greek-yogurt-parfait",
+    "power-berry-nut-muesli-bowl",
   ],
   chia: ["chia-pudding"],
   pudding: ["chia-pudding"],

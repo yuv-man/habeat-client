@@ -21,9 +21,9 @@ const FavoriteMeals = ({ recipes }: { recipes: IRecipe[] }) => {
       {/* Meal Cards Grid */}
       <div className="px-4 pb-4">
         <div className="grid grid-cols-2 gap-4">
-          {recipes.map((recipe) => {
+          {recipes.map((recipe: IRecipe) => {
             // Handle both id and _id for compatibility
-            const recipeId = recipe._id || recipe.id;
+            const recipeId = recipe.mealId;
             // Check if meal is in user.favoriteMeals
             const isFavorite = user?.favoriteMeals?.includes(recipeId) || false;
             return (

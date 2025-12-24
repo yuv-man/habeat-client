@@ -1,5 +1,14 @@
 import React from "react";
-import { Share2, Plus, Scale, Dumbbell, GlassWater, Leaf } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  Share2,
+  Plus,
+  Scale,
+  Dumbbell,
+  GlassWater,
+  Leaf,
+  ChevronRight,
+} from "lucide-react";
 
 export interface Goal {
   id: string;
@@ -25,6 +34,7 @@ const Goals = ({
   onMarkAchieved,
   onAddGoal,
 }: GoalsProps) => {
+  const navigate = useNavigate();
   const getIcon = (iconType: Goal["icon"]) => {
     const iconClass = "w-6 h-6 text-white";
     switch (iconType) {
@@ -95,7 +105,8 @@ const Goals = ({
           return (
             <div
               key={goal.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+              onClick={() => navigate(`/goals/${goal.id}`)}
+              className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-gray-300 transition-all"
             >
               {/* Icon and Title */}
               <div className="flex items-start gap-3 mb-3">
@@ -108,6 +119,7 @@ const Goals = ({
                     {goal.description}
                   </p>
                 </div>
+                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
               </div>
 
               {/* Progress Bar */}
@@ -128,24 +140,20 @@ const Goals = ({
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => onUpdateProgress?.(goal.id)}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm"
-                >
-                  Update Progress
-                </button>
-                <button
-                  onClick={() => onMarkAchieved?.(goal.id)}
-                  className={`flex-1 font-medium py-2.5 px-4 rounded-lg transition-colors text-sm text-white ${
+              {/* Status Badge */}
+              <div className="flex items-center justify-between">
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
                     isAchieved
-                      ? "bg-green-500 hover:bg-green-600"
-                      : "bg-orange-500 hover:bg-orange-600"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-orange-100 text-orange-700"
                   }`}
                 >
-                  {isAchieved ? "Achieved" : "in progress"}
-                </button>
+                  {isAchieved ? "Achieved" : "In Progress"}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Tap to view details
+                </span>
               </div>
             </div>
           );

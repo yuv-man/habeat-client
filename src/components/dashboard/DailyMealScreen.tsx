@@ -6,7 +6,6 @@ import {
   Flame,
   Trash2,
   Check,
-  RefreshCw,
   CalendarDays,
   Sparkles,
   X,
@@ -209,11 +208,6 @@ const DailyMealScreen = () => {
     } catch (error) {
       console.error("Failed to complete workout:", error);
     }
-  };
-
-  const handleChangeWorkout = (workoutIndex: number) => {
-    // TODO: Implement workout swap/change functionality
-    console.log("Change workout at index:", workoutIndex);
   };
 
   // Get last date from plan for expired message
@@ -459,8 +453,32 @@ const DailyMealScreen = () => {
                 Today's Workouts
               </h2>
               <div className="space-y-0">
-                {dailyProgress.workouts.length > 0 ? (
-                  dailyProgress.workouts.map((workout, index) => (
+                {(() => {
+                  // Filter out rest day entries and check if there are actual workouts
+                  const actualWorkouts = dailyProgress.workouts.filter(
+                    (w) => !w.name?.toLowerCase().includes("rest")
+                  );
+                  const hasOnlyRestDay =
+                    dailyProgress.workouts.length > 0 &&
+                    actualWorkouts.length === 0;
+
+                  if (hasOnlyRestDay) {
+                    return (
+                      <div className="py-3 text-sm text-gray-500 text-center">
+                        Rest Day
+                      </div>
+                    );
+                  }
+
+                  if (actualWorkouts.length === 0) {
+                    return (
+                      <div className="py-3 text-sm text-gray-500 text-center">
+                        No workouts planned for today
+                      </div>
+                    );
+                  }
+
+                  return actualWorkouts.map((workout, index) => (
                     <div
                       key={index}
                       className="flex items-center gap-3 py-3 border-b border-gray-200"
@@ -516,13 +534,6 @@ const DailyMealScreen = () => {
                           <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500 transition-colors" />
                         </button>
                         <button
-                          onClick={() => handleChangeWorkout(index)}
-                          className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                          aria-label="Change workout"
-                        >
-                          <RefreshCw className="w-4 h-4 text-gray-400 hover:text-blue-500 transition-colors" />
-                        </button>
-                        <button
                           onClick={() => handleCompleteWorkout(index)}
                           className={`p-0.5 rounded-full transition-all duration-200 ${
                             workout.done ?? false
@@ -545,12 +556,8 @@ const DailyMealScreen = () => {
                         </button>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="py-3 text-sm text-gray-500 text-center">
-                    No workouts planned for today
-                  </div>
-                )}
+                  ));
+                })()}
               </div>
             </div>
 

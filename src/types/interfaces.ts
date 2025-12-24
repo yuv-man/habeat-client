@@ -252,27 +252,52 @@ export interface WorkoutData {
   time?: string;
 }
 
-export interface IRecipe {
-  id: string;
-  _id?: string; // MongoDB ObjectId (optional, for compatibility)
+export interface IRecipeIngredient {
   name: string;
+  amount: string; // e.g., "170", "40"
+  unit?: string; // e.g., "g", "ml", "cup"
+  _id?: string;
+}
+
+export interface IRecipeInstruction {
+  step: number;
+  instruction: string;
+  time?: number; // in minutes
+  temperature?: number | null;
+  _id?: string;
+}
+
+export interface IRecipe {
+  _id?: string;
+  mealId: string;
+  mealName: string;
   category: string;
-  description: string;
-  image: string;
-  cookTime: number;
-  servings: number;
-  calories: number;
-  difficulty: "Easy" | "Medium" | "Hard";
-  tags: string[];
-  rating: number;
-  ingredients: string[];
-  instructions: string[];
+  servings?: number;
+  prepTime?: number;
+  cookTime?: number;
+  difficulty?: string; // "easy", "medium", "hard"
   macros: {
+    calories: number;
     protein: number;
     carbs: number;
     fat: number;
-    fiber: number;
   };
+  ingredients: IRecipeIngredient[];
+  instructions: IRecipeInstruction[];
+  equipment?: string[];
+  tags?: string[];
+  dietaryInfo?: {
+    isVegetarian?: boolean;
+    isVegan?: boolean;
+    isGlutenFree?: boolean;
+    isDairyFree?: boolean;
+    isKeto?: boolean;
+    isLowCarb?: boolean;
+  };
+  language?: string;
+  usageCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface MealTimes {
@@ -288,6 +313,8 @@ export interface AuthState {
   token: string | null;
   plan: IPlan | null;
   mealTimes: MealTimes;
+  favoriteMealsData: IMeal[];
+  favoriteMealsLoaded: boolean;
 }
 
 export interface AuthActions {
@@ -321,6 +348,8 @@ export interface AuthActions {
     mealId: string,
     isFavorite: boolean
   ) => Promise<void>;
+  fetchFavoriteMeals: (userId: string) => Promise<void>;
+  setFavoriteMealsData: (meals: IMeal[]) => void;
 }
 
 export interface IngredientInput {

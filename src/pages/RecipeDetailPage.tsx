@@ -2,15 +2,27 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import RecipeDetail from "@/components/recipes/RecipeDetail";
-import { IMeal } from "@/types/interfaces";
+import MealLoader from "@/components/helper/MealLoader";
+import { IRecipe } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
+import { ArrowLeft } from "lucide-react";
+
+const recipeLoadingMessages = [
+  "📖 Opening the cookbook...",
+  "👨‍🍳 Our AI chef is writing your recipe...",
+  "🥘 Crafting cooking instructions...",
+  "📝 Detailing the steps...",
+  "✨ Adding the finishing touches...",
+];
 
 const RecipeDetailPage = () => {
-  const { recipeId } = useParams<{ recipeId: string }>();
+  // mealId comes from the URL - we fetch the recipe by meal ID
+  const { recipeId: mealId } = useParams<{ recipeId: string }>();
   const navigate = useNavigate();
-  const { user, plan, loading, token } = useAuthStore();
-  const [recipe, setRecipe] = useState<IMeal | null>(null);
+  const { user, loading, token } = useAuthStore();
+  const [recipe, setRecipe] = useState<IRecipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Only redirect if not loading, no user, AND no token
@@ -21,52 +33,51 @@ const RecipeDetailPage = () => {
 
   useEffect(() => {
     const loadRecipe = async () => {
-      if (!recipeId || !plan) {
+      if (!mealId) {
         setIsLoading(false);
         return;
       }
 
-      // Try to find meal in the plan
-      const weeklyPlan = plan.weeklyPlan;
-      let foundMeal: IMeal | null = null;
-
-      for (const dateKey of Object.keys(weeklyPlan)) {
-        const dailyPlan = weeklyPlan[dateKey];
-        const { breakfast, lunch, dinner, snacks } = dailyPlan.meals;
-
-        if (breakfast._id === recipeId) {
-          foundMeal = breakfast;
-          break;
+      try {
+        // Fetch recipe from backend using meal ID
+        // First time: AI generates the recipe (takes time)
+        // Subsequent times: Returns from DB (instant)
+        const response = await userAPI.getRecipeByMealId(mealId, user._id);
+        if (response.data) {
+          setRecipe(response.data);
+        } else {
+          setError("Recipe not found");
         }
-        if (lunch._id === recipeId) {
-          foundMeal = lunch;
-          break;
-        }
-        if (dinner._id === recipeId) {
-          foundMeal = dinner;
-          break;
-        }
-        const snack = snacks.find((s) => s._id === recipeId);
-        if (snack) {
-          foundMeal = snack;
-          break;
-        }
+      } catch (err) {
+        console.error("Failed to fetch recipe:", err);
+        setError("Failed to load recipe");
+      } finally {
+        setIsLoading(false);
       }
-
-      setRecipe(foundMeal);
-      setIsLoading(false);
     };
 
-    loadRecipe();
-  }, [recipeId, plan]);
+    if (user) {
+      loadRecipe();
+    }
+  }, [mealId, user]);
 
   // Show loading if still loading OR if we have a token but no user yet
   if (loading || (token && !user) || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading recipe...</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        {/* Back button during loading */}
+        <div className="p-4">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
+          </button>
+        </div>
+        {/* Loader centered */}
+        <div className="flex-1 flex items-center justify-center">
+          <MealLoader customMessages={recipeLoadingMessages} interval={2000} />
         </div>
       </div>
     );
@@ -76,11 +87,13 @@ const RecipeDetailPage = () => {
     return <div>Redirecting...</div>;
   }
 
-  if (!recipe) {
+  if (error || !recipe) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 text-lg mb-4">Recipe not found</p>
+          <p className="text-gray-600 text-lg mb-4">
+            {error || "Recipe not found"}
+          </p>
           <button
             onClick={() => navigate(-1)}
             className="text-green-500 hover:text-green-600 font-medium"
@@ -92,7 +105,7 @@ const RecipeDetailPage = () => {
     );
   }
 
-  return <RecipeDetail meal={recipe} onBack={() => navigate(-1)} />;
+  return <RecipeDetail recipe={recipe} onBack={() => navigate(-1)} />;
 };
 
 export default RecipeDetailPage;

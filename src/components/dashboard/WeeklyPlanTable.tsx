@@ -275,8 +275,23 @@ const WeeklyPlanTable = ({
                 return (
                   <td key={date} className="p-3">
                     <div className="space-y-2">
-                      {dayData.workouts.length > 0 ? (
-                        dayData.workouts.map((workout, index) => (
+                      {(() => {
+                        const actualWorkouts = dayData.workouts.filter(
+                          (w) => !w.name?.toLowerCase().includes("rest")
+                        );
+                        const hasOnlyRestDay =
+                          dayData.workouts.length > 0 &&
+                          actualWorkouts.length === 0;
+
+                        if (hasOnlyRestDay || dayData.workouts.length === 0) {
+                          return (
+                            <div className="text-sm text-gray-500">
+                              Rest Day
+                            </div>
+                          );
+                        }
+
+                        return actualWorkouts.map((workout, index) => (
                           <div key={index} className="flex items-center gap-2">
                             <div className="flex-1">
                               <div className="text-sm font-medium text-gray-900">
@@ -304,10 +319,8 @@ const WeeklyPlanTable = ({
                               </button>
                             )}
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-sm text-gray-500">Rest Day</div>
-                      )}
+                        ));
+                      })()}
                       {onAddWorkout && (
                         <WorkoutModal
                           onWorkoutAdd={(workout) =>
@@ -326,31 +339,28 @@ const WeeklyPlanTable = ({
               })}
             </tr>
 
-            {/* Water Intake Row */}
+            {/* Water Target Row */}
             <tr>
               <td className="p-3 text-sm font-medium text-gray-700 bg-gray-50">
                 <div className="flex items-center gap-2">
                   <GlassWater className="w-4 h-4 text-blue-500" />
-                  <span>Water Intake</span>
+                  <span>Water Target</span>
                 </div>
               </td>
               {dates.slice(0, 5).map((date) => {
-                const dayData = weeklyPlan[date];
                 return (
                   <td key={date} className="p-3">
-                    <div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                    <div className="flex flex-wrap gap-1">
+                      {Array.from({ length: 8 }).map((_, index) => (
                         <div
-                          className="bg-green-500 h-2 rounded-full transition-all"
-                          style={{
-                            width: `${(dayData.waterIntake / 8) * 100}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {dayData.waterIntake} / 8 glasses
-                      </div>
+                          key={index}
+                          className="w-5 h-5 rounded border border-blue-200 bg-blue-50 flex items-center justify-center"
+                        >
+                          <GlassWater className="w-3 h-3 text-blue-400" />
+                        </div>
+                      ))}
                     </div>
+                    <div className="text-xs text-gray-500 mt-1">8 glasses</div>
                   </td>
                 );
               })}

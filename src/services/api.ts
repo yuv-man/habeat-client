@@ -551,18 +551,14 @@ const getFavoritesByUserId = async (userId: string): Promise<{ data: any }> => {
 
 // Shopping Bag API
 const getShoppingList = async (
-  userId: string,
   planId: string
 ): Promise<{ ingredients: IngredientInput[] }> => {
   try {
     const response: AxiosResponse<{
       data: { ingredients: IngredientInput[] };
-    }> = await userClient.get(
-      `/meals/${userId}/shopping-list?planId=${planId}`,
-      {
-        headers: getAuthHeaders(),
-      }
-    );
+    }> = await userClient.get(`/shopping/list?planId=${planId}`, {
+      headers: getAuthHeaders(),
+    });
     return response.data.data;
   } catch (error) {
     throw new Error("Failed to get shopping list. Please try again.");
@@ -570,19 +566,49 @@ const getShoppingList = async (
 };
 
 const updateShoppingItem = async (
-  userId: string,
-  itemId: string,
-  checked: boolean
+  planId: string,
+  item: IngredientInput
 ): Promise<{ data: any }> => {
   try {
     const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/shopping/${userId}/item/${itemId}`,
-      { checked },
+      `/shopping/${planId}/items`,
+      { item },
       { headers: getAuthHeaders() }
     );
     return response.data;
   } catch (error) {
     throw new Error("Failed to update shopping item. Please try again.");
+  }
+};
+
+const addShoppingItem = async (
+  planId: string,
+  item: IngredientInput
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.post(
+      `/shopping/${planId}/items`,
+      { items: [item] },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to add shopping item. Please try again.");
+  }
+};
+
+const deleteShoppingItem = async (
+  planId: string,
+  itemId: string
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.delete(
+      `/shopping/${planId}/items/${itemId}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to delete shopping item. Please try again.");
   }
 };
 
@@ -625,6 +651,24 @@ const toggleFavoriteRecipe = async (
     return response.data;
   } catch (error) {
     throw new Error("Failed to update favorite recipe. Please try again.");
+  }
+};
+
+// Get Recipe by Meal ID (fetches full recipe details including instructions)
+// First time: AI generates the recipe (takes time)
+// Subsequent times: Returns from DB (instant)
+const getRecipeByMealId = async (
+  mealId: string,
+  userId: string
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.get(
+      `/recipes/${userId}/meal/${mealId}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to get recipe. Please try again.");
   }
 };
 
@@ -821,6 +865,44 @@ const changeMealInPlan = async (
   }
 };
 
+// Add snack to plan
+const addSnack = async (
+  planId: string,
+  date: string,
+  name: string
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.post(
+      `/plan/${planId}/add-snack`,
+      {
+        date,
+        name,
+      },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to add snack. Please try again.");
+  }
+};
+
+// Delete snack from plan
+const deleteSnack = async (
+  planId: string,
+  date: string,
+  snackId: string
+): Promise<{ data: any }> => {
+  try {
+    const response: AxiosResponse<{ data: any }> = await userClient.delete(
+      `/plan/${planId}/snack/${date}/${snackId}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error("Failed to delete snack. Please try again.");
+  }
+};
+
 export const userAPI = {
   getAllUsers,
   getUserById,
@@ -847,10 +929,13 @@ export const userAPI = {
   // Shopping Bag
   getShoppingList,
   updateShoppingItem,
+  addShoppingItem,
+  deleteShoppingItem,
   clearShoppingList,
   // Favorite Recipes
   getFavoriteRecipes,
   toggleFavoriteRecipe,
+  getRecipeByMealId,
   // Goals
   getGoals,
   createGoal,
@@ -864,4 +949,6 @@ export const userAPI = {
   // Meal Changes
   getAIMealSuggestions,
   changeMealInPlan,
+  addSnack,
+  deleteSnack,
 };

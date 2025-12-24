@@ -246,7 +246,7 @@ const MealCard = ({
         <div className="border-t border-gray-200 pt-3 mt-3 space-y-3 animate-in slide-in-from-top-2 duration-200">
           {/* Additional Info */}
           <div className="space-y-2">
-            {meal.prepTime > 0 && (
+            {!isSnack && meal.prepTime > 0 && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Clock className="w-4 h-4 text-gray-400" />
                 <span>Prep time: {meal.prepTime} min</span>

@@ -5,173 +5,42 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, BookOpen, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "@/styles/recipes.css";
-import NavBar from "@/components/ui/navbar";
-import MobileHeader from "@/components/ui/MobileHeader";
-import { userAPI } from "@/services/api";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuthStore } from "@/stores/authStore";
-import { IRecipe, IMeal } from "@/types/interfaces";
+import { IRecipe } from "@/types/interfaces";
 import FavoriteMeals from "@/components/recipes/FavoriteMeals";
 import RecipeItem from "@/components/recipes/RecipeItem";
 import { toast } from "sonner";
 import config from "@/services/config";
+import { mockRecipes } from "@/mocks/recipesMock";
 
 const Recipes = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const { user, updateFavorite } = useAuthStore();
-  const [favoriteMeals, setFavoriteMeals] = useState<IMeal[]>([]);
+  const {
+    user,
+    updateFavorite,
+    favoriteMealsData,
+    favoriteMealsLoaded,
+    fetchFavoriteMeals,
+  } = useAuthStore();
   const [recipes, setRecipes] = useState<IRecipe[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch favorite meals from API
+  // Fetch favorite meals only if not already loaded
   useEffect(() => {
-    const fetchFavoriteMeals = async () => {
-      if (!user?._id) return;
+    if (!user?._id) return;
 
-      setLoading(true);
-      try {
-        if (config.testFrontend) {
-          // Use mock data in test mode
-          setFavoriteMeals([]);
-          setRecipes(mockRecipes);
-        } else {
-          const response = await userAPI.getFavoritesByUserId(user._id);
-          // The API returns the actual meal objects
-          setFavoriteMeals(response.data.favoriteMeals || response.data || []);
-        }
-      } catch (error) {
-        console.error("Failed to fetch favorite meals:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (config.testFrontend) {
+      setRecipes(mockRecipes);
+      return;
+    }
 
-    fetchFavoriteMeals();
-  }, [user?._id]);
-
-  // Mock recipes data
-  const mockRecipes: IRecipe[] = [
-    {
-      id: "1",
-      name: "Grilled Chicken Salad",
-      category: "lunch",
-      description:
-        "Fresh mixed greens with grilled chicken breast, perfect for weight loss",
-      image:
-        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
-      cookTime: 15,
-      servings: 2,
-      calories: 320,
-      difficulty: "Easy",
-      tags: ["High Protein", "Low Carb", "Gluten Free"],
-      rating: 4.8,
-      ingredients: [
-        "200g chicken breast",
-        "100g mixed greens",
-        "1 cucumber",
-        "1 tomato",
-        "2 tbsp olive oil",
-        "1 tbsp lemon juice",
-      ],
-      instructions: [
-        "Season and grill chicken breast until cooked through",
-        "Dice cucumber and tomato",
-        "Mix olive oil and lemon juice for dressing",
-        "Combine all ingredients and serve",
-      ],
-      macros: { protein: 35, carbs: 8, fat: 12, fiber: 4 },
-    },
-    {
-      id: "2",
-      name: "Quinoa Power Bowl",
-      category: "lunch",
-      description:
-        "Nutrient-dense bowl with quinoa, roasted vegetables, and tahini dressing",
-      image:
-        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
-      cookTime: 25,
-      servings: 2,
-      calories: 450,
-      difficulty: "Medium",
-      tags: ["Vegan", "High Fiber", "Complete Protein"],
-      rating: 4.6,
-      ingredients: [
-        "1 cup quinoa",
-        "1 sweet potato",
-        "1 zucchini",
-        "1 red bell pepper",
-        "2 tbsp tahini",
-        "1 tbsp maple syrup",
-      ],
-      instructions: [
-        "Cook quinoa according to package instructions",
-        "Roast vegetables at 400°F for 20 minutes",
-        "Mix tahini and maple syrup for dressing",
-        "Assemble bowl and drizzle with dressing",
-      ],
-      macros: { protein: 16, carbs: 65, fat: 14, fiber: 12 },
-    },
-    {
-      id: "3",
-      name: "Keto Avocado Smoothie",
-      category: "breakfast",
-      description:
-        "Creamy low-carb smoothie perfect for breakfast or post-workout",
-      image:
-        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
-      cookTime: 5,
-      servings: 1,
-      calories: 280,
-      difficulty: "Easy",
-      tags: ["Keto", "Low Carb", "Quick"],
-      rating: 4.9,
-      ingredients: [
-        "1 ripe avocado",
-        "1 cup unsweetened almond milk",
-        "1 tbsp MCT oil",
-        "1 tsp vanilla extract",
-        "1 packet stevia",
-        "Ice cubes",
-      ],
-      instructions: [
-        "Add all ingredients to blender",
-        "Blend until smooth and creamy",
-        "Add ice if desired consistency",
-        "Serve immediately",
-      ],
-      macros: { protein: 6, carbs: 4, fat: 26, fiber: 10 },
-    },
-    {
-      id: "4",
-      name: "Protein Pancakes",
-      category: "breakfast",
-      description: "Fluffy high-protein pancakes perfect for muscle building",
-      image:
-        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=300&fit=crop",
-      cookTime: 10,
-      servings: 2,
-      calories: 380,
-      difficulty: "Easy",
-      tags: ["High Protein", "Post-Workout", "Gluten Free"],
-      rating: 4.7,
-      ingredients: [
-        "2 eggs",
-        "1 banana",
-        "30g protein powder",
-        "1 tbsp almond flour",
-        "1 tsp baking powder",
-        "Cinnamon to taste",
-      ],
-      instructions: [
-        "Mash banana and mix with eggs",
-        "Add protein powder and almond flour",
-        "Cook pancakes in non-stick pan",
-        "Serve with fresh berries",
-      ],
-      macros: { protein: 28, carbs: 22, fat: 8, fiber: 4 },
-    },
-  ];
+    // Only fetch if not already loaded
+    if (!favoriteMealsLoaded) {
+      fetchFavoriteMeals(user._id);
+    }
+  }, [user?._id, favoriteMealsLoaded, fetchFavoriteMeals]);
 
   const categories = [
     { id: "all", label: "All Recipes", count: recipes.length },
@@ -183,34 +52,36 @@ const Recipes = () => {
 
   const filteredRecipes = recipes.filter(
     (recipe) =>
-      recipe.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      recipe.tags.some((tag) =>
+      recipe.mealName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      recipe.tags?.some((tag) =>
         tag.toLowerCase().includes(searchQuery.toLowerCase())
       ) ||
       recipe.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Convert favorite meals to recipe format for display
-  const favoriteMealsAsRecipes: IRecipe[] = favoriteMeals.map((meal) => ({
-    id: meal._id,
+  const favoriteMealsAsRecipes: IRecipe[] = favoriteMealsData.map((meal) => ({
     _id: meal._id,
-    name: meal.name,
+    mealId: meal._id, // Recipe references the meal
+    mealName: meal.name,
     category: meal.category || "meal",
-    description: "",
-    image: meal.icon || "",
     cookTime: meal.prepTime || 0,
     servings: 1,
-    calories: meal.calories,
-    difficulty: "Easy" as const,
+    difficulty: "easy",
     tags: [],
-    rating: 0,
-    ingredients: meal.ingredients || [],
+    // Convert string ingredients to IRecipeIngredient format
+    ingredients: (meal.ingredients || []).map((ing, idx) => ({
+      name: typeof ing === "string" ? ing : "",
+      amount: "",
+      unit: "Other",
+      _id: `ing-${idx}`,
+    })),
     instructions: [],
     macros: {
+      calories: meal.calories || 0,
       protein: meal.macros?.protein || 0,
       carbs: meal.macros?.carbs || 0,
       fat: meal.macros?.fat || 0,
-      fiber: 0,
     },
   }));
 
@@ -225,17 +96,14 @@ const Recipes = () => {
 
   if (isMobile) {
     return (
-      <>
-        <MobileHeader />
+      <DashboardLayout showNavBar={false}>
         <FavoriteMeals recipes={favoriteMealsAsRecipes} />
-      </>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-0 md:pt-16">
-      <MobileHeader />
-      <NavBar />
+    <DashboardLayout showNavBar={true}>
       {/* Header */}
       <div className="recipes-header">
         <div className="flex items-center justify-between mb-4">
@@ -288,20 +156,20 @@ const Recipes = () => {
             {/* Recipe Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredRecipes.map((recipe) => {
-                // Handle both id and _id for compatibility
-                const recipeId = recipe._id || recipe.id;
+                // Use mealId for key and favorites
+                const mealId = recipe.mealId;
                 // Check if meal is in user.favoriteMeals
                 const isFavorite =
-                  user?.favoriteMeals?.includes(recipeId) || false;
+                  user?.favoriteMeals?.includes(mealId) || false;
                 return (
                   <RecipeItem
-                    key={recipeId}
+                    key={mealId}
                     recipe={recipe}
                     isFavorite={isFavorite}
                     onFavoriteToggle={async () => {
-                      if (user?._id && recipeId) {
+                      if (user?._id && mealId) {
                         try {
-                          await updateFavorite(user._id, recipeId, !isFavorite);
+                          await updateFavorite(user._id, mealId, !isFavorite);
                           if (isFavorite) {
                             toast.success("Removed from favorites", {
                               duration: 2000,
@@ -335,13 +203,13 @@ const Recipes = () => {
         </Tabs>
 
         {/* Floating Action Button */}
-        <div className="fixed bottom-6 right-6">
+        <div className="fixed bottom-20 right-6 md:bottom-6">
           <Button className="rounded-full h-12 w-12" size="sm">
             <Camera className="h-5 w-5" />
           </Button>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 };
 

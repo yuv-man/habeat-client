@@ -47,34 +47,22 @@ const ChangeMealModal = ({
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
-  // Favorites state
-  const { user, plan } = useAuthStore();
-  const [favoriteMeals, setFavoriteMeals] = useState<IMeal[]>([]);
-  const [isLoadingFavorites, setIsLoadingFavorites] = useState(false);
+  // Favorites state - use store instead of local fetch
+  const {
+    user,
+    plan,
+    favoriteMealsData,
+    favoriteMealsLoaded,
+    fetchFavoriteMeals: fetchFavoritesFromStore,
+  } = useAuthStore();
+  const isLoadingFavorites = !favoriteMealsLoaded;
 
-  // Fetch favorite meals when switching to favorites tab
+  // Fetch favorite meals when switching to favorites tab (only if not already loaded)
   useEffect(() => {
-    if (activeTab === "favorites" && user?._id) {
-      fetchFavoriteMeals();
+    if (activeTab === "favorites" && user?._id && !favoriteMealsLoaded) {
+      fetchFavoritesFromStore(user._id);
     }
-  }, [activeTab, user?._id]);
-
-  const fetchFavoriteMeals = async () => {
-    if (!user?._id) return;
-
-    setIsLoadingFavorites(true);
-    try {
-      const response = await userAPI.getFavoritesByUserId(user._id);
-      // The API returns full meal objects in favoriteMeals
-      const meals = response.data?.favoriteMeals || response.data || [];
-      setFavoriteMeals(Array.isArray(meals) ? meals : []);
-    } catch (error) {
-      console.error("Failed to fetch favorite meals:", error);
-      setFavoriteMeals([]);
-    } finally {
-      setIsLoadingFavorites(false);
-    }
-  };
+  }, [activeTab, user?._id, favoriteMealsLoaded, fetchFavoritesFromStore]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -530,8 +518,8 @@ const ChangeMealModal = ({
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
                     </div>
-                  ) : favoriteMeals && favoriteMeals.length > 0 ? (
-                    favoriteMeals.map((meal) => (
+                  ) : favoriteMealsData && favoriteMealsData.length > 0 ? (
+                    favoriteMealsData.map((meal) => (
                       <button
                         key={meal._id}
                         onClick={() => handleSelectFavorite(meal)}

@@ -24,9 +24,7 @@ import {
   Camera,
   User,
 } from "lucide-react";
-import NavBar from "@/components/ui/navbar";
-import BottomNav from "@/components/ui/BottomNav";
-import MobileHeader from "@/components/ui/MobileHeader";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
 
 const Settings = () => {
@@ -257,11 +255,8 @@ const Settings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-0 md:pt-16 pb-20 md:pb-0">
-      <MobileHeader />
-      <NavBar currentView="daily" />
-
-      <div className="max-w-2xl mx-auto px-4 py-4 pt-14 md:pt-4">
+    <DashboardLayout currentView="daily">
+      <div className="max-w-2xl mx-auto px-4 py-4">
         {/* Header */}
         <div className="flex items-center gap-3 mb-3">
           <button
@@ -703,9 +698,7 @@ const Settings = () => {
           </div>
         </div>
       </div>
-
-      <BottomNav />
-    </div>
+    </DashboardLayout>
   );
 };
 

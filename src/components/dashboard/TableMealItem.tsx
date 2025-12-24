@@ -28,7 +28,7 @@ const TableMealItem = ({
             <span>🔥</span>
             {meal.calories} kcal
           </span>
-          {meal.prepTime > 0 && (
+          {mealType !== "snacks" && meal.prepTime > 0 && (
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {meal.prepTime} min

@@ -253,7 +253,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         throw new Error("No token found");
       }
       const { data } = await userAPI.updateMealInPlan(userId, date, meal);
-      console.log(data);
       set({ plan: data.plan, loading: false });
     } catch (error) {
       set({ loading: false });
@@ -345,7 +344,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     try {
       const response = await userAPI.getFavoritesByUserId(userId);
-      const meals = response.data.favoriteMeals || response.data || [];
+      const meals = response.data.favoriteMeals || [];
       set({ favoriteMealsData: meals, favoriteMealsLoaded: true });
       localStorage.setItem("habeat_favorite_meals", JSON.stringify(meals));
     } catch (error) {

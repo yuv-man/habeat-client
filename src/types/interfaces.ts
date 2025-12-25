@@ -3,7 +3,8 @@ export interface IUser {
   name: string;
   email: string;
   phone?: string;
-  password: string;
+  // Note: password is only used during signup/login, never stored in state
+  password?: string;
   height: number;
   weight: number;
   gender: string;

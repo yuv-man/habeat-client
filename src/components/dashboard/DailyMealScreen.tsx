@@ -16,11 +16,11 @@ import { IDailyProgress, WorkoutData } from "@/types/interfaces";
 import Loader from "../helper/loader";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
-import { mockDailyProgress } from "@/mocks/dailyProgressMock";
 import MealCard from "./MealCard";
 import { useProgressStore } from "@/stores/progressStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
+import { formatTime12Hour, formatDisplayDate } from "@/lib/dateUtils";
 import FastingClock from "./FastingClock";
 import NutritionProgressBar from "@/components/helper/NutritionProgressBar";
 import { Button } from "@/components/ui/button";
@@ -103,13 +103,7 @@ const DailyMealScreen = () => {
   // Get meal time and format to 12-hour
   const getMealTime = (mealType: string) => {
     const time = mealTimes[mealType as keyof typeof mealTimes] || "12:00";
-
-    // Format time to 12-hour format with AM/PM
-    const [hours, minutes] = time.split(":");
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const hour12 = hour % 12 || 12;
-    return `${hour12}:${minutes} ${ampm}`;
+    return formatTime12Hour(time);
   };
 
   const addWaterGlass = async () => {
@@ -216,11 +210,7 @@ const DailyMealScreen = () => {
     const dates = Object.keys(plan.weeklyPlan).sort();
     if (dates.length === 0) return null;
     const lastDate = dates[dates.length - 1];
-    return new Date(lastDate).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-    });
+    return formatDisplayDate(lastDate);
   };
 
   return (
@@ -567,7 +557,7 @@ const DailyMealScreen = () => {
                 Water Intake
               </h2>
               <div className="flex flex-wrap gap-2 mb-3">
-                {Array.from({ length: 8 }).map((_, index) => (
+                {Array.from({ length: dailyProgress.water.goal }).map((_, index) => (
                   <button
                     key={index}
                     onClick={

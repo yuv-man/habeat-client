@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, memo } from "react";
 import {
   Heart,
   Check,
@@ -315,4 +315,4 @@ const MealCard = ({
   );
 };
 
-export default MealCard;
+export default memo(MealCard);

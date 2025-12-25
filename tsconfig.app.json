@@ -14,12 +14,20 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Type Checking - Stricter settings for better code quality */
     "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "noFallthroughCasesInSwitch": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "exactOptionalPropertyTypes": false,
+    "noUncheckedIndexedAccess": false,
+    "forceConsistentCasingInFileNames": true,
 
     "baseUrl": ".",
     "paths": {

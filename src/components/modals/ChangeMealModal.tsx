@@ -4,6 +4,7 @@ import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI, MealCriteria } from "@/services/api";
 import { getMealImageVite } from "@/lib/mealImageHelper";
+import { toLocalDateString } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import MealLoader from "@/components/helper/MealLoader";
 
@@ -89,27 +90,13 @@ const ChangeMealModal = ({
     setAiError(null);
   };
 
-  // Helper to get local date string in YYYY-MM-DD format
-  const getLocalDateString = (dateInput: string): string => {
-    // If already in YYYY-MM-DD format, return as-is
-    if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-      return dateInput;
-    }
-    // Otherwise, parse as date and get local date
-    const dateObj = new Date(dateInput);
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(dateObj.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
-
   // API call to change the meal in the plan
   const changeMealAPI = async (newMeal: IMeal) => {
     if (!user?._id || !plan?._id) {
       throw new Error("User not authenticated or no plan found");
     }
 
-    const dateString = getLocalDateString(date);
+    const dateString = toLocalDateString(date);
 
     try {
       await userAPI.changeMealInPlan(

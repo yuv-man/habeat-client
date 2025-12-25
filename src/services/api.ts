@@ -1,11 +1,11 @@
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import {
   IUser,
   IPlan,
-  IProgress,
   IMeal,
   IDailyProgress,
   WorkoutData,
+  IRecipe,
 } from "../types/interfaces";
 import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
@@ -28,135 +28,127 @@ const getAuthToken = (): string | null => {
 };
 
 // Helper function to get auth headers
-const getAuthHeaders = (): { Authorization: string } | {} => {
+const getAuthHeaders = (): { Authorization: string } | Record<string, never> => {
   const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const getAllUsers = async (): Promise<IUser[]> => {
+/**
+ * Wrapper function for API calls with consistent error handling
+ * @param fn - Async function that makes the API call
+ * @param errorMessage - Default error message if no specific error is available
+ * @returns The result of the API call
+ */
+const withErrorHandling = async <T>(
+  fn: () => Promise<T>,
+  errorMessage: string
+): Promise<T> => {
   try {
-    const response: AxiosResponse<IUser[]> = await userClient.get<IUser[]>(
-      "/users"
-    );
-    return response.data;
+    return await fn();
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.message || "Failed to fetch users. Please try again."
-      );
+      // Check for specific error message from server
+      const serverMessage = error.response?.data?.message;
+      throw new Error(serverMessage || error.message || errorMessage);
     }
     throw new Error("An unexpected error occurred. Please try again.");
   }
+};
+
+const getAllUsers = async (): Promise<IUser[]> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<IUser[]>("/users");
+      return response.data;
+    },
+    "Failed to fetch users. Please try again."
+  );
 };
 
 const getUserById = async (id: string): Promise<IUser> => {
-  try {
-    const response: AxiosResponse<IUser> = await userClient.get<IUser>(
-      `/users/${id}`
-    );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.message || "Failed to fetch user. Please try again."
-      );
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<IUser>(`/users/${id}`);
+      return response.data;
+    },
+    "Failed to fetch user. Please try again."
+  );
 };
 
 const saveUser = async (user: IUser): Promise<IUser> => {
-  try {
-    const response: AxiosResponse<IUser> = await userClient.post<IUser>(
-      "/users",
-      user
-    );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.message || "Failed to save user. Please try again."
-      );
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<IUser>("/users", user);
+      return response.data;
+    },
+    "Failed to save user. Please try again."
+  );
 };
 
 const updateUser = async (id: string, user: IUser): Promise<IUser> => {
-  try {
-    const response: AxiosResponse<IUser> = await userClient.put<IUser>(
-      `/users/${id}`,
-      user,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.message || "Failed to update user. Please try again."
-      );
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<IUser>(`/users/${id}`, user, {
+        headers: getAuthHeaders(),
+      });
+      return response.data;
+    },
+    "Failed to update user. Please try again."
+  );
 };
 
 const deleteUser = async (id: string): Promise<void> => {
-  try {
-    await userClient.delete(`/users/${id}`, { headers: getAuthHeaders() });
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.message || "Failed to delete user. Please try again."
-      );
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      await userClient.delete(`/users/${id}`, { headers: getAuthHeaders() });
+    },
+    "Failed to delete user. Please try again."
+  );
 };
 
 const login = async (email: string, password: string): Promise<string> => {
-  try {
-    const response: AxiosResponse<{ data: { token: string }; status: string }> =
-      await userClient.post("/login", { email, password });
-    return response.data.data.token;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(error.message || "Failed to login. Please try again.");
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<{ data: { token: string }; status: string }>(
+        "/login",
+        { email, password }
+      );
+      return response.data.data.token;
+    },
+    "Failed to login. Please try again."
+  );
 };
 
 const signup = async (
   email: string,
   password: string,
-  userData?: any
+  userData?: Partial<IUser>
 ): Promise<{ token: string; user: IUser; plan: IPlan }> => {
-  try {
-    const response: AxiosResponse<{
-      data: { user: IUser; plan: IPlan; token: string };
-      status: string;
-    }> = await userClient.post("/auth/signup", { email, password, userData });
-    return response.data.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(error.message || "Failed to signup. Please try again.");
-    }
-    throw new Error("An unexpected error occurred. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<{
+        data: { user: IUser; plan: IPlan; token: string };
+        status: string;
+      }>("/auth/signup", { email, password, userData });
+      return response.data.data;
+    },
+    "Failed to signup. Please try again."
+  );
 };
 
 const fetchUser = async (
   token: string
 ): Promise<{ user: IUser; plan: IPlan }> => {
-  try {
-    const response: AxiosResponse<{ data: { user: IUser; plan: IPlan } }> =
-      await userClient.get("/auth/users/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    return response.data.data;
-  } catch (error) {
-    throw new Error("Failed to fetch user. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<{ data: { user: IUser; plan: IPlan } }>(
+        "/auth/users/me",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return response.data.data;
+    },
+    "Failed to fetch user. Please try again."
+  );
 };
 
 const oauthAuth = async (
@@ -286,19 +278,28 @@ const initiateOAuth = async (
   }
 };
 
+interface ProgressStats {
+  calories: { consumed: number; goal: number; percentage: number };
+  water: { consumed: number; goal: number; percentage: number };
+  macros: {
+    protein: { consumed: number; goal: number; percentage: number };
+    carbs: { consumed: number; goal: number; percentage: number };
+    fat: { consumed: number; goal: number; percentage: number };
+  };
+}
+
 const getTodayProgress = async (
   userId: string
-): Promise<{ progress: IDailyProgress; stats: any; message: string }> => {
-  try {
-    const response: AxiosResponse<{
-      data: { progress: IDailyProgress; stats: any; message: string };
-    }> = await userClient.get(`/progress/today/${userId}`, {
-      headers: getAuthHeaders(),
-    });
-    return response.data.data;
-  } catch (error) {
-    throw new Error("Failed to get today progress. Please try again.");
-  }
+): Promise<{ progress: IDailyProgress; stats: ProgressStats; message: string }> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<{
+        data: { progress: IDailyProgress; stats: ProgressStats; message: string };
+      }>(`/progress/today/${userId}`, { headers: getAuthHeaders() });
+      return response.data.data;
+    },
+    "Failed to get today progress. Please try again."
+  );
 };
 
 const generateMealPlan = async (
@@ -343,185 +344,171 @@ const generateMealPlan = async (
   }
 };
 
+// Generic API response type for endpoints returning { data: T }
+interface ApiResponse<T> {
+  data: T;
+}
+
 const updateProgress = async (
   userId: string,
   progress: IDailyProgress
-): Promise<{ data: any }> => {
-  const payload = {
-    progress,
-    useMock: config.useMock,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/progress/${userId}`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update progress. Please try again.");
-  }
+): Promise<ApiResponse<IDailyProgress>> => {
+  return withErrorHandling(
+    async () => {
+      const payload = { progress, useMock: config.useMock };
+      const response = await userClient.put<ApiResponse<IDailyProgress>>(
+        `/progress/${userId}`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update progress. Please try again."
+  );
 };
 
 const updateMealPlan = async (
   userId: string,
   mealPlan: IPlan
-): Promise<{ data: any }> => {
-  const payload = {
-    mealPlan,
-    useMock: config.useMock,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/plan/${userId}`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update meal plan. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const payload = { mealPlan, useMock: config.useMock };
+      const response = await userClient.put<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update meal plan. Please try again."
+  );
 };
 
 const updateMealInPlan = async (
   userId: string,
   date: Date,
   meal: IMeal
-): Promise<{ data: any }> => {
-  const stringDate = new Date(date).toISOString();
-  const payload = {
-    date: stringDate,
-    meal,
-    useMock: config.useMock,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/plan/${userId}/update-meal`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update meal. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const stringDate = new Date(date).toISOString();
+      const payload = { date: stringDate, meal, useMock: config.useMock };
+      const response = await userClient.put<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}/update-meal`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update meal. Please try again."
+  );
 };
 
 const addWaterGlass = async (
   userId: string,
   date: string,
   glasses: number
-): Promise<{ data: any }> => {
-  const payload = {
-    glasses,
-    date,
-    useMock: config.useMock,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/progress/water/${userId}`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to add water glass. Please try again.");
-  }
+): Promise<ApiResponse<{ progress: IDailyProgress }>> => {
+  return withErrorHandling(
+    async () => {
+      const payload = { glasses, date, useMock: config.useMock };
+      const response = await userClient.post<ApiResponse<{ progress: IDailyProgress }>>(
+        `/progress/water/${userId}`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to add water glass. Please try again."
+  );
 };
 
 const addWorkout = async (
   userId: string,
   workout: WorkoutData
-): Promise<{ data: any }> => {
-  const payload = { ...workout, useMock: config.useMock };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/plan/${userId}/workout`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to add workout. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const payload = { ...workout, useMock: config.useMock };
+      const response = await userClient.post<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}/workout`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to add workout. Please try again."
+  );
 };
 
 const updateWorkout = async (
   userId: string,
   date: string,
   workout: WorkoutData
-): Promise<{ data: any }> => {
-  const dailyDate = new Date(date);
-  dailyDate.setHours(0, 0, 0, 0);
-  const payload = {
-    date: dailyDate.toISOString(),
-    workout,
-    useMock: config.useMock,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/plan/${userId}/workout`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update workout. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const dailyDate = new Date(date);
+      dailyDate.setHours(0, 0, 0, 0);
+      const payload = { date: dailyDate.toISOString(), workout, useMock: config.useMock };
+      const response = await userClient.put<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}/workout`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update workout. Please try again."
+  );
 };
 
 const deleteWorkout = async (
   userId: string,
   date: string,
   workout: WorkoutData
-): Promise<{ data: any }> => {
-  const dailyDate = new Date(date);
-  dailyDate.setHours(0, 0, 0, 0);
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/plan/${userId}/workout/${date}/${workout.name}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to delete workout. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.delete<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}/workout/${date}/${workout.name}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to delete workout. Please try again."
+  );
 };
 
 const completeWorkout = async (
   userId: string,
   date: string,
   workout: WorkoutData
-): Promise<{ data: any }> => {
-  const dailyDate = new Date(date);
-  dailyDate.setHours(0, 0, 0, 0);
-  const payload = {
-    date: dailyDate.toISOString(),
-    workout,
-  };
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/progress/workout-completed/${userId}`,
-      payload,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to complete workout. Please try again.");
-  }
+): Promise<ApiResponse<{ progress: IDailyProgress }>> => {
+  return withErrorHandling(
+    async () => {
+      const dailyDate = new Date(date);
+      dailyDate.setHours(0, 0, 0, 0);
+      const payload = { date: dailyDate.toISOString(), workout };
+      const response = await userClient.put<ApiResponse<{ progress: IDailyProgress }>>(
+        `/progress/workout-completed/${userId}`,
+        payload,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to complete workout. Please try again."
+  );
 };
 
 const updateFavorite = async (
   userId: string,
   mealId: string,
   isFavorite: boolean
-): Promise<{ data: any }> => {
-  const payload = {
-    mealId,
-    isFavorite,
-    useMock: config.useMock,
-  };
+): Promise<ApiResponse<IUser>> => {
   try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
+    const payload = { mealId, isFavorite, useMock: config.useMock };
+    const response = await userClient.put<ApiResponse<IUser>>(
       `/users/${userId}/favorite-meals`,
       payload,
       { headers: getAuthHeaders() }
@@ -529,7 +516,6 @@ const updateFavorite = async (
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem("token");
       throw new Error("AUTH_ERROR");
     }
@@ -537,121 +523,134 @@ const updateFavorite = async (
   }
 };
 
-const getFavoritesByUserId = async (userId: string): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/users/${userId}/favorite-meals`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to get favorites. Please try again.");
-  }
+const getFavoritesByUserId = async (
+  userId: string
+): Promise<ApiResponse<{ favoriteMeals: IMeal[] }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<ApiResponse<{ favoriteMeals: IMeal[] }>>(
+        `/users/${userId}/favorite-meals`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to get favorites. Please try again."
+  );
 };
 
 // Shopping Bag API
 const getShoppingList = async (
   planId: string
 ): Promise<{ ingredients: IngredientInput[] }> => {
-  try {
-    const response: AxiosResponse<{
-      data: { ingredients: IngredientInput[] };
-    }> = await userClient.get(`/shopping/list?planId=${planId}`, {
-      headers: getAuthHeaders(),
-    });
-    return response.data.data;
-  } catch (error) {
-    throw new Error("Failed to get shopping list. Please try again.");
-  }
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<{ data: { ingredients: IngredientInput[] } }>(
+        `/shopping/list?planId=${planId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data.data;
+    },
+    "Failed to get shopping list. Please try again."
+  );
 };
 
 const updateShoppingItem = async (
   planId: string,
   item: IngredientInput
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/shopping/${planId}/items`,
-      { item },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update shopping item. Please try again.");
-  }
+): Promise<ApiResponse<IngredientInput>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<IngredientInput>>(
+        `/shopping/${planId}/items`,
+        { item },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update shopping item. Please try again."
+  );
 };
 
 const addShoppingItem = async (
   planId: string,
   item: IngredientInput
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/shopping/${planId}/items`,
-      { items: [item] },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to add shopping item. Please try again.");
-  }
+): Promise<ApiResponse<IngredientInput[]>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<ApiResponse<IngredientInput[]>>(
+        `/shopping/${planId}/items`,
+        { items: [item] },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to add shopping item. Please try again."
+  );
 };
 
 const deleteShoppingItem = async (
   planId: string,
   itemId: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/shopping/${planId}/items/${itemId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to delete shopping item. Please try again.");
-  }
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.delete<ApiResponse<{ success: boolean }>>(
+        `/shopping/${planId}/items/${itemId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to delete shopping item. Please try again."
+  );
 };
 
-const clearShoppingList = async (userId: string): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/shopping/${userId}/clear`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to clear shopping list. Please try again.");
-  }
+const clearShoppingList = async (
+  userId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.delete<ApiResponse<{ success: boolean }>>(
+        `/shopping/${userId}/clear`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to clear shopping list. Please try again."
+  );
 };
 
 // Favorite Recipes API
-const getFavoriteRecipes = async (userId: string): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/recipes/favorites/${userId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to get favorite recipes. Please try again.");
-  }
+const getFavoriteRecipes = async (
+  userId: string
+): Promise<ApiResponse<{ recipes: IRecipe[] }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<ApiResponse<{ recipes: IRecipe[] }>>(
+        `/recipes/favorites/${userId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to get favorite recipes. Please try again."
+  );
 };
 
 const toggleFavoriteRecipe = async (
   userId: string,
   recipeId: string,
   isFavorite: boolean
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/recipes/favorites/${userId}`,
-      { recipeId, isFavorite },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update favorite recipe. Please try again.");
-  }
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<{ success: boolean }>>(
+        `/recipes/favorites/${userId}`,
+        { recipeId, isFavorite },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update favorite recipe. Please try again."
+  );
 };
 
 // Get Recipe by Meal ID (fetches full recipe details including instructions)
@@ -660,94 +659,112 @@ const toggleFavoriteRecipe = async (
 const getRecipeByMealId = async (
   mealId: string,
   userId: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/recipes/${userId}/meal/${mealId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to get recipe. Please try again.");
-  }
+): Promise<ApiResponse<IRecipe>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<ApiResponse<IRecipe>>(
+        `/recipes/${userId}/meal/${mealId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to get recipe. Please try again."
+  );
 };
 
+// Goal type for API operations
+interface Goal {
+  _id?: string;
+  userId: string;
+  name: string;
+  target: number;
+  current: number;
+  unit: string;
+  deadline?: string;
+  achieved?: boolean;
+}
+
 // Goals API
-const getGoals = async (userId: string): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/goals/${userId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to get goals. Please try again.");
-  }
+const getGoals = async (userId: string): Promise<ApiResponse<Goal[]>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.get<ApiResponse<Goal[]>>(
+        `/goals/${userId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to get goals. Please try again."
+  );
 };
 
 const createGoal = async (
   userId: string,
-  goal: any
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/goals/${userId}`,
-      goal,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to create goal. Please try again.");
-  }
+  goal: Omit<Goal, "_id" | "userId">
+): Promise<ApiResponse<Goal>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<ApiResponse<Goal>>(
+        `/goals/${userId}`,
+        goal,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to create goal. Please try again."
+  );
 };
 
 const updateGoal = async (
   userId: string,
   goalId: string,
-  updates: any
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/goals/${userId}/${goalId}`,
-      updates,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update goal. Please try again.");
-  }
+  updates: Partial<Goal>
+): Promise<ApiResponse<Goal>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<Goal>>(
+        `/goals/${userId}/${goalId}`,
+        updates,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update goal. Please try again."
+  );
 };
 
 const deleteGoal = async (
   userId: string,
   goalId: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/goals/${userId}/${goalId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to delete goal. Please try again.");
-  }
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.delete<ApiResponse<{ success: boolean }>>(
+        `/goals/${userId}/${goalId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to delete goal. Please try again."
+  );
 };
 
 const updateGoalProgress = async (
   userId: string,
   goalId: string,
   current: number
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/goals/${userId}/${goalId}/progress`,
-      { current },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update goal progress. Please try again.");
-  }
+): Promise<ApiResponse<Goal>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<Goal>>(
+        `/goals/${userId}/${goalId}/progress`,
+        { current },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update goal progress. Please try again."
+  );
 };
 
 // Progress/Daily Tracker API
@@ -755,36 +772,38 @@ const getProgressHistory = async (
   userId: string,
   startDate?: string,
   endDate?: string
-): Promise<{ data: any }> => {
-  try {
-    const params: any = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    const response: AxiosResponse<{ data: any }> = await userClient.get(
-      `/progress/${userId}/history`,
-      { params, headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to get progress history. Please try again.");
-  }
+): Promise<ApiResponse<{ history: IDailyProgress[] }>> => {
+  return withErrorHandling(
+    async () => {
+      const params: Record<string, string> = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      const response = await userClient.get<ApiResponse<{ history: IDailyProgress[] }>>(
+        `/progress/${userId}/history`,
+        { params, headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to get progress history. Please try again."
+  );
 };
 
 const updateDailyProgress = async (
   userId: string,
   date: string,
   progress: Partial<IDailyProgress>
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/progress/${userId}/daily`,
-      { date, progress },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to update daily progress. Please try again.");
-  }
+): Promise<ApiResponse<IDailyProgress>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<IDailyProgress>>(
+        `/progress/${userId}/daily`,
+        { date, progress },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to update daily progress. Please try again."
+  );
 };
 
 const completeMeal = async (
@@ -792,17 +811,18 @@ const completeMeal = async (
   date: string,
   mealType: string,
   mealId: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/progress/meal/${userId}/${mealId}`,
-      { date, mealType, mealId },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to complete meal. Please try again.");
-  }
+): Promise<ApiResponse<IDailyProgress>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<IDailyProgress>>(
+        `/progress/meal/${userId}/${mealId}`,
+        { date, mealType, mealId },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to complete meal. Please try again."
+  );
 };
 
 // Meal criteria interface for AI suggestions
@@ -819,24 +839,18 @@ const getAIMealSuggestions = async (
   userId: string,
   mealCriteria: MealCriteria,
   aiRules?: string
-): Promise<{ data: { meals: IMeal[] } }> => {
-  try {
-    const response: AxiosResponse<{ data: { meals: IMeal[] } }> =
-      await mealGenerationClient.post(
+): Promise<ApiResponse<{ meals: IMeal[] }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await mealGenerationClient.post<ApiResponse<{ meals: IMeal[] }>>(
         `/generate/meal-suggestions/${userId}`,
         { mealCriteria, aiRules },
         { headers: getAuthHeaders() }
       );
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      throw new Error(
-        error.response?.data?.message ||
-          "Failed to get AI suggestions. Please try again."
-      );
-    }
-    throw new Error("Failed to get AI suggestions. Please try again.");
-  }
+      return response.data;
+    },
+    "Failed to get AI suggestions. Please try again."
+  );
 };
 
 // Change meal in plan (for weekly/daily view)
@@ -846,23 +860,24 @@ const changeMealInPlan = async (
   date: string,
   mealType: string,
   newMeal: IMeal,
-  snackIndex?: number // Index of snack to change (only for mealType "snacks")
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.put(
-      `/plan/${userId}/meal-replace/${planId}`,
-      {
-        date,
-        mealType,
-        newMeal,
-        ...(snackIndex !== undefined && { snackIndex }),
-      },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to change meal. Please try again.");
-  }
+  snackIndex?: number
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.put<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${userId}/meal-replace/${planId}`,
+        {
+          date,
+          mealType,
+          newMeal,
+          ...(snackIndex !== undefined && { snackIndex }),
+        },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to change meal. Please try again."
+  );
 };
 
 // Add snack to plan
@@ -870,20 +885,18 @@ const addSnack = async (
   planId: string,
   date: string,
   name: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.post(
-      `/plan/${planId}/add-snack`,
-      {
-        date,
-        name,
-      },
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to add snack. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.post<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${planId}/add-snack`,
+        { date, name },
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to add snack. Please try again."
+  );
 };
 
 // Delete snack from plan
@@ -891,16 +904,17 @@ const deleteSnack = async (
   planId: string,
   date: string,
   snackId: string
-): Promise<{ data: any }> => {
-  try {
-    const response: AxiosResponse<{ data: any }> = await userClient.delete(
-      `/plan/${planId}/snack/${date}/${snackId}`,
-      { headers: getAuthHeaders() }
-    );
-    return response.data;
-  } catch (error) {
-    throw new Error("Failed to delete snack. Please try again.");
-  }
+): Promise<ApiResponse<{ plan: IPlan }>> => {
+  return withErrorHandling(
+    async () => {
+      const response = await userClient.delete<ApiResponse<{ plan: IPlan }>>(
+        `/plan/${planId}/snack/${date}/${snackId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    },
+    "Failed to delete snack. Please try again."
+  );
 };
 
 export const userAPI = {

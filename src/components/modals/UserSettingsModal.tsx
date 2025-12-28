@@ -19,14 +19,16 @@ export function UserSettingsModal({ children }: { children: React.ReactNode }) {
   const [newPreference, setNewPreference] = useState("");
   const [newDislike, setNewDislike] = useState("");
   const [allergies, setAllergies] = useState<string[]>(user?.allergies || []);
-  const [preferences, setPreferences] = useState<string[]>(user?.dietaryRestrictions || []);
+  const [preferences, setPreferences] = useState<string[]>(
+    user?.dietaryRestrictions || []
+  );
   const [dislikes, setDislikes] = useState<string[]>(user?.dislikes || []);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      await updateProfile({
+      await updateProfile(user?._id || "", {
         ...user,
         weight: parseFloat(weight),
         allergies,
@@ -217,7 +219,11 @@ export function UserSettingsModal({ children }: { children: React.ReactNode }) {
           <DialogTrigger asChild>
             <Button variant="outline">Cancel</Button>
           </DialogTrigger>
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button
+            className="bg-green-500 text-white hover:bg-green-600"
+            onClick={handleSave}
+            disabled={isLoading}
+          >
             {isLoading ? "Saving..." : "Save changes"}
           </Button>
         </div>

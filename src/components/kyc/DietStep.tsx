@@ -1,6 +1,19 @@
-import React from "react";
-import { ChevronRight, ChevronLeft, Loader } from "lucide-react";
-import { KYCData, dietTypes } from "./types";
+import {
+  Leaf,
+  Fish,
+  MilkOff,
+  WheatOff,
+  Nut,
+  Apple,
+  Beef,
+  Salad,
+  Heart,
+  Dumbbell,
+  Timer,
+  Scale,
+} from "lucide-react";
+import { KYCData, dietGoals, dietaryRestrictions } from "./types";
+import KycLayout from "./KycLayout";
 
 interface DietStepProps {
   kycData: KYCData;
@@ -11,6 +24,79 @@ interface DietStepProps {
   onBack: () => void;
 }
 
+// Icon component for dietary preferences
+const DietIcon = ({
+  type,
+  className,
+}: {
+  type: string;
+  className?: string;
+}) => {
+  const iconProps = { className: className || "w-8 h-8", strokeWidth: 1.5 };
+
+  switch (type) {
+    // Diet goals
+    case "keto":
+      return <Nut {...iconProps} />;
+    case "healthy-balance":
+      return <Heart {...iconProps} />;
+    case "muscle-up":
+      return <Dumbbell {...iconProps} />;
+    case "running":
+      return (
+        <svg
+          className={iconProps.className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={iconProps.strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="17" cy="4" r="2" />
+          <path d="M15.59 13.51l-2.18-2.23a1.5 1.5 0 00-2.12 0l-3.88 3.88a1.5 1.5 0 000 2.12l2.64 2.64" />
+          <path d="M9.5 5.5L7 8l-4 1 1-4 2.5-2.5" />
+          <path d="M14 17l2.5 2.5 4-1-1 4-2.5 2.5" />
+          <path d="M19 12l-7-7" />
+        </svg>
+      );
+    case "lose-weight":
+      return <Scale {...iconProps} />;
+    case "fasting":
+      return <Timer {...iconProps} />;
+    // Dietary restrictions
+    case "vegan":
+      return (
+        <svg
+          className={iconProps.className}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={iconProps.strokeWidth}
+          strokeLinecap="round"
+        >
+          <path d="M12 3c-4.5 6-4 12 0 18" />
+          <path d="M12 3c4.5 6 4 12 0 18" />
+          <path d="M12 3v18" />
+        </svg>
+      );
+    case "vegetarian":
+      return <Leaf {...iconProps} />;
+    case "pescatarian":
+      return <Fish {...iconProps} />;
+    case "dairy-free":
+      return <MilkOff {...iconProps} />;
+    case "gluten-free":
+      return <WheatOff {...iconProps} />;
+    case "paleo":
+      return <Beef {...iconProps} />;
+    case "low-carb":
+      return <Salad {...iconProps} />;
+    default:
+      return <Apple {...iconProps} />;
+  }
+};
+
 export default function DietStep({
   kycData,
   setKycData,
@@ -19,86 +105,132 @@ export default function DietStep({
   onSubmit,
   onBack,
 }: DietStepProps) {
+  // Single selection for diet goal
+  const selectDietGoal = (goalId: string) => {
+    setKycData((prev) => ({
+      ...prev,
+      dietType: prev.dietType === goalId ? "" : goalId,
+    }));
+  };
+
+  // Multi-selection for dietary restrictions
+  const toggleRestriction = (restrictionId: string) => {
+    setKycData((prev) => {
+      const current = prev.dietaryRestrictions || [];
+      const hasRestriction = current.includes(restrictionId);
+      return {
+        ...prev,
+        dietaryRestrictions: hasRestriction
+          ? current.filter((r) => r !== restrictionId)
+          : [...current, restrictionId],
+      };
+    });
+  };
+
+  const isGoalSelected = (goalId: string) => kycData.dietType === goalId;
+  const isRestrictionSelected = (restrictionId: string) =>
+    (kycData.dietaryRestrictions || []).includes(restrictionId);
+
+  const hasGoalSelection = kycData.dietType && kycData.dietType.length > 0;
+
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4 relative"
-      style={{ backgroundColor: "var(--bg-primary)" }}
+    <KycLayout
+      title="Diet & Goals"
+      description="Select your health goal and any dietary restrictions."
+      onBack={onBack}
+      onSubmit={onSubmit}
+      loading={loading}
+      error={error}
+      submitText="Continue"
+      submitDisabled={!hasGoalSelection}
     >
-      <button
-        onClick={onBack}
-        disabled={loading}
-        className="absolute top-4 left-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition disabled:opacity-50"
-        aria-label="Go back"
-      >
-        <ChevronLeft className="w-5 h-5" />
-      </button>
-      <div className="w-full max-w-md">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">
-          Choose Your Diet Type
-        </h1>
-        <p className="text-gray-600 text-lg mb-8">
-          Select the eating plan that best fits your lifestyle and goals.
-        </p>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-4 mb-8">
-          {dietTypes.map((diet) => {
+      {/* Diet Goals Section - Single Select */}
+      <div className="mb-8">
+        <h3 className="text-lg font-bold text-gray-900 mb-3">
+          What's your goal?
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">Choose one</p>
+        <div className="grid grid-cols-2 gap-3">
+          {dietGoals.map((goal) => {
+            const selected = isGoalSelected(goal.id);
             return (
               <button
-                key={diet.name}
-                onClick={() =>
-                  setKycData((prev) => ({ ...prev, dietType: diet.name }))
-                }
-                className={`w-full p-6 rounded-2xl border-2 transition flex flex-col items-center gap-3 ${
-                  kycData.dietType === diet.name
-                    ? "border-green-500 bg-green-50 shadow-md"
-                    : "border-gray-200 hover:border-gray-300 bg-white"
-                }`}
+                key={goal.id}
+                onClick={() => selectDietGoal(goal.id)}
+                className={`
+                  flex flex-col items-center justify-center
+                  p-4 rounded-xl border-2 transition-all duration-200
+                  ${
+                    selected
+                      ? "border-green-500 bg-green-50 shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }
+                `}
               >
                 <div
-                  className={`${diet.color} p-4 rounded-full flex items-center justify-center`}
-                >
-                  <div className="w-36 h-36 flex items-center justify-center">
-                    {diet.icon}
-                  </div>
-                </div>
-                <div
-                  className={`font-semibold text-lg ${
-                    kycData.dietType === diet.name
-                      ? "text-green-700"
-                      : "text-gray-900"
+                  className={`mb-2 ${
+                    selected ? "text-green-600" : "text-gray-700"
                   }`}
                 >
-                  {diet.name}
+                  <DietIcon type={goal.icon} className="w-8 h-8" />
                 </div>
+                <span
+                  className={`text-xs font-medium text-center ${
+                    selected ? "text-green-600" : "text-gray-800"
+                  }`}
+                >
+                  {goal.name}
+                </span>
               </button>
             );
           })}
         </div>
-
-        <button
-          onClick={onSubmit}
-          disabled={loading || !kycData.dietType}
-          className={`w-full h-12 px-3 flex items-center justify-center gap-2 font-open text-lg font-semibold border-none rounded-xl transition ${
-            kycData.dietType
-              ? "bg-green-500 hover:bg-green-600 text-white shadow-lg"
-              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-          } disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed`}
-        >
-          {loading ? (
-            <Loader className="w-6 h-6 animate-spin" />
-          ) : (
-            <>
-              Next <ChevronRight className="w-6 h-6" />
-            </>
-          )}
-        </button>
       </div>
-    </div>
+
+      {/* Dietary Restrictions Section - Multi Select */}
+      <div>
+        <h3 className="text-lg font-bold text-gray-900 mb-3">
+          Any dietary restrictions?
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Select all that apply (optional)
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          {dietaryRestrictions.map((restriction) => {
+            const selected = isRestrictionSelected(restriction.id);
+            return (
+              <button
+                key={restriction.id}
+                onClick={() => toggleRestriction(restriction.id)}
+                className={`
+                  flex flex-col items-center justify-center
+                  p-4 rounded-xl border-2 transition-all duration-200
+                  ${
+                    selected
+                      ? "border-blue-500 bg-blue-50 shadow-sm"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }
+                `}
+              >
+                <div
+                  className={`mb-2 ${
+                    selected ? "text-blue-600" : "text-gray-700"
+                  }`}
+                >
+                  <DietIcon type={restriction.icon} className="w-8 h-8" />
+                </div>
+                <span
+                  className={`text-xs font-medium text-center ${
+                    selected ? "text-blue-600" : "text-gray-800"
+                  }`}
+                >
+                  {restriction.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </KycLayout>
   );
 }

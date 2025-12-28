@@ -11,183 +11,57 @@ import {
   Dumbbell,
   GlassWater,
   Leaf,
-  Edit2,
   Trash2,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-
-// Types
-interface Milestone {
-  id: string;
-  title: string;
-  targetValue: number;
-  completed: boolean;
-  completedDate?: string;
-}
-
-interface ProgressEntry {
-  date: string;
-  value: number;
-}
-
-interface Goal {
-  id: string;
-  title: string;
-  description: string;
-  current: number;
-  target: number;
-  unit: string;
-  icon: "run" | "weight" | "workout" | "water" | "veggies";
-  status: "achieved" | "in_progress";
-  startDate: string;
-  milestones: Milestone[];
-  progressHistory: ProgressEntry[];
-}
-
-// Mock data - in real app, this would come from API/store
-const mockGoals: Goal[] = [
-  {
-    id: "1",
-    title: "Run 5K",
-    description: "Improve cardiovascular endurance and complete a 5K.",
-    current: 3.5,
-    target: 5,
-    unit: "km",
-    icon: "run",
-    status: "achieved",
-    startDate: "2024-11-01",
-    milestones: [
-      { id: "m1", title: "Run 1K without stopping", targetValue: 1, completed: true, completedDate: "2024-11-10" },
-      { id: "m2", title: "Run 2K in under 15 min", targetValue: 2, completed: true, completedDate: "2024-11-20" },
-      { id: "m3", title: "Run 3K comfortably", targetValue: 3, completed: true, completedDate: "2024-12-01" },
-      { id: "m4", title: "Complete 5K run", targetValue: 5, completed: false },
-    ],
-    progressHistory: [
-      { date: "2024-11-01", value: 0.5 },
-      { date: "2024-11-08", value: 1.0 },
-      { date: "2024-11-15", value: 1.5 },
-      { date: "2024-11-22", value: 2.2 },
-      { date: "2024-11-29", value: 2.8 },
-      { date: "2024-12-06", value: 3.2 },
-      { date: "2024-12-13", value: 3.5 },
-    ],
-  },
-  {
-    id: "2",
-    title: "Lose 10kg Weight",
-    description: "Reach a healthier body weight through diet and consistent exercise.",
-    current: 6.2,
-    target: 10,
-    unit: "kg",
-    icon: "weight",
-    status: "achieved",
-    startDate: "2024-10-01",
-    milestones: [
-      { id: "m1", title: "Lose first 2kg", targetValue: 2, completed: true, completedDate: "2024-10-15" },
-      { id: "m2", title: "Lose 5kg (halfway)", targetValue: 5, completed: true, completedDate: "2024-11-10" },
-      { id: "m3", title: "Lose 7.5kg (75%)", targetValue: 7.5, completed: false },
-      { id: "m4", title: "Reach goal: 10kg lost", targetValue: 10, completed: false },
-    ],
-    progressHistory: [
-      { date: "2024-10-01", value: 0 },
-      { date: "2024-10-15", value: 2.1 },
-      { date: "2024-11-01", value: 3.5 },
-      { date: "2024-11-15", value: 4.8 },
-      { date: "2024-12-01", value: 5.6 },
-      { date: "2024-12-15", value: 6.2 },
-    ],
-  },
-  {
-    id: "3",
-    title: "Workout 3x a Week",
-    description: "Build strength and consistency in my weekly workout routine.",
-    current: 2,
-    target: 3,
-    unit: "times",
-    icon: "workout",
-    status: "in_progress",
-    startDate: "2024-12-01",
-    milestones: [
-      { id: "m1", title: "Complete first week", targetValue: 1, completed: true, completedDate: "2024-12-07" },
-      { id: "m2", title: "2 weeks streak", targetValue: 2, completed: true, completedDate: "2024-12-14" },
-      { id: "m3", title: "1 month consistency", targetValue: 4, completed: false },
-      { id: "m4", title: "2 months streak", targetValue: 8, completed: false },
-    ],
-    progressHistory: [
-      { date: "2024-12-01", value: 0 },
-      { date: "2024-12-07", value: 2 },
-      { date: "2024-12-14", value: 2 },
-      { date: "2024-12-21", value: 2 },
-    ],
-  },
-  {
-    id: "4",
-    title: "Drink 2L Water Daily",
-    description: "Stay adequately hydrated for better health and energy levels.",
-    current: 1.8,
-    target: 2,
-    unit: "L",
-    icon: "water",
-    status: "achieved",
-    startDate: "2024-12-01",
-    milestones: [
-      { id: "m1", title: "Drink 1L daily for a week", targetValue: 1, completed: true, completedDate: "2024-12-07" },
-      { id: "m2", title: "Reach 1.5L daily", targetValue: 1.5, completed: true, completedDate: "2024-12-14" },
-      { id: "m3", title: "Consistent 2L for a week", targetValue: 2, completed: false },
-    ],
-    progressHistory: [
-      { date: "2024-12-01", value: 0.8 },
-      { date: "2024-12-07", value: 1.2 },
-      { date: "2024-12-14", value: 1.5 },
-      { date: "2024-12-21", value: 1.8 },
-    ],
-  },
-  {
-    id: "5",
-    title: "Eat 5 Portions of Veggies",
-    description: "Increase daily vegetable intake for improved nutrition.",
-    current: 4,
-    target: 5,
-    unit: "portions",
-    icon: "veggies",
-    status: "achieved",
-    startDate: "2024-11-15",
-    milestones: [
-      { id: "m1", title: "Eat 2 portions daily", targetValue: 2, completed: true, completedDate: "2024-11-22" },
-      { id: "m2", title: "Eat 3 portions daily", targetValue: 3, completed: true, completedDate: "2024-12-01" },
-      { id: "m3", title: "Eat 4 portions daily", targetValue: 4, completed: true, completedDate: "2024-12-10" },
-      { id: "m4", title: "Reach 5 portions goal", targetValue: 5, completed: false },
-    ],
-    progressHistory: [
-      { date: "2024-11-15", value: 1 },
-      { date: "2024-11-22", value: 2 },
-      { date: "2024-12-01", value: 3 },
-      { date: "2024-12-08", value: 3.5 },
-      { date: "2024-12-15", value: 4 },
-    ],
-  },
-];
+import { useGoalsStore } from "@/stores/goalsStore";
+import { useAuthStore } from "@/stores/authStore";
+import type { Goal, Milestone } from "@/components/goals/Goals";
 
 const GoalDetailPage = () => {
   const { goalId } = useParams<{ goalId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const {
+    goals,
+    fetchGoals,
+    updateProgress: storeUpdateProgress,
+  } = useGoalsStore();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [showUpdateProgress, setShowUpdateProgress] = useState(false);
-  const [newMilestone, setNewMilestone] = useState({ title: "", targetValue: "" });
+  const [newMilestone, setNewMilestone] = useState({
+    title: "",
+    targetValue: "",
+  });
   const [newProgress, setNewProgress] = useState("");
 
   useEffect(() => {
-    // In real app, fetch from API
-    const foundGoal = mockGoals.find((g) => g.id === goalId);
-    if (foundGoal) {
-      setGoal(foundGoal);
+    // Fetch goals if not loaded
+    if (user?._id && goals.length === 0) {
+      fetchGoals(user._id);
     }
-  }, [goalId]);
+  }, [user?._id, goals.length, fetchGoals]);
+
+  // Initialize local goal state from store
+  useEffect(() => {
+    const storeGoal = goals.find((g) => g.id === goalId);
+    if (storeGoal) {
+      // Add default values for optional fields
+      setGoal({
+        ...storeGoal,
+        startDate:
+          storeGoal.startDate || new Date().toISOString().split("T")[0],
+        milestones: storeGoal.milestones || [],
+        progressHistory: storeGoal.progressHistory || [],
+      } as Goal);
+    }
+  }, [goals, goalId]);
 
   const getIcon = (iconType: Goal["icon"]) => {
     const iconClass = "w-8 h-8 text-white";
-    const containerClass = "w-16 h-16 rounded-2xl flex items-center justify-center";
+    const containerClass =
+      "w-16 h-16 rounded-2xl flex items-center justify-center";
     switch (iconType) {
       case "run":
         return (
@@ -247,7 +121,7 @@ const GoalDetailPage = () => {
 
     setGoal({
       ...goal,
-      milestones: [...goal.milestones, milestone].sort(
+      milestones: [...(goal.milestones || []), milestone].sort(
         (a, b) => a.targetValue - b.targetValue
       ),
     });
@@ -260,7 +134,7 @@ const GoalDetailPage = () => {
 
     setGoal({
       ...goal,
-      milestones: goal.milestones.map((m) =>
+      milestones: (goal.milestones || []).map((m) =>
         m.id === milestoneId
           ? {
               ...m,
@@ -279,40 +153,52 @@ const GoalDetailPage = () => {
 
     setGoal({
       ...goal,
-      milestones: goal.milestones.filter((m) => m.id !== milestoneId),
+      milestones: (goal.milestones || []).filter((m) => m.id !== milestoneId),
     });
   };
 
-  const handleUpdateProgress = () => {
-    if (!goal || !newProgress) return;
+  const handleUpdateProgress = async () => {
+    if (!goal || !newProgress || !user?._id) return;
 
     const newValue = parseFloat(newProgress);
     const today = new Date().toISOString().split("T")[0];
 
+    // Update local state
     setGoal({
       ...goal,
       current: newValue,
       progressHistory: [
-        ...goal.progressHistory.filter((p) => p.date !== today),
+        ...(goal.progressHistory || []).filter((p) => p.date !== today),
         { date: today, value: newValue },
       ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
     });
+
+    // Update store and API
+    await storeUpdateProgress(user._id, goal.id, newValue);
+
     setNewProgress("");
     setShowUpdateProgress(false);
   };
 
   // Calculate chart dimensions
   const getChartPath = () => {
-    if (!goal || goal.progressHistory.length < 2) return "";
+    const progressHistory = goal?.progressHistory || [];
+    if (!goal || progressHistory.length < 2) return "";
 
-    const maxValue = Math.max(goal.target, ...goal.progressHistory.map((p) => p.value));
+    const maxValue = Math.max(
+      goal.target,
+      ...progressHistory.map((p) => p.value)
+    );
     const width = 100;
     const height = 100;
     const padding = 10;
 
-    const points = goal.progressHistory.map((entry, index) => {
-      const x = padding + (index / (goal.progressHistory.length - 1)) * (width - 2 * padding);
-      const y = height - padding - (entry.value / maxValue) * (height - 2 * padding);
+    const points = progressHistory.map((entry, index) => {
+      const x =
+        padding +
+        (index / (progressHistory.length - 1)) * (width - 2 * padding);
+      const y =
+        height - padding - (entry.value / maxValue) * (height - 2 * padding);
       return { x, y };
     });
 
@@ -335,7 +221,9 @@ const GoalDetailPage = () => {
   }
 
   const progress = getProgressPercentage(goal.current, goal.target);
-  const completedMilestones = goal.milestones.filter((m) => m.completed).length;
+  const milestones = goal.milestones || [];
+  const progressHistory = goal.progressHistory || [];
+  const completedMilestones = milestones.filter((m) => m.completed).length;
 
   return (
     <DashboardLayout bgColor="bg-gray-50" showNavBar={false}>
@@ -349,7 +237,9 @@ const GoalDetailPage = () => {
             >
               <ArrowLeft className="w-5 h-5 text-gray-700" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">Goal Details</h1>
+            <h1 className="text-lg font-semibold text-gray-900">
+              Goal Details
+            </h1>
           </div>
         </div>
 
@@ -359,7 +249,9 @@ const GoalDetailPage = () => {
             <div className="flex items-start gap-4 mb-6">
               {getIcon(goal.icon)}
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 mb-1">{goal.title}</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                  {goal.title}
+                </h2>
                 <p className="text-sm text-gray-600">{goal.description}</p>
               </div>
             </div>
@@ -392,7 +284,9 @@ const GoalDetailPage = () => {
                   <span className="text-2xl font-bold text-gray-900">
                     {goal.current}
                   </span>
-                  <span className="text-sm text-gray-500">of {goal.target} {goal.unit}</span>
+                  <span className="text-sm text-gray-500">
+                    of {goal.target} {goal.unit}
+                  </span>
                 </div>
               </div>
             </div>
@@ -403,14 +297,14 @@ const GoalDetailPage = () => {
                 <Calendar className="w-5 h-5 mx-auto mb-1 text-gray-500" />
                 <div className="text-xs text-gray-500">Started</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {formatDate(goal.startDate)}
+                  {formatDate(goal.startDate || new Date().toISOString())}
                 </div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-xl">
                 <Target className="w-5 h-5 mx-auto mb-1 text-gray-500" />
                 <div className="text-xs text-gray-500">Milestones</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {completedMilestones}/{goal.milestones.length}
+                  {completedMilestones}/{milestones.length}
                 </div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-xl">
@@ -439,15 +333,42 @@ const GoalDetailPage = () => {
               <TrendingUp className="w-5 h-5 text-green-500" />
               Progress Over Time
             </h3>
-            
-            {goal.progressHistory.length > 1 ? (
+
+            {progressHistory.length > 1 ? (
               <div className="relative h-40">
-                <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                <svg
+                  viewBox="0 0 100 100"
+                  className="w-full h-full"
+                  preserveAspectRatio="none"
+                >
                   {/* Grid lines */}
-                  <line x1="10" y1="90" x2="90" y2="90" stroke="#e5e7eb" strokeWidth="0.5" />
-                  <line x1="10" y1="50" x2="90" y2="50" stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="2" />
-                  <line x1="10" y1="10" x2="90" y2="10" stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="2" />
-                  
+                  <line
+                    x1="10"
+                    y1="90"
+                    x2="90"
+                    y2="90"
+                    stroke="#e5e7eb"
+                    strokeWidth="0.5"
+                  />
+                  <line
+                    x1="10"
+                    y1="50"
+                    x2="90"
+                    y2="50"
+                    stroke="#e5e7eb"
+                    strokeWidth="0.5"
+                    strokeDasharray="2"
+                  />
+                  <line
+                    x1="10"
+                    y1="10"
+                    x2="90"
+                    y2="10"
+                    stroke="#e5e7eb"
+                    strokeWidth="0.5"
+                    strokeDasharray="2"
+                  />
+
                   {/* Progress line */}
                   <path
                     d={getChartPath()}
@@ -457,11 +378,14 @@ const GoalDetailPage = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  
+
                   {/* Data points */}
-                  {goal.progressHistory.map((entry, index) => {
-                    const maxValue = Math.max(goal.target, ...goal.progressHistory.map((p) => p.value));
-                    const x = 10 + (index / (goal.progressHistory.length - 1)) * 80;
+                  {progressHistory.map((entry, index) => {
+                    const maxValue = Math.max(
+                      goal.target,
+                      ...progressHistory.map((p) => p.value)
+                    );
+                    const x = 10 + (index / (progressHistory.length - 1)) * 80;
                     const y = 90 - (entry.value / maxValue) * 80;
                     return (
                       <circle
@@ -474,14 +398,16 @@ const GoalDetailPage = () => {
                     );
                   })}
                 </svg>
-                
+
                 {/* X-axis labels */}
                 <div className="flex justify-between mt-2 px-2">
                   <span className="text-xs text-gray-500">
-                    {formatDate(goal.progressHistory[0].date)}
+                    {formatDate(progressHistory[0].date)}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {formatDate(goal.progressHistory[goal.progressHistory.length - 1].date)}
+                    {formatDate(
+                      progressHistory[progressHistory.length - 1].date
+                    )}
                   </span>
                 </div>
               </div>
@@ -493,17 +419,22 @@ const GoalDetailPage = () => {
 
             {/* Recent Progress List */}
             <div className="mt-4 space-y-2">
-              {goal.progressHistory.slice(-5).reverse().map((entry) => (
-                <div
-                  key={entry.date}
-                  className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-                >
-                  <span className="text-sm text-gray-600">{formatDate(entry.date)}</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {entry.value} {goal.unit}
-                  </span>
-                </div>
-              ))}
+              {progressHistory
+                .slice(-5)
+                .reverse()
+                .map((entry) => (
+                  <div
+                    key={entry.date}
+                    className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
+                  >
+                    <span className="text-sm text-gray-600">
+                      {formatDate(entry.date)}
+                    </span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {entry.value} {goal.unit}
+                    </span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -525,7 +456,7 @@ const GoalDetailPage = () => {
             </div>
 
             <div className="space-y-3">
-              {goal.milestones.map((milestone) => (
+              {milestones.map((milestone) => (
                 <div
                   key={milestone.id}
                   className={`flex items-center gap-3 p-3 rounded-xl border transition ${
@@ -547,7 +478,7 @@ const GoalDetailPage = () => {
                   <div className="flex-1 min-w-0">
                     <div
                       className={`font-medium text-sm ${
-                        milestone.completed ? "text-green-700" : "text-gray-900"
+                        milestone.completed ? "text-green-600" : "text-gray-900"
                       }`}
                     >
                       {milestone.title}
@@ -555,7 +486,10 @@ const GoalDetailPage = () => {
                     <div className="text-xs text-gray-500">
                       Target: {milestone.targetValue} {goal.unit}
                       {milestone.completedDate && (
-                        <span> • Completed {formatDate(milestone.completedDate)}</span>
+                        <span>
+                          {" "}
+                          • Completed {formatDate(milestone.completedDate)}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -568,7 +502,7 @@ const GoalDetailPage = () => {
                 </div>
               ))}
 
-              {goal.milestones.length === 0 && (
+              {milestones.length === 0 && (
                 <div className="text-center py-6 text-gray-400 text-sm">
                   No milestones yet. Add one to track your progress!
                 </div>
@@ -581,7 +515,9 @@ const GoalDetailPage = () => {
         {showAddMilestone && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Milestone</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Add Milestone
+              </h3>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -591,7 +527,10 @@ const GoalDetailPage = () => {
                     type="text"
                     value={newMilestone.title}
                     onChange={(e) =>
-                      setNewMilestone({ ...newMilestone, title: e.target.value })
+                      setNewMilestone({
+                        ...newMilestone,
+                        title: e.target.value,
+                      })
                     }
                     placeholder="e.g., Complete first 2km"
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -605,7 +544,10 @@ const GoalDetailPage = () => {
                     type="number"
                     value={newMilestone.targetValue}
                     onChange={(e) =>
-                      setNewMilestone({ ...newMilestone, targetValue: e.target.value })
+                      setNewMilestone({
+                        ...newMilestone,
+                        targetValue: e.target.value,
+                      })
                     }
                     placeholder="e.g., 2"
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -634,7 +576,9 @@ const GoalDetailPage = () => {
         {showUpdateProgress && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Update Progress</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Update Progress
+              </h3>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Current Progress ({goal.unit})
@@ -647,7 +591,8 @@ const GoalDetailPage = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  Previous: {goal.current} {goal.unit} • Target: {goal.target} {goal.unit}
+                  Previous: {goal.current} {goal.unit} • Target: {goal.target}{" "}
+                  {goal.unit}
                 </p>
               </div>
               <div className="flex gap-3 mt-6">
@@ -673,4 +618,3 @@ const GoalDetailPage = () => {
 };
 
 export default GoalDetailPage;
-

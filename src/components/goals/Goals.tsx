@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Share2,
@@ -10,6 +9,19 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+export interface Milestone {
+  id: string;
+  title: string;
+  targetValue: number;
+  completed: boolean;
+  completedDate?: string;
+}
+
+export interface ProgressEntry {
+  date: string;
+  value: number;
+}
+
 export interface Goal {
   id: string;
   title: string;
@@ -19,6 +31,9 @@ export interface Goal {
   unit: string;
   icon: "run" | "weight" | "workout" | "water" | "veggies";
   status: "achieved" | "in_progress";
+  startDate?: string;
+  milestones?: Milestone[];
+  progressHistory?: ProgressEntry[];
 }
 
 interface GoalsProps {
@@ -30,10 +45,13 @@ interface GoalsProps {
 
 const Goals = ({
   goals = [],
-  onUpdateProgress,
-  onMarkAchieved,
+  onUpdateProgress: _onUpdateProgress,
+  onMarkAchieved: _onMarkAchieved,
   onAddGoal,
 }: GoalsProps) => {
+  // These callbacks are available for parent components to use if needed
+  void _onUpdateProgress;
+  void _onMarkAchieved;
   const navigate = useNavigate();
   const getIcon = (iconType: Goal["icon"]) => {
     const iconClass = "w-6 h-6 text-white";
@@ -163,7 +181,7 @@ const Goals = ({
       {/* Floating Action Button */}
       <button
         onClick={onAddGoal}
-        className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
+        className="fixed bottom-24 right-6 w-14 h-14 bg-green-500 text-white hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
       >
         <Plus className="w-6 h-6" />
       </button>

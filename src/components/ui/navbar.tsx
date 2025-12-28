@@ -5,11 +5,11 @@ import {
   ShoppingCart,
   Heart,
   Home,
-  Settings,
+  User,
 } from "lucide-react";
-import { useState } from "react";
 import logo from "@/assets/habeatIcon.png";
 import "@/styles/navbar.css";
+import { useAuthStore } from "@/stores/authStore";
 
 interface NavBarProps {
   currentView?: "daily" | "weekly";
@@ -18,6 +18,7 @@ interface NavBarProps {
 
 const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
   const location = useLocation();
+  const { user } = useAuthStore();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -70,9 +71,21 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
           </div>
           <Link
             to="/settings"
-            className={`nav-link ${isActive("/settings") ? "active" : ""}`}
+            className={`nav-link flex items-center gap-2 ${isActive("/settings") ? "active" : ""}`}
           >
-            <Settings className="w-5 h-5" />
+            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0">
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
+            </div>
             <div className="nav-link-text">Settings</div>
           </Link>
           <div className="mobile-view-toggle">

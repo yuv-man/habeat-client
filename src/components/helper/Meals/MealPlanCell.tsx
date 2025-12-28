@@ -36,7 +36,7 @@ const MealPlanCell = memo(
         e.stopPropagation();
         try {
           setIsCompleted(!isCompleted);
-          userAPI.updateMealInPlan(user._id, date, {
+          userAPI.updateMealInPlan(user?._id || "", date, {
             ...meal,
             done: !isCompleted,
           });
@@ -45,7 +45,7 @@ const MealPlanCell = memo(
           console.error("Error updating meal in plan:", error);
         }
       },
-      [user._id, date, meal, isCompleted, updateMealInPlan]
+      [user?._id, date, meal, isCompleted, updateMealInPlan]
     );
 
     return (

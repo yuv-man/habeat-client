@@ -59,7 +59,7 @@ const ShoppingList = () => {
   };
 
   const toggleItem = (item: IngredientInput) => {
-    userAPI.updateShoppingItem(plan?._id, item);
+    userAPI.updateShoppingItem(plan?._id || "", item);
     setIngredients((prev) =>
       prev.map((ing) =>
         ing.name === item.name ? { ...ing, done: !ing.done } : ing
@@ -69,7 +69,7 @@ const ShoppingList = () => {
 
   const deleteItem = (itemName: string) => {
     setIngredients((prev) => prev.filter((item) => item.name !== itemName));
-    userAPI.deleteShoppingItem(plan._id, itemName);
+    userAPI.deleteShoppingItem(plan?._id || "", itemName);
   };
 
   // Get unique categories from ingredients, sorted with "Other" at the end
@@ -92,7 +92,7 @@ const ShoppingList = () => {
   const handleAddItem = (newIngredient: IngredientInput) => {
     setIngredients((prev) => [...prev, newIngredient]);
     setShowAddModal(false);
-    userAPI.addShoppingItem(plan._id, newIngredient);
+    userAPI.addShoppingItem(plan?._id || "", newIngredient);
   };
 
   const filteredIngredients = ingredients.filter((ing) =>

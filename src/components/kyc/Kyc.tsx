@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SignupStep from "./SignupStep";
 import DietStep from "./DietStep";
@@ -15,10 +15,8 @@ import {
   calculateTDEE,
   calculateIdealWeight,
 } from "@/lib/calculations";
-import { initGoogleOAuth, decodeGoogleToken } from "@/lib/googleOAuth";
 
 const STORAGE_KEYS = {
-  GOOGLE_CREDENTIAL: "habeat_google_credential",
   AUTH_DATA: "habeat_auth_data",
   KYC_DATA: "habeat_kyc_data",
   CUSTOM_INPUTS: "habeat_custom_inputs",
@@ -38,10 +36,10 @@ export default function KYCFlow() {
     password: "",
     authMethod: null,
   });
-  const [googleCredential, setGoogleCredential] = useState<string | null>(null);
 
   const [kycData, setKycData] = useState<KYCData>({
     dietType: "",
+    dietaryRestrictions: [],
     weight: "",
     height: "",
     age: "",
@@ -61,31 +59,12 @@ export default function KYCFlow() {
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const storedCredential = localStorage.getItem(
-        STORAGE_KEYS.GOOGLE_CREDENTIAL
-      );
       const storedAuthData = localStorage.getItem(STORAGE_KEYS.AUTH_DATA);
       const storedKycData = localStorage.getItem(STORAGE_KEYS.KYC_DATA);
       const storedCustomInputs = localStorage.getItem(
         STORAGE_KEYS.CUSTOM_INPUTS
       );
       const storedStep = localStorage.getItem(STORAGE_KEYS.CURRENT_STEP);
-
-      if (storedCredential) {
-        try {
-          const userInfo = decodeGoogleToken(storedCredential);
-          setGoogleCredential(storedCredential);
-          setAuthData({
-            name: userInfo.name,
-            email: userInfo.email,
-            password: "",
-            authMethod: "google",
-          });
-        } catch (err) {
-          console.error("Failed to decode stored Google token:", err);
-          localStorage.removeItem(STORAGE_KEYS.GOOGLE_CREDENTIAL);
-        }
-      }
 
       if (storedAuthData) {
         try {
@@ -112,20 +91,22 @@ export default function KYCFlow() {
         }
       }
 
-      if (storedStep && storedStep !== "signup" && storedStep !== "complete") {
+      // Handle step restoration - skip signup if user is already authenticated
+      if (
+        storedStep &&
+        storedStep !== "signup" &&
+        storedStep !== "complete" &&
+        storedStep !== "google_oauth_pending"
+      ) {
         setStep(storedStep);
+      } else if (storedStep === "google_oauth_pending") {
+        // This shouldn't happen as OAuthCallback sets it to "diet", but handle it just in case
+        setStep("diet");
       }
     } catch (err) {
       console.error("Failed to load from localStorage:", err);
     }
   }, []);
-
-  // Save Google credential to localStorage
-  useEffect(() => {
-    if (googleCredential) {
-      localStorage.setItem(STORAGE_KEYS.GOOGLE_CREDENTIAL, googleCredential);
-    }
-  }, [googleCredential]);
 
   useEffect(() => {
     if (authData.authMethod) {
@@ -180,43 +161,15 @@ export default function KYCFlow() {
     setError("");
     setLoading(true);
     try {
-      // Initialize Google OAuth
-      await initGoogleOAuth((credential: string) => {
-        try {
-          // Decode the credential to get user info
-          const userInfo = decodeGoogleToken(credential);
+      // Save current state to localStorage before redirecting
+      // This will be restored after OAuth callback
+      localStorage.setItem(STORAGE_KEYS.CURRENT_STEP, "google_oauth_pending");
 
-          // Store the credential (will be saved to localStorage via useEffect)
-          setGoogleCredential(credential);
-
-          setAuthData((prev) => ({
-            ...prev,
-            name: userInfo.name,
-            email: userInfo.email,
-            authMethod: "google",
-          }));
-
-          // Move to next step
-          setStep("diet");
-          setLoading(false);
-        } catch (err: any) {
-          setError(err.message || "Failed to process Google sign-in");
-          setLoading(false);
-        }
-      });
-
-      // Trigger the Google sign-in popup
-      if (window.google?.accounts?.id) {
-        window.google.accounts.id.prompt();
-      } else {
-        setError("Google OAuth not initialized. Please refresh and try again.");
-        setLoading(false);
-      }
+      // Use backend OAuth flow - this will redirect to Google
+      await authStore.oauthSignup("google");
+      // Note: The redirect happens in oauthSignup, so code after this won't execute
     } catch (err: any) {
-      setError(
-        err.message ||
-          "Google signup failed. Please make sure VITE_GOOGLE_CLIENT_ID is set in your .env file."
-      );
+      setError(err.message || "Google signup failed. Please try again.");
       setLoading(false);
     }
   };
@@ -226,8 +179,8 @@ export default function KYCFlow() {
       setError("Please select a diet type");
       return;
     }
-    // If 8-16 fasting is selected, go to fasting hours step
-    if (kycData.dietType === "8 - 16 hours fasting") {
+    // If fasting is selected, go to fasting hours step
+    if (kycData.dietType === "fasting") {
       setStep("fastingHours");
     } else {
       setStep("profile");
@@ -274,14 +227,14 @@ export default function KYCFlow() {
       const tdee = calculateTDEE(bmr);
       const idealWeight = calculateIdealWeight(userDataForCalc);
 
-      // Map diet type to path
+      // Map diet goal to path
       const dietTypeToPath: Record<string, string> = {
-        Keto: "keto",
-        "Healthy Balance": "healthy",
-        "Muscle Up": "gain-muscle",
-        Running: "healthy",
-        "Lose Weight": "lose-weight",
-        "8 - 16 hours fasting": "fasting",
+        keto: "keto",
+        "healthy-balance": "healthy",
+        "muscle-up": "gain-muscle",
+        running: "healthy",
+        "lose-weight": "lose-weight",
+        fasting: "fasting",
       };
 
       // Prepare user data for signup
@@ -299,25 +252,15 @@ export default function KYCFlow() {
         idealWeight: Math.round(idealWeight),
         workoutFrequency: kycData.workoutFrequency,
         allergies: kycData.allergies,
-        dietaryRestrictions: [],
+        dietaryRestrictions: kycData.dietaryRestrictions || [],
         foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
         isPremium: false,
       };
 
-      // Add fasting data if 8-16 fasting is selected
+      // Add fasting data if fasting is selected
       if (
-        kycData.dietType === "8 - 16 hours fasting" &&
-        kycData.fastingHours &&
-        kycData.fastingStartTime
-      ) {
-        userData.fastingHours = kycData.fastingHours;
-        userData.fastingStartTime = kycData.fastingStartTime;
-      }
-
-      // Add fasting data if 8-16 fasting is selected
-      if (
-        kycData.dietType === "8 - 16 hours fasting" &&
+        kycData.dietType === "fasting" &&
         kycData.fastingHours &&
         kycData.fastingStartTime
       ) {
@@ -328,19 +271,23 @@ export default function KYCFlow() {
       // Signup with all collected data
       if (authData.authMethod === "email") {
         await authStore.signup(authData.email, authData.password, userData);
-      } else if (authData.authMethod === "google" && googleCredential) {
-        // Send Google credential to backend for signup with user data
-        await authStore.handleOAuthCallback(
-          "google",
-          "signup",
-          googleCredential
-        );
+      } else if (authData.authMethod === "google") {
+        // User already authenticated via Google OAuth - update profile and generate plan
+        const currentUser = authStore.user;
+        if (!currentUser?._id) {
+          throw new Error(
+            "User not authenticated. Please try signing in again."
+          );
+        }
+        // Update user profile with KYC data
+        await authStore.updateProfile(currentUser._id, userData);
+        // Generate meal plan
+        await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
       } else {
         throw new Error("Invalid authentication method");
       }
 
       // Clear all KYC-related localStorage on successful completion
-      localStorage.removeItem(STORAGE_KEYS.GOOGLE_CREDENTIAL);
       localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
       localStorage.removeItem(STORAGE_KEYS.KYC_DATA);
       localStorage.removeItem(STORAGE_KEYS.CUSTOM_INPUTS);
@@ -368,8 +315,9 @@ export default function KYCFlow() {
     });
   };
 
-  const addCustomItem = (category: string, inputKey: keyof CustomInputs) => {
-    const value = customInputs[inputKey].trim();
+  const addCustomItem = (category: string, inputKey: string) => {
+    const key = inputKey as keyof CustomInputs;
+    const value = customInputs[key].trim();
     if (!value) return;
 
     setKycData((prev) => {
@@ -381,7 +329,7 @@ export default function KYCFlow() {
     });
     setCustomInputs((prev) => ({
       ...prev,
-      [inputKey]: "",
+      [key]: "",
     }));
   };
 
@@ -395,8 +343,16 @@ export default function KYCFlow() {
       case "diet":
         setStep("signup");
         break;
-      case "profile":
+      case "fastingHours":
         setStep("diet");
+        break;
+      case "profile":
+        // Go back to diet or fasting hours depending on selected diet
+        if (kycData.dietType === "fasting") {
+          setStep("fastingHours");
+        } else {
+          setStep("diet");
+        }
         break;
       case "fitness":
         setStep("profile");

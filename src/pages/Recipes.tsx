@@ -27,7 +27,7 @@ const Recipes = () => {
   } = useAuthStore();
   const [recipes, setRecipes] = useState<IRecipe[]>([]);
 
-  // Fetch favorite meals only if not already loaded
+  // Fetch favorite meals only if not already loaded or if data is empty
   useEffect(() => {
     if (!user?._id) return;
 
@@ -36,11 +36,16 @@ const Recipes = () => {
       return;
     }
 
-    // Only fetch if not already loaded
-    if (!favoriteMealsLoaded) {
+    // Fetch if not loaded OR if loaded but empty (stale localStorage)
+    if (!favoriteMealsLoaded || favoriteMealsData.length === 0) {
       fetchFavoriteMeals(user._id);
     }
-  }, [user?._id, favoriteMealsLoaded, fetchFavoriteMeals]);
+  }, [
+    user?._id,
+    favoriteMealsLoaded,
+    favoriteMealsData.length,
+    fetchFavoriteMeals,
+  ]);
 
   const categories = [
     { id: "all", label: "All Recipes", count: recipes.length },
@@ -69,13 +74,21 @@ const Recipes = () => {
     servings: 1,
     difficulty: "easy",
     tags: [],
-    // Convert string ingredients to IRecipeIngredient format
-    ingredients: (meal.ingredients || []).map((ing, idx) => ({
-      name: typeof ing === "string" ? ing : "",
-      amount: "",
-      unit: "Other",
-      _id: `ing-${idx}`,
-    })),
+    // Convert ingredients to IRecipeIngredient format
+    // Ingredients can be strings or arrays like ["chicken_breast", "170 g", "Proteins"]
+    ingredients: (meal.ingredients || []).map((ing, idx) => {
+      if (typeof ing === "string") {
+        return { name: ing, amount: "", unit: "Other", _id: `ing-${idx}` };
+      } else if (Array.isArray(ing)) {
+        return {
+          name: ing[0] || "",
+          amount: ing[1] || "",
+          unit: ing[2] || "Other",
+          _id: `ing-${idx}`,
+        };
+      }
+      return { name: "", amount: "", unit: "Other", _id: `ing-${idx}` };
+    }),
     instructions: [],
     macros: {
       calories: meal.calories || 0,

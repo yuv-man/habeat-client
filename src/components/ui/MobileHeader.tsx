@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Settings, BarChart3, User } from "lucide-react";
+import { Menu, X, BarChart3, User } from "lucide-react";
 import logo from "@/assets/habeatIcon.png";
+import { useAuthStore } from "@/stores/authStore";
 
 const MobileHeader = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,42 +54,64 @@ const MobileHeader = () => {
           <div className="text-lg font-semibold text-gray-900">Habeat</div>
         </Link>
 
-        {/* Burger Menu Button */}
-        <div className="relative" ref={menuRef}>
+        {/* Profile Picture and Burger Menu */}
+        <div className="flex items-center gap-2">
+          {/* Profile Picture */}
           <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition"
-            aria-label="Menu"
+            onClick={() => navigate("/settings")}
+            className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0"
+            aria-label="Profile"
           >
-            {isMenuOpen ? (
-              <X className="w-5 h-5" />
+            {user?.profilePicture ? (
+              <img
+                src={user.profilePicture}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
             ) : (
-              <Menu className="w-5 h-5" />
+              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                <User className="w-4 h-4 text-gray-400" />
+              </div>
             )}
           </button>
 
-          {/* Dropdown Menu */}
-          {isMenuOpen && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-              {menuItems.map((item) => (
-                <button
-                  key={item.path}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition ${
-                    location.pathname === item.path
-                      ? "text-green-600 bg-green-50"
-                      : "text-gray-700"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5" />
-                  <span className="text-sm font-medium">{item.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Burger Menu Button */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition"
+              aria-label="Menu"
+            >
+              {isMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+
+            {/* Dropdown Menu */}
+            {isMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                {menuItems.map((item) => (
+                  <button
+                    key={item.path}
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition ${
+                      location.pathname === item.path
+                        ? "text-green-600 bg-green-50"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    <item.icon className="w-5 h-5" />
+                    <span className="text-sm font-medium">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

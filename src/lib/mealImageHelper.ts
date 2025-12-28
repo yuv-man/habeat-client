@@ -116,6 +116,7 @@ const availableImages = [
   "chicken-teriyaki-bowl-with-brown-rice",
   "power-berry-nut-muesli-bowl",
   "whole-wheat-pancakes-with-fruit",
+  "black-bean-burger-on-whole-wheat-bun",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -142,8 +143,13 @@ const keywordMappings: { [key: string]: string[] } = {
   gulash: ["gulash-soup"],
 
   // Burgers
-  burger: ["burger-with-fries", "veggie-burger"],
+  burger: [
+    "burger-with-fries",
+    "veggie-burger",
+    "black-bean-burger-on-whole-wheat-bun",
+  ],
   hamburger: ["burger-with-fries"],
+  blackBean: ["black-bean-burger-on-whole-wheat-bun"],
 
   // Salads
   salad: [
@@ -402,6 +408,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "tuna-salad-sandwich",
     "turkey-sandwich",
     "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
+    "black-bean-burger-on-whole-wheat-bun",
   ],
   wrap: [
     "avocado-chicken-wrap",

@@ -1,92 +1,48 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
+import { useGoalsStore } from "@/stores/goalsStore";
 import Goals from "@/components/goals/Goals";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import type { Goal } from "@/components/goals/Goals";
 
 const GoalsPage = () => {
   const navigate = useNavigate();
-  const { user, loading, token } = useAuthStore();
-  const [goals, setGoals] = useState<Goal[]>([
-    {
-      id: "1",
-      title: "Run 5K",
-      description: "Improve cardiovascular endurance and complete a 5K.",
-      current: 3.5,
-      target: 5,
-      unit: "km",
-      icon: "run",
-      status: "achieved",
-    },
-    {
-      id: "2",
-      title: "Lose 10kg Weight",
-      description: "Reach a healthier body weight through diet and consistent",
-      current: 6.2,
-      target: 10,
-      unit: "kg",
-      icon: "weight",
-      status: "achieved",
-    },
-    {
-      id: "3",
-      title: "Workout 3x a Week",
-      description:
-        "Build strength and consistency in my weekly workout routine.",
-      current: 2,
-      target: 3,
-      unit: "times",
-      icon: "workout",
-      status: "in_progress",
-    },
-    {
-      id: "4",
-      title: "Drink 2L Water Daily",
-      description:
-        "Stay adequately hydrated for better health and energy levels.",
-      current: 1.8,
-      target: 2,
-      unit: "L",
-      icon: "water",
-      status: "achieved",
-    },
-    {
-      id: "5",
-      title: "Eat 5 Portions of Veggies",
-      description: "Increase daily vegetable intake for improved nutrition.",
-      current: 4,
-      target: 5,
-      unit: "portions",
-      icon: "veggies",
-      status: "achieved",
-    },
-  ]);
+  const { user, loading: authLoading, token } = useAuthStore();
+  const {
+    goals,
+    loading: goalsLoading,
+    fetchGoals,
+    markAchieved,
+  } = useGoalsStore();
 
   useEffect(() => {
-    if (!loading && !user && !token) {
+    if (!authLoading && !user && !token) {
       navigate("/register");
     }
-  }, [user, loading, token, navigate]);
+  }, [user, authLoading, token, navigate]);
+
+  // Fetch goals when user is available
+  useEffect(() => {
+    if (user?._id) {
+      fetchGoals(user._id);
+    }
+  }, [user?._id, fetchGoals]);
 
   const handleUpdateProgress = (goalId: string) => {
-    console.log("Update progress for goal:", goalId);
+    if (user?._id) {
+      // Navigate to goal detail page for updating
+      navigate(`/goals/${goalId}`);
+    }
   };
 
   const handleMarkAchieved = (goalId: string) => {
-    setGoals((prevGoals) =>
-      prevGoals.map((goal) =>
-        goal.id === goalId
-          ? {
-              ...goal,
-              status: goal.status === "achieved" ? "in_progress" : "achieved",
-            }
-          : goal
-      )
-    );
+    if (user?._id) {
+      markAchieved(user._id, goalId);
+    }
   };
 
   const handleAddGoal = () => {
+    // TODO: Open add goal modal
     console.log("Add new goal");
   };
 
@@ -94,7 +50,7 @@ const GoalsPage = () => {
     return <div>Redirecting...</div>;
   }
 
-  if (loading) {
+  if (authLoading || goalsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

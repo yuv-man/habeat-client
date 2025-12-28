@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Settings,
   GlassWater,
   Sparkles,
   Target,
@@ -11,7 +10,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
-import { IDailyPlan, IMeal, WorkoutData } from "@/types/interfaces";
+import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/helper/loader";
@@ -459,14 +458,9 @@ export default function WeeklyMealPlan() {
         snackName.trim()
       );
 
-      // Update local state with the new snack
-      if (response.data?.snack) {
-        const updatedPlan = { ...plan };
-        const dayPlan = updatedPlan.weeklyPlan[addSnackDate];
-        if (dayPlan) {
-          dayPlan.meals.snacks = [...dayPlan.meals.snacks, response.data.snack];
-          useAuthStore.setState({ plan: updatedPlan });
-        }
+      // Update local state with the returned plan
+      if (response.data?.plan) {
+        useAuthStore.setState({ plan: response.data.plan });
       }
 
       // Close modal and reset
@@ -480,12 +474,12 @@ export default function WeeklyMealPlan() {
   };
 
   const handleDeleteWorkout = async (workout: WorkoutData) => {
-    if (!selectedDate || !currentDay || !user) return;
+    if (!selectedDate || !currentDay || !user || !plan?.weeklyPlan) return;
 
     const date = new Date(selectedDate);
     const dateKey = date.toISOString().split("T")[0];
-    const updatedPlan = { ...plan };
-    const dayPlan = updatedPlan?.weeklyPlan[dateKey];
+    const updatedPlan: IPlan = { ...plan };
+    const dayPlan = updatedPlan.weeklyPlan[dateKey];
 
     if (dayPlan && dayPlan.workouts.find((w) => w.name === workout.name)) {
       // Remove workout from array
@@ -514,7 +508,7 @@ export default function WeeklyMealPlan() {
   };
 
   const handleAddWorkout = async (workout: WorkoutData) => {
-    if (!selectedDate || !currentDay || !user) return;
+    if (!selectedDate || !currentDay || !user || !plan?.weeklyPlan) return;
 
     const date = new Date(selectedDate);
     const dateKey = date.toISOString().split("T")[0];
@@ -522,8 +516,8 @@ export default function WeeklyMealPlan() {
     // Use ISO format "YYYY-MM-DD"
     const formattedDate = dateKey;
 
-    const updatedPlan = { ...plan };
-    const dayPlan = updatedPlan?.weeklyPlan[dateKey];
+    const updatedPlan: IPlan = { ...plan };
+    const dayPlan = updatedPlan.weeklyPlan[dateKey];
 
     if (dayPlan) {
       // Convert WorkoutData to workout format with date and time
@@ -616,7 +610,7 @@ export default function WeeklyMealPlan() {
             <Button
               disabled={isGenerating}
               onClick={generatePlan}
-              className="flex items-center gap-2 mx-auto bg-green-500 hover:bg-green-600"
+              className="flex items-center gap-2 mx-auto bg-green-500 text-white hover:bg-green-600"
               size="lg"
             >
               {isGenerating ? (
@@ -701,7 +695,7 @@ export default function WeeklyMealPlan() {
         <button
           onClick={generatePlan}
           disabled={isGenerating}
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg mb-8 transition disabled:opacity-50"
+          className="w-full bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg mb-8 transition disabled:opacity-50"
         >
           {isGenerating ? "Generating..." : "Generate AI Meal Plan"}
         </button>

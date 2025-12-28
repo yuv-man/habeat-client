@@ -11,10 +11,12 @@ import {
 } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
+const KYC_STORAGE_KEY = "habeat_current_step";
+
 const OAuthCallback = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { handleOAuthCallback, user, plan } = useAuthStore();
+  const { handleOAuthCallback } = useAuthStore();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(true);
 
@@ -59,6 +61,24 @@ const OAuthCallback = () => {
         const currentUser = useAuthStore.getState().user;
         const currentPlan = useAuthStore.getState().plan;
 
+        // Check if user was in KYC flow (signup action)
+        const kycStep = localStorage.getItem(KYC_STORAGE_KEY);
+        const wasInKycFlow = kycStep === "google_oauth_pending" || action === "signup";
+
+        if (wasInKycFlow && currentUser && !currentPlan) {
+          // User signed up via Google but hasn't completed KYC
+          // Update KYC state with Google user info and redirect to continue KYC
+          localStorage.setItem(KYC_STORAGE_KEY, "diet");
+          localStorage.setItem("habeat_auth_data", JSON.stringify({
+            name: currentUser.name || "",
+            email: currentUser.email || "",
+            password: "",
+            authMethod: "google",
+          }));
+          navigate("/register");
+          return;
+        }
+
         // Redirect based on user state
         // If user has completed KYC (has plan), go to daily tracker
         // If user exists but no plan, go to weekly overview to regenerate plan
@@ -82,6 +102,9 @@ const OAuthCallback = () => {
               : "Failed to complete authentication",
           variant: "destructive",
         });
+
+        // Clear KYC state on error
+        localStorage.removeItem(KYC_STORAGE_KEY);
 
         // Redirect to login page
         navigate("/");

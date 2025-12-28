@@ -211,7 +211,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
             </Button>
             <Button
               type="submit"
-              className="flex-1"
+              className="flex-1 bg-green-500 text-white hover:bg-green-600"
               disabled={!isFormValid() || isSubmitting}
             >
               {isSubmitting ? (

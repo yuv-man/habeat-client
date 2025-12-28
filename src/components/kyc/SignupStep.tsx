@@ -1,12 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Loader } from "lucide-react";
 import { AuthData } from "./types";
-import { initGoogleOAuth, triggerGoogleSignIn } from "@/lib/googleOAuth";
 import GoogleIcon from "@/assets/icons/google";
 
 interface SignupStepProps {
   authData: AuthData;
-  setAuthData: React.Dispatch<React.SetStateAction<AuthData>>;
+  setAuthData: Dispatch<SetStateAction<AuthData>>;
   loading: boolean;
   error: string;
   onSignupEmail: () => void;
@@ -21,31 +20,21 @@ export default function SignupStep({
   onSignupEmail,
   onGoogleSignup,
 }: SignupStepProps) {
-  const googleButtonRef = useRef<HTMLButtonElement>(null);
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    // Initialize Google OAuth when component mounts
-    if (!isInitialized.current) {
-      initGoogleOAuth((credential) => {
-        onGoogleSignup();
-      }).catch((err) => {
-        console.error("Failed to initialize Google OAuth:", err);
-      });
-      isInitialized.current = true;
-    }
-  }, [onGoogleSignup]);
-
+  // Let the parent (Kyc.tsx) handle Google OAuth initialization and triggering
+  // This prevents duplicate initialization that causes credential to be ignored
   const handleGoogleClick = () => {
-    triggerGoogleSignIn();
+    onGoogleSignup();
   };
 
   return (
-    <div className="min-h-screen bg-primary-200 flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ backgroundColor: "var(--bg-primary)" }}
+    >
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
-          <h1 className="text-4xl font-bold text-white mb-3">Get Started</h1>
-          <p className="text-white/80 text-lg">Create your account to begin</p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Get Started</h1>
+          <p className="text-gray-600 text-lg">Create your account to begin</p>
         </div>
 
         <div className="backdrop-blur-sm bg-white/95 rounded-lg p-6 shadow-lg">
@@ -56,7 +45,6 @@ export default function SignupStep({
           )}
 
           <button
-            ref={googleButtonRef}
             onClick={handleGoogleClick}
             disabled={loading}
             className="w-full mb-6 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-3"

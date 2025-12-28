@@ -303,7 +303,7 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
         {/* Notes Section */}
         <div className="bg-green-50 border border-green-200 rounded-2xl p-5">
           <h3 className="text-lg font-bold text-green-800 mb-2">Notes</h3>
-          <p className="text-green-700 leading-relaxed">{notes}</p>
+          <p className="text-green-600 leading-relaxed">{notes}</p>
         </div>
       </div>
 

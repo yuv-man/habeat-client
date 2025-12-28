@@ -349,7 +349,7 @@ export interface AuthActions {
     mealId: string,
     isFavorite: boolean
   ) => Promise<void>;
-  fetchFavoriteMeals: (userId: string) => Promise<void>;
+  fetchFavoriteMeals: (userId: string, forceRefresh?: boolean) => Promise<void>;
   setFavoriteMealsData: (meals: IMeal[]) => void;
 }
 

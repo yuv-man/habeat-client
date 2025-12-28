@@ -14,7 +14,8 @@ export interface AuthData {
 }
 
 export interface KYCData {
-  dietType: string;
+  dietType: string; // Single selection - main goal (lose-weight, muscle-up, etc.)
+  dietaryRestrictions: string[]; // Multi-selection - what you can't/don't eat (vegan, gluten-free, etc.)
   weight: string;
   height: string;
   age: string;
@@ -38,6 +39,13 @@ export interface DietType {
   icon: React.ReactNode;
   color: string;
   iconColor: string;
+}
+
+// Dietary preferences for the new grid design
+export interface DietaryPreference {
+  id: string;
+  name: string;
+  icon: string; // lucide icon name
 }
 
 export const allergies = [
@@ -155,4 +163,25 @@ export const dietTypes: DietType[] = [
     color: "bg-green-100",
     iconColor: "text-green-500",
   },
+];
+
+// Diet Goals - single selection (what's your main fitness/health goal?)
+export const dietGoals: DietaryPreference[] = [
+  { id: "healthy-balance", name: "Healthy Balance", icon: "healthy-balance" },
+  { id: "lose-weight", name: "Lose Weight", icon: "lose-weight" },
+  { id: "muscle-up", name: "Muscle Up", icon: "muscle-up" },
+  { id: "running", name: "Running", icon: "running" },
+  { id: "keto", name: "Keto", icon: "keto" },
+  { id: "fasting", name: "Intermittent Fasting", icon: "fasting" },
+];
+
+// Dietary Restrictions - multi-selection (what can't/don't you eat?)
+export const dietaryRestrictions: DietaryPreference[] = [
+  { id: "vegan", name: "Vegan", icon: "vegan" },
+  { id: "vegetarian", name: "Vegetarian", icon: "vegetarian" },
+  { id: "pescatarian", name: "Pescatarian", icon: "pescatarian" },
+  { id: "dairy-free", name: "Dairy-Free", icon: "dairy-free" },
+  { id: "gluten-free", name: "Gluten-Free", icon: "gluten-free" },
+  { id: "paleo", name: "Paleo", icon: "paleo" },
+  { id: "low-carb", name: "Low-Carb", icon: "low-carb" },
 ];

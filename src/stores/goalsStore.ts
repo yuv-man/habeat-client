@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { Goal } from "@/components/goals/Goals";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
@@ -54,8 +54,21 @@ export const useGoalsStore = create<GoalsStore>()(
         try {
           set({ loading: true, error: null });
           const response = await userAPI.getGoals(userId);
+          // API returns { success: true, data: [...goals] }
+          const apiGoals = response.data || [];
+          // Map API goals to component Goal format
+          const mappedGoals: Goal[] = apiGoals.map((g: any) => ({
+            id: g._id || g.id,
+            title: g.name || g.title,
+            description: g.description || "",
+            current: g.current || 0,
+            target: g.target || 0,
+            unit: g.unit || "",
+            icon: g.icon || "workout",
+            status: g.achieved ? "achieved" : g.status || "in_progress",
+          }));
           set({
-            goals: response.data.goals || [],
+            goals: mappedGoals,
             loading: false,
           });
         } catch (error: any) {
@@ -79,8 +92,36 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          const response = await userAPI.createGoal(userId, goalData);
-          const createdGoal = response.data.goal;
+          // Transform frontend Goal format to API format
+          const apiGoalData = {
+            name: goalData.title,
+            description: goalData.description,
+            target: goalData.target,
+            current: goalData.current,
+            unit: goalData.unit,
+            achieved: goalData.status === "achieved",
+            icon: goalData.icon,
+            startDate: goalData.startDate,
+            milestones: goalData.milestones,
+            progressHistory: goalData.progressHistory,
+          };
+          const response = await userAPI.createGoal(userId, apiGoalData);
+          // Map API response back to frontend Goal format
+          const apiGoal = response.data;
+          const createdGoal: Goal = {
+            id: apiGoal._id || newGoal.id,
+            title: apiGoal.name || goalData.title,
+            description: apiGoal.description || goalData.description,
+            current: apiGoal.current || goalData.current,
+            target: apiGoal.target || goalData.target,
+            unit: apiGoal.unit || goalData.unit,
+            icon: (apiGoal.icon as Goal["icon"]) || goalData.icon,
+            status: apiGoal.achieved ? "achieved" : "in_progress",
+            startDate: apiGoal.startDate || goalData.startDate,
+            milestones: apiGoal.milestones || goalData.milestones,
+            progressHistory:
+              apiGoal.progressHistory || goalData.progressHistory,
+          };
           set({ goals: [...get().goals, createdGoal] });
         } catch (error: any) {
           set({ error: error.message || "Failed to create goal" });
@@ -181,7 +222,9 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          await userAPI.updateGoal(userId, goalId, { status: newStatus });
+          await userAPI.updateGoal(userId, goalId, {
+            achieved: newStatus === "achieved",
+          });
           set({
             goals: goals.map((g) =>
               g.id === goalId ? { ...g, status: newStatus } : g

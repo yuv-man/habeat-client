@@ -49,9 +49,6 @@ const Settings = () => {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
-    null
-  );
 
   // Physical attributes
   const [weight, setWeight] = useState("");
@@ -147,14 +144,26 @@ const Settings = () => {
         return;
       }
 
-      setProfilePictureFile(file);
-
       // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
-        setProfilePicture(reader.result as string);
+        if (reader.result) {
+          setProfilePicture(reader.result as string);
+        }
+      };
+      reader.onerror = () => {
+        toast({
+          title: "Error reading file",
+          description: "Failed to read the image file. Please try again.",
+          variant: "destructive",
+        });
       };
       reader.readAsDataURL(file);
+
+      // Reset file input to allow re-selecting the same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -271,7 +280,7 @@ const Settings = () => {
 
         {/* Success/Error Messages */}
         {success && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-lg mb-4 text-sm">
+          <div className="bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded-lg mb-4 text-sm">
             Settings saved successfully!
           </div>
         )}
@@ -657,7 +666,7 @@ const Settings = () => {
               onClick={handleSave}
               disabled={isSaving || loading}
               size="sm"
-              className="h-9 min-w-[100px]"
+              className="h-9 min-w-[100px] bg-green-500 text-white hover:bg-green-600"
             >
               {isSaving ? (
                 <>

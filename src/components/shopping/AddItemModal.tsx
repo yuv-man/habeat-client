@@ -142,7 +142,7 @@ const AddItemModal = ({
                       }}
                       className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition ${
                         newItem.category === category
-                          ? "bg-green-50 text-green-700"
+                          ? "bg-green-50 text-green-600"
                           : "text-gray-700"
                       } ${
                         category === "Other" ? "border-t border-gray-100" : ""

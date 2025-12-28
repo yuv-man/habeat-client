@@ -279,7 +279,7 @@ const DailyMealScreen = () => {
             </div>
             <Button
               onClick={() => navigate("/weekly-overview")}
-              className="flex items-center gap-2 bg-green-500 hover:bg-green-600"
+              className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-600"
               size="lg"
             >
               <Sparkles className="h-5 w-5" />
@@ -557,29 +557,31 @@ const DailyMealScreen = () => {
                 Water Intake
               </h2>
               <div className="flex flex-wrap gap-2 mb-3">
-                {Array.from({ length: dailyProgress.water.goal }).map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={
-                      index < dailyProgress.water.consumed
-                        ? undefined
-                        : addWaterGlass
-                    }
-                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                      index < dailyProgress.water.consumed
-                        ? "bg-blue-400 border-blue-400"
-                        : "bg-transparent border-gray-300"
-                    }`}
-                  >
-                    <GlassWater
-                      className={`w-6 h-6 mx-auto ${
+                {Array.from({ length: dailyProgress.water.goal }).map(
+                  (_, index) => (
+                    <button
+                      key={index}
+                      onClick={
                         index < dailyProgress.water.consumed
-                          ? "text-white"
-                          : "text-gray-300"
+                          ? undefined
+                          : addWaterGlass
+                      }
+                      className={`w-10 h-10 rounded-lg border-2 transition-all ${
+                        index < dailyProgress.water.consumed
+                          ? "bg-blue-400 border-blue-400"
+                          : "bg-transparent border-gray-300"
                       }`}
-                    />
-                  </button>
-                ))}
+                    >
+                      <GlassWater
+                        className={`w-6 h-6 mx-auto ${
+                          index < dailyProgress.water.consumed
+                            ? "text-white"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    </button>
+                  )
+                )}
               </div>
               <p className="text-sm text-gray-600">
                 {dailyProgress.water.consumed} of {dailyProgress.water.goal}{" "}

@@ -52,6 +52,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         _id: user._id,
         email: user.email,
         name: user.name,
+        profilePicture: user.profilePicture,
         // Don't store sensitive data like password, tokens, etc.
       };
       localStorage.setItem("habeat_user", JSON.stringify(userDataToStore));
@@ -209,8 +210,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (!token) {
         throw new Error("No token found");
       }
+      const currentUser = get().user;
       const updatedUser = await userAPI.updateUser(id, data as IUser);
-      set({ user: updatedUser, loading: false });
+      // Merge updated user with current user to preserve fields the backend might not return
+      const mergedUser = { ...currentUser, ...updatedUser };
+      get().setUser(mergedUser as IUser);
+      set({ loading: false });
     } catch (error) {
       set({ loading: false });
       throw error;
@@ -308,7 +313,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Refetch favorite meals data to get the updated list with full meal objects
       if (isFavorite) {
         // Only refetch when adding a new favorite to get the full meal data
-        await get().fetchFavoriteMeals(userId);
+        // Force refresh to bypass the cache check
+        await get().fetchFavoriteMeals(userId, true);
       }
     } catch (error) {
       // Revert on error
@@ -330,9 +336,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     localStorage.setItem("habeat_favorite_meals", JSON.stringify(meals));
   },
 
-  fetchFavoriteMeals: async (userId: string) => {
+  fetchFavoriteMeals: async (userId: string, forceRefresh: boolean = false) => {
     // Skip if already loaded and not forcing refresh
-    if (get().favoriteMealsLoaded && get().favoriteMealsData.length > 0) {
+    if (
+      !forceRefresh &&
+      get().favoriteMealsLoaded &&
+      get().favoriteMealsData.length > 0
+    ) {
       return;
     }
 
@@ -344,7 +354,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     try {
       const response = await userAPI.getFavoritesByUserId(userId);
-      const meals = response.data.favoriteMeals || [];
+      // API returns { success: true, data: [...meals] }
+      const meals = response.data || [];
       set({ favoriteMealsData: meals, favoriteMealsLoaded: true });
       localStorage.setItem("habeat_favorite_meals", JSON.stringify(meals));
     } catch (error) {
@@ -392,10 +403,13 @@ if (typeof window !== "undefined") {
     if (storedFavoriteMeals) {
       try {
         const favoriteMeals = JSON.parse(storedFavoriteMeals);
-        useAuthStore.setState({
-          favoriteMealsData: favoriteMeals,
-          favoriteMealsLoaded: true,
-        });
+        // Only mark as loaded if we actually have data
+        if (Array.isArray(favoriteMeals) && favoriteMeals.length > 0) {
+          useAuthStore.setState({
+            favoriteMealsData: favoriteMeals,
+            favoriteMealsLoaded: true,
+          });
+        }
       } catch (err) {
         console.error("Failed to parse stored favorite meals:", err);
       }

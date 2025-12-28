@@ -1,12 +1,13 @@
-import React from "react";
-
 interface CompleteStepProps {
   onComplete: () => void;
 }
 
 export default function CompleteStep({ onComplete }: CompleteStepProps) {
   return (
-    <div className="min-h-screen bg-primary flex items-center justify-center p-4">
+    <div
+      className="min-h-screen flex items-center justify-center p-4"
+      style={{ backgroundColor: "var(--bg-primary)" }}
+    >
       <div className="w-full max-w-md text-center">
         <div className="text-7xl mb-6">✅</div>
         <h1 className="text-4xl font-bold text-gray-900 mb-3">All Set!</h1>
@@ -15,7 +16,7 @@ export default function CompleteStep({ onComplete }: CompleteStepProps) {
         </p>
         <button
           onClick={onComplete}
-          className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-4 rounded-xl transition"
+          className="w-full bg-green-500 text-white hover:bg-green-600 font-semibold py-4 px-4 rounded-xl transition"
         >
           Go to Dashboard
         </button>

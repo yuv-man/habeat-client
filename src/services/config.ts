@@ -4,7 +4,7 @@ const config = {
   useMock: false,
   // Use production URL in production mode, development URL otherwise
   baseURL:
-    import.meta.env.MODE === "production"
+    import.meta.env.VITE_MODE === "production"
       ? import.meta.env.VITE_BASE_URL_PROD
       : import.meta.env.VITE_BASE_URL_DEV || "http://localhost:5000/api",
   // Test mode - bypasses authentication for frontend testing

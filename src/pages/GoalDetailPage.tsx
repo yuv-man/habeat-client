@@ -174,7 +174,7 @@ const GoalDetailPage = () => {
     });
 
     // Update store and API
-    await storeUpdateProgress(user._id, goal.id, newValue);
+    await storeUpdateProgress(goal.id, newValue);
 
     setNewProgress("");
     setShowUpdateProgress(false);

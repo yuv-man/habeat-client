@@ -122,7 +122,7 @@ const Index = () => {
                 Everything you need to succeed
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Habeat provides comprehensive tools to help you build
+                Habeats provides comprehensive tools to help you build
                 sustainable healthy habits
               </p>
             </div>
@@ -195,7 +195,7 @@ const Index = () => {
                 </h2>
                 <p className="text-xl mb-8 text-white/90">
                   Join thousands of users who have already started their journey
-                  to better health with Habeat.
+                  to better health with Habeats.
                 </p>
                 <div className="flex items-center justify-center space-x-4 mb-8">
                   <CheckCircle className="h-5 w-5" />

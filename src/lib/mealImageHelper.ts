@@ -117,6 +117,7 @@ const availableImages = [
   "power-berry-nut-muesli-bowl",
   "whole-wheat-pancakes-with-fruit",
   "black-bean-burger-on-whole-wheat-bun",
+  "lemon-herb-chicken-with-brown-rice-and-broccoli",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -182,6 +183,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-and-veggie-whole-wheat-wrap",
     "chicken-pad-see-ew",
     "chicken-teriyaki-bowl-with-brown-rice",
+    "lemon-herb-chicken-with-brown-rice-and-broccoli",
   ],
   wings: ["barbeque-chicken-wings"],
   curry: [
@@ -301,6 +303,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "tofu-and-rice-noodles",
     "chicken-fried-rice",
     "chicken-teriyaki-bowl-with-brown-rice",
+    "lemon-herb-chicken-with-brown-rice-and-broccoli",
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],

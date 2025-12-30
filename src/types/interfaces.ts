@@ -359,3 +359,72 @@ export interface IngredientInput {
   category: string;
   done: boolean;
 }
+
+export interface IGoal {
+  _id?: string;
+  userId?: string;
+  name?: string;
+  title?: string;
+  description?: string;
+  target: number;
+  current: number;
+  unit: string;
+  deadline?: string;
+  achieved?: boolean;
+  status?: "achieved" | "in_progress";
+  icon?: string;
+  startDate?: string;
+  milestones?: any[];
+  progressHistory?: any[];
+}
+
+export interface IAnalyticsData {
+  period: "week" | "month";
+  startDate: string;
+  endDate: string;
+  daysTracked: number;
+  totalDays: number;
+  targets: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+  };
+  totals: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+    workoutsCompleted: number;
+    workoutsTotal: number;
+    caloriesBurned: number;
+  };
+  averages: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+  };
+  goalPercentages: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+  };
+  dailyData: Array<{
+    date: string;
+    dateKey: string;
+    calories: number;
+    caloriesGoal: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+    workoutsCompleted: number;
+    workoutsTotal: number;
+  }>;
+}

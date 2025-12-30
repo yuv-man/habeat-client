@@ -51,7 +51,7 @@ const MobileHeader = () => {
       <div className="flex items-center justify-between h-14 px-4">
         <Link to="/daily-tracker" className="flex items-center gap-2">
           <img src={logo} alt="logo" className="w-10 h-10" />
-          <div className="text-lg font-semibold text-gray-900">Habeat</div>
+          <div className="text-lg font-semibold text-gray-900">Habeats</div>
         </Link>
 
         {/* Profile Picture and Burger Menu */}

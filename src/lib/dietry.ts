@@ -48,4 +48,10 @@ export const workoutCategories = [
   "tennis",
   "volleyball",
   "beach-volleyball",
+  "boxing",
+  "squash",
+  "paddle",
+  "paddleboarding",
+  "kayaking",
+  "canoeing",
 ];

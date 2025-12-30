@@ -6,6 +6,8 @@ import {
   IDailyProgress,
   WorkoutData,
   IRecipe,
+  IGoal,
+  IAnalyticsData,
 } from "../types/interfaces";
 import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
@@ -574,7 +576,7 @@ const getRecipeByMealId = async (
   userId: string
 ): Promise<ApiResponse<IRecipe>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.get<ApiResponse<IRecipe>>(
+    const response = await mealGenerationClient.get<ApiResponse<IRecipe>>(
       `/recipes/${userId}/meal/${mealId}`,
       { headers: getAuthHeaders() }
     );
@@ -582,29 +584,12 @@ const getRecipeByMealId = async (
   }, "Failed to get recipe. Please try again.");
 };
 
-// Goal type for API operations
-interface Goal {
-  _id?: string;
-  userId?: string;
-  name?: string;
-  title?: string;
-  description?: string;
-  target: number;
-  current: number;
-  unit: string;
-  deadline?: string;
-  achieved?: boolean;
-  status?: "achieved" | "in_progress";
-  icon?: string;
-  startDate?: string;
-  milestones?: any[];
-  progressHistory?: any[];
-}
-
 // Goals API
-const getGoals = async (userId: string): Promise<ApiResponse<Goal[]>> => {
+
+// GET :userId - Get all goals for user
+const getGoals = async (userId: string): Promise<ApiResponse<IGoal[]>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.get<ApiResponse<Goal[]>>(
+    const response = await userClient.get<ApiResponse<IGoal[]>>(
       `/goals/${userId}`,
       { headers: getAuthHeaders() }
     );
@@ -612,28 +597,40 @@ const getGoals = async (userId: string): Promise<ApiResponse<Goal[]>> => {
   }, "Failed to get goals. Please try again.");
 };
 
-const createGoal = async (
+// GET :userId/goal/:id - Get goal by ID
+const getGoalById = async (
   userId: string,
-  goal: Omit<Goal, "_id" | "userId">
-): Promise<ApiResponse<Goal>> => {
+  goalId: string
+): Promise<ApiResponse<IGoal>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.post<ApiResponse<Goal>>(
-      `/goals/${userId}`,
-      goal,
+    const response = await userClient.get<ApiResponse<IGoal>>(
+      `/goals/${userId}/goal/${goalId}`,
       { headers: getAuthHeaders() }
     );
+    return response.data;
+  }, "Failed to get goal. Please try again.");
+};
+
+// POST - Create a new goal (userId from auth token)
+const createGoal = async (
+  goal: Omit<IGoal, "_id" | "userId">
+): Promise<ApiResponse<IGoal>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<ApiResponse<IGoal>>(`/goals`, goal, {
+      headers: getAuthHeaders(),
+    });
     return response.data;
   }, "Failed to create goal. Please try again.");
 };
 
+// PUT :id - Update a goal
 const updateGoal = async (
-  userId: string,
   goalId: string,
-  updates: Partial<Goal>
-): Promise<ApiResponse<Goal>> => {
+  updates: Partial<IGoal>
+): Promise<ApiResponse<IGoal>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.put<ApiResponse<Goal>>(
-      `/goals/${userId}/${goalId}`,
+    const response = await userClient.put<ApiResponse<IGoal>>(
+      `/goals/${goalId}`,
       updates,
       { headers: getAuthHeaders() }
     );
@@ -641,92 +638,80 @@ const updateGoal = async (
   }, "Failed to update goal. Please try again.");
 };
 
+// DELETE :id - Delete a goal
 const deleteGoal = async (
-  userId: string,
   goalId: string
 ): Promise<ApiResponse<{ success: boolean }>> => {
   return withErrorHandling(async () => {
     const response = await userClient.delete<ApiResponse<{ success: boolean }>>(
-      `/goals/${userId}/${goalId}`,
+      `/goals/${goalId}`,
       { headers: getAuthHeaders() }
     );
     return response.data;
   }, "Failed to delete goal. Please try again.");
 };
 
-const updateGoalProgress = async (
-  userId: string,
-  goalId: string,
-  current: number
-): Promise<ApiResponse<Goal>> => {
+// POST generate - Generate a goal using AI
+interface GenerateGoalDto {
+  userId: string;
+  title: string;
+  description: string;
+  startDate: string;
+  targetDate?: string;
+  language?: string;
+}
+
+const generateGoal = async (
+  data: GenerateGoalDto
+): Promise<ApiResponse<IGoal>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.put<ApiResponse<Goal>>(
-      `/goals/${userId}/${goalId}/progress`,
-      { current },
+    const response = await userClient.post<ApiResponse<IGoal>>(
+      `/goals/generate`,
+      { ...data, language: data.language || "en" },
       { headers: getAuthHeaders() }
     );
     return response.data;
-  }, "Failed to update goal progress. Please try again.");
+  }, "Failed to generate goal. Please try again.");
 };
 
-// Analytics API
-export interface AnalyticsData {
-  period: "week" | "month";
-  startDate: string;
-  endDate: string;
-  daysTracked: number;
-  totalDays: number;
-  targets: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    water: number;
-  };
-  totals: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    water: number;
-    workoutsCompleted: number;
-    workoutsTotal: number;
-    caloriesBurned: number;
-  };
-  averages: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    water: number;
-  };
-  goalPercentages: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    water: number;
-  };
-  dailyData: Array<{
-    date: string;
-    dateKey: string;
-    calories: number;
-    caloriesGoal: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-    water: number;
-    workoutsCompleted: number;
-    workoutsTotal: number;
-  }>;
-}
+// POST :id/progress - Add a progress entry to a goal
+const addGoalProgress = async (
+  goalId: string,
+  value: number,
+  date?: string
+): Promise<ApiResponse<IGoal>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<ApiResponse<IGoal>>(
+      `/goals/${goalId}/progress`,
+      { value, date },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to add progress entry. Please try again.");
+};
+
+// PUT :id/milestones/:milestoneId - Update a milestone
+const updateMilestone = async (
+  goalId: string,
+  milestoneId: string,
+  completed: boolean
+): Promise<ApiResponse<IGoal>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<ApiResponse<IGoal>>(
+      `/goals/${goalId}/milestones/${milestoneId}`,
+      { completed },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to update milestone. Please try again.");
+};
 
 const getAnalytics = async (
   userId: string,
   period: "week" | "month" = "week"
-): Promise<ApiResponse<AnalyticsData>> => {
+): Promise<ApiResponse<IAnalyticsData>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.get<ApiResponse<AnalyticsData>>(
+    const response = await userClient.get<ApiResponse<IAnalyticsData>>(
       `/progress/analytics/${userId}`,
       { params: { period }, headers: getAuthHeaders() }
     );
@@ -899,10 +884,13 @@ export const userAPI = {
   getRecipeByMealId,
   // Goals
   getGoals,
+  getGoalById,
   createGoal,
   updateGoal,
   deleteGoal,
-  updateGoalProgress,
+  generateGoal,
+  addGoalProgress,
+  updateMilestone,
   // Analytics
   getAnalytics,
   // Progress/Daily Tracker

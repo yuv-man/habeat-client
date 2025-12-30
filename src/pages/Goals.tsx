@@ -36,14 +36,12 @@ const GoalsPage = () => {
   };
 
   const handleMarkAchieved = (goalId: string) => {
-    if (user?._id) {
-      markAchieved(user._id, goalId);
-    }
+    markAchieved(goalId);
   };
 
   const handleAddGoal = () => {
-    // TODO: Open add goal modal
-    console.log("Add new goal");
+    // Navigate to create goal page
+    navigate("/goals/create");
   };
 
   if (!user) {

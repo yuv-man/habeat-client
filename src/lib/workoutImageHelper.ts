@@ -114,9 +114,12 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // Sports
   basketball: ["basketball"],
+  boxing: ["boxing"],
   football: ["football"],
   soccer: ["football"],
   tennis: ["tennis"],
+  squash: ["squash"],
+  paddle: ["squash"],
   volleyball: ["volleyball"],
   "beach-volleyball": ["volleyball"],
 
@@ -144,6 +147,12 @@ const keywordMappings: { [key: string]: string[] } = {
   skateboard: ["skating"],
   surf: ["surfing"],
   surfing: ["surfing"],
+  paddleboarding: ["paddleboarding"],
+  paddleboard: ["paddleboarding"],
+  kayaking: ["kayaking"],
+  kayak: ["kayaking"],
+  canoe: ["kayaking"],
+  canoeing: ["kayaking"],
 };
 
 // Function to find the best matching image for a workout name

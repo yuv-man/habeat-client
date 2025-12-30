@@ -30,7 +30,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
         <div className="flex items-center justify-between h-16">
           <div className="flex flex-row items-center gap-2">
             <img src={logo} alt="logo" className="w-12 h-12 md:w-16 md:h-16" />
-            <div className="logo-text text-lg font-semibold">Habeat</div>
+            <div className="logo-text text-lg font-semibold">Habeats</div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <Link
@@ -71,7 +71,9 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
           </div>
           <Link
             to="/settings"
-            className={`nav-link flex items-center gap-2 ${isActive("/settings") ? "active" : ""}`}
+            className={`nav-link flex items-center gap-2 ${
+              isActive("/settings") ? "active" : ""
+            }`}
           >
             <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0">
               {user?.profilePicture ? (

@@ -10,10 +10,10 @@ const FavoriteMeals = ({ recipes }: { recipes: IRecipe[] }) => {
   const { user, updateFavorite } = useAuthStore();
 
   return (
-    <div className="min-h-screen bg-white pb-20 pt-14">
+    <div className="min-h-screen bg-white pb-20">
       {/* Header */}
       <div className="px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 text-start">
           Favorite Meals
         </h1>
       </div>

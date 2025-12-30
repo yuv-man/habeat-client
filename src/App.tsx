@@ -16,6 +16,7 @@ const Registration = lazy(() => import("./pages/Registration"));
 const DailyTracker = lazy(() => import("./pages/DailyTracker"));
 const WeeklyOverview = lazy(() => import("./pages/WeeklyOverview"));
 const Goals = lazy(() => import("./pages/Goals"));
+const CreateGoalPage = lazy(() => import("./pages/CreateGoalPage"));
 const GoalDetailPage = lazy(() => import("./pages/GoalDetailPage"));
 const Recipes = lazy(() => import("./pages/Recipes"));
 const RecipeDetailPage = lazy(() => import("./pages/RecipeDetailPage"));
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/daily-tracker" element={<DailyTracker />} />
               <Route path="/weekly-overview" element={<WeeklyOverview />} />
               <Route path="/goals" element={<Goals />} />
+              <Route path="/goals/create" element={<CreateGoalPage />} />
               <Route path="/goals/:goalId" element={<GoalDetailPage />} />
               <Route path="/recipes" element={<Recipes />} />
               <Route path="/recipes/:recipeId" element={<RecipeDetailPage />} />

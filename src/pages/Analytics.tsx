@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { userAPI, AnalyticsData } from "@/services/api";
+import { userAPI } from "@/services/api";
+import { IAnalyticsData } from "@/types/interfaces";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   TrendingUp,
@@ -19,7 +20,7 @@ const Analytics = () => {
   const navigate = useNavigate();
   const { user, loading, token } = useAuthStore();
   const [period, setPeriod] = useState<"week" | "month">("week");
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [analytics, setAnalytics] = useState<IAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

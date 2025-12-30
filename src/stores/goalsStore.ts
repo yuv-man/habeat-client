@@ -12,19 +12,20 @@ interface GoalsState {
 
 interface GoalsActions {
   fetchGoals: (userId: string) => Promise<void>;
-  createGoal: (userId: string, goal: Omit<Goal, "id">) => Promise<void>;
-  updateGoal: (
-    userId: string,
-    goalId: string,
-    updates: Partial<Goal>
-  ) => Promise<void>;
-  deleteGoal: (userId: string, goalId: string) => Promise<void>;
+  createGoal: (goal: Omit<Goal, "id">) => Promise<void>;
+  updateGoal: (goalId: string, updates: Partial<Goal>) => Promise<void>;
+  deleteGoal: (goalId: string) => Promise<void>;
   updateProgress: (
-    userId: string,
     goalId: string,
-    current: number
+    value: number,
+    date?: string
   ) => Promise<void>;
-  markAchieved: (userId: string, goalId: string) => Promise<void>;
+  markAchieved: (goalId: string) => Promise<void>;
+  updateMilestone: (
+    goalId: string,
+    milestoneId: string,
+    completed: boolean
+  ) => Promise<void>;
   setGoals: (goals: Goal[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -79,7 +80,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
       },
 
-      createGoal: async (userId: string, goalData: Omit<Goal, "id">) => {
+      createGoal: async (goalData: Omit<Goal, "id">) => {
         const newGoal: Goal = {
           ...goalData,
           id: `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -105,7 +106,7 @@ export const useGoalsStore = create<GoalsStore>()(
             milestones: goalData.milestones,
             progressHistory: goalData.progressHistory,
           };
-          const response = await userAPI.createGoal(userId, apiGoalData);
+          const response = await userAPI.createGoal(apiGoalData);
           // Map API response back to frontend Goal format
           const apiGoal = response.data;
           const createdGoal: Goal = {
@@ -128,11 +129,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
       },
 
-      updateGoal: async (
-        userId: string,
-        goalId: string,
-        updates: Partial<Goal>
-      ) => {
+      updateGoal: async (goalId: string, updates: Partial<Goal>) => {
         if (config.testFrontend) {
           // Update local state in test mode
           const { goals } = get();
@@ -145,7 +142,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          await userAPI.updateGoal(userId, goalId, updates);
+          await userAPI.updateGoal(goalId, updates);
           const { goals } = get();
           set({
             goals: goals.map((goal) =>
@@ -157,7 +154,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
       },
 
-      deleteGoal: async (userId: string, goalId: string) => {
+      deleteGoal: async (goalId: string) => {
         if (config.testFrontend) {
           // Update local state in test mode
           const { goals } = get();
@@ -166,7 +163,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          await userAPI.deleteGoal(userId, goalId);
+          await userAPI.deleteGoal(goalId);
           const { goals } = get();
           set({ goals: goals.filter((goal) => goal.id !== goalId) });
         } catch (error: any) {
@@ -174,28 +171,32 @@ export const useGoalsStore = create<GoalsStore>()(
         }
       },
 
-      updateProgress: async (
-        userId: string,
-        goalId: string,
-        current: number
-      ) => {
+      updateProgress: async (goalId: string, value: number, date?: string) => {
         if (config.testFrontend) {
           // Update local state in test mode
           const { goals } = get();
           set({
             goals: goals.map((goal) =>
-              goal.id === goalId ? { ...goal, current } : goal
+              goal.id === goalId ? { ...goal, current: value } : goal
             ),
           });
           return;
         }
 
         try {
-          await userAPI.updateGoalProgress(userId, goalId, current);
+          const response = await userAPI.addGoalProgress(goalId, value, date);
+          const apiGoal = response.data;
           const { goals } = get();
           set({
             goals: goals.map((goal) =>
-              goal.id === goalId ? { ...goal, current } : goal
+              goal.id === goalId
+                ? {
+                    ...goal,
+                    current: apiGoal.current || value,
+                    progressHistory:
+                      apiGoal.progressHistory || goal.progressHistory,
+                  }
+                : goal
             ),
           });
         } catch (error: any) {
@@ -203,7 +204,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
       },
 
-      markAchieved: async (userId: string, goalId: string) => {
+      markAchieved: async (goalId: string) => {
         const { goals } = get();
         const goal = goals.find((g) => g.id === goalId);
         if (!goal) return;
@@ -222,7 +223,7 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          await userAPI.updateGoal(userId, goalId, {
+          await userAPI.updateGoal(goalId, {
             achieved: newStatus === "achieved",
           });
           set({
@@ -232,6 +233,52 @@ export const useGoalsStore = create<GoalsStore>()(
           });
         } catch (error: any) {
           set({ error: error.message || "Failed to mark goal as achieved" });
+        }
+      },
+
+      // Update a milestone
+      updateMilestone: async (
+        goalId: string,
+        milestoneId: string,
+        completed: boolean
+      ) => {
+        if (config.testFrontend) {
+          const { goals } = get();
+          set({
+            goals: goals.map((goal) =>
+              goal.id === goalId
+                ? {
+                    ...goal,
+                    milestones: goal.milestones?.map((m) =>
+                      m.id === milestoneId ? { ...m, completed } : m
+                    ),
+                  }
+                : goal
+            ),
+          });
+          return;
+        }
+
+        try {
+          const response = await userAPI.updateMilestone(
+            goalId,
+            milestoneId,
+            completed
+          );
+          const apiGoal = response.data;
+          const { goals } = get();
+          set({
+            goals: goals.map((goal) =>
+              goal.id === goalId
+                ? {
+                    ...goal,
+                    milestones: apiGoal.milestones || goal.milestones,
+                  }
+                : goal
+            ),
+          });
+        } catch (error: any) {
+          set({ error: error.message || "Failed to update milestone" });
         }
       },
     }),

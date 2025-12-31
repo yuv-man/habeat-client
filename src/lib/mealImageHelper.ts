@@ -118,6 +118,8 @@ const availableImages = [
   "whole-wheat-pancakes-with-fruit",
   "black-bean-burger-on-whole-wheat-bun",
   "lemon-herb-chicken-with-brown-rice-and-broccoli",
+  "lean-beef-with-quinoa-and-roasted-root-vegetables",
+  "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -304,6 +306,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-fried-rice",
     "chicken-teriyaki-bowl-with-brown-rice",
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
+    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
@@ -323,7 +326,12 @@ const keywordMappings: { [key: string]: string[] } = {
     "stirfried-noodles",
     "chicken-pad-see-ew",
   ],
-  stir: ["stirfried-noodles", "veggie-stir-fry", "turkey-stirfry"],
+  stir: [
+    "stirfried-noodles",
+    "veggie-stir-fry",
+    "turkey-stirfry",
+    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
+  ],
   ramen: ["ramen-bowl"],
   sushi: ["sushi-bowl", "sushi-rolls"],
   dumplings: ["chinese-dumplings"],
@@ -336,7 +344,11 @@ const keywordMappings: { [key: string]: string[] } = {
   nachos: ["nachos"],
 
   // Meat dishes
-  beef: ["beef-and-bean-chili", "lean-beef-stir-fry-with-brown-rice"],
+  beef: [
+    "beef-and-bean-chili",
+    "lean-beef-stir-fry-with-brown-rice",
+    "lean-beef-with-quinoa-and-roasted-root-vegetables",
+  ],
   steak: [
     "steak-with-mashed-potatoes",
     "steak-and-roasted-vegetables",
@@ -348,11 +360,16 @@ const keywordMappings: { [key: string]: string[] } = {
     "spare-ribs",
     "beef-and-bean-chili",
     "lean-beef-stir-fry-with-brown-rice",
+    "lean-beef-with-quinoa-and-roasted-root-vegetables",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],
-  turkey: ["turkey-sandwich", "turkey-stirfry"],
+  turkey: [
+    "turkey-sandwich",
+    "turkey-stirfry",
+    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
+  ],
   schnitzel: ["schnitzel-and-fries"],
 
   // Vegetarian

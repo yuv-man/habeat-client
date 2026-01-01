@@ -60,13 +60,16 @@ export const useGoalsStore = create<GoalsStore>()(
           // Map API goals to component Goal format
           const mappedGoals: Goal[] = apiGoals.map((g: any) => ({
             id: g._id || g.id,
-            title: g.name || g.title,
+            title: g.title || "",
             description: g.description || "",
             current: g.current || 0,
             target: g.target || 0,
             unit: g.unit || "",
             icon: g.icon || "workout",
             status: g.achieved ? "achieved" : g.status || "in_progress",
+            startDate: g.startDate,
+            milestones: g.milestones,
+            progressHistory: g.progressHistory,
           }));
           set({
             goals: mappedGoals,
@@ -93,9 +96,9 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          // Transform frontend Goal format to API format
+          // Send goal data to API (backend expects 'title')
           const apiGoalData = {
-            name: goalData.title,
+            title: goalData.title,
             description: goalData.description,
             target: goalData.target,
             current: goalData.current,
@@ -111,7 +114,7 @@ export const useGoalsStore = create<GoalsStore>()(
           const apiGoal = response.data;
           const createdGoal: Goal = {
             id: apiGoal._id || newGoal.id,
-            title: apiGoal.name || goalData.title,
+            title: apiGoal.title || goalData.title,
             description: apiGoal.description || goalData.description,
             current: apiGoal.current || goalData.current,
             target: apiGoal.target || goalData.target,
@@ -142,7 +145,13 @@ export const useGoalsStore = create<GoalsStore>()(
         }
 
         try {
-          await userAPI.updateGoal(goalId, updates);
+          // Transform status to achieved for API
+          const apiUpdates: Record<string, unknown> = { ...updates };
+          if (updates.status !== undefined) {
+            apiUpdates.achieved = updates.status === "achieved";
+            delete apiUpdates.status;
+          }
+          await userAPI.updateGoal(goalId, apiUpdates);
           const { goals } = get();
           set({
             goals: goals.map((goal) =>

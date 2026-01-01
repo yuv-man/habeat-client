@@ -363,7 +363,6 @@ export interface IngredientInput {
 export interface IGoal {
   _id?: string;
   userId?: string;
-  name?: string;
   title?: string;
   description?: string;
   target: number;

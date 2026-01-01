@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Plus,
   Check,
-  TrendingUp,
   Calendar,
   Target,
   Scale,
@@ -12,6 +11,14 @@ import {
   GlassWater,
   Leaf,
   Trash2,
+  FileText,
+  Loader2,
+  Footprints,
+  Flame,
+  Moon,
+  Apple,
+  Trophy,
+  Zap,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useGoalsStore } from "@/stores/goalsStore";
@@ -25,29 +32,27 @@ const GoalDetailPage = () => {
   const {
     goals,
     fetchGoals,
-    updateProgress: storeUpdateProgress,
+    updateGoal,
+    updateMilestone: storeMilestoneUpdate,
   } = useGoalsStore();
   const [goal, setGoal] = useState<Goal | null>(null);
   const [showAddMilestone, setShowAddMilestone] = useState(false);
-  const [showUpdateProgress, setShowUpdateProgress] = useState(false);
   const [newMilestone, setNewMilestone] = useState({
     title: "",
-    targetValue: "",
+    targetPercentage: "",
   });
-  const [newProgress, setNewProgress] = useState("");
+  const [progressNote, setProgressNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Fetch goals if not loaded
     if (user?._id && goals.length === 0) {
       fetchGoals(user._id);
     }
   }, [user?._id, goals.length, fetchGoals]);
 
-  // Initialize local goal state from store
   useEffect(() => {
     const storeGoal = goals.find((g) => g.id === goalId);
     if (storeGoal) {
-      // Add default values for optional fields
       setGoal({
         ...storeGoal,
         startDate:
@@ -58,48 +63,70 @@ const GoalDetailPage = () => {
     }
   }, [goals, goalId]);
 
-  const getIcon = (iconType: Goal["icon"]) => {
-    const iconClass = "w-8 h-8 text-white";
-    const containerClass =
-      "w-16 h-16 rounded-2xl flex items-center justify-center";
-    switch (iconType) {
-      case "run":
-        return (
-          <div className={`${containerClass} bg-green-400`}>
-            <span className="text-white font-bold text-2xl">H</span>
-          </div>
-        );
-      case "weight":
-        return (
-          <div className={`${containerClass} bg-orange-400`}>
-            <Scale className={iconClass} />
-          </div>
-        );
-      case "workout":
-        return (
-          <div className={`${containerClass} bg-blue-400`}>
-            <Dumbbell className={iconClass} />
-          </div>
-        );
-      case "water":
-        return (
-          <div className={`${containerClass} bg-yellow-400`}>
-            <GlassWater className={iconClass} />
-          </div>
-        );
-      case "veggies":
-        return (
-          <div className={`${containerClass} bg-green-400`}>
-            <Leaf className={iconClass} />
-          </div>
-        );
-      default:
-        return null;
-    }
+  // Goal type configurations
+  const goalTypeConfig: Record<
+    string,
+    { icon: any; color: string; gradient: string; lightBg: string }
+  > = {
+    run: {
+      icon: Footprints,
+      color: "text-pink-500",
+      gradient: "from-pink-500 to-rose-500",
+      lightBg: "bg-pink-50",
+    },
+    weight: {
+      icon: Scale,
+      color: "text-orange-500",
+      gradient: "from-orange-500 to-amber-500",
+      lightBg: "bg-orange-50",
+    },
+    workout: {
+      icon: Dumbbell,
+      color: "text-blue-500",
+      gradient: "from-blue-500 to-indigo-500",
+      lightBg: "bg-blue-50",
+    },
+    water: {
+      icon: GlassWater,
+      color: "text-cyan-500",
+      gradient: "from-cyan-500 to-teal-500",
+      lightBg: "bg-cyan-50",
+    },
+    veggies: {
+      icon: Leaf,
+      color: "text-green-500",
+      gradient: "from-green-500 to-emerald-500",
+      lightBg: "bg-green-50",
+    },
+    calories: {
+      icon: Flame,
+      color: "text-red-500",
+      gradient: "from-red-500 to-orange-500",
+      lightBg: "bg-red-50",
+    },
+    sleep: {
+      icon: Moon,
+      color: "text-indigo-500",
+      gradient: "from-indigo-500 to-purple-500",
+      lightBg: "bg-indigo-50",
+    },
+    protein: {
+      icon: Apple,
+      color: "text-amber-500",
+      gradient: "from-amber-500 to-yellow-500",
+      lightBg: "bg-amber-50",
+    },
   };
 
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
+  const getGoalConfig = (iconType: string) => {
+    return (
+      goalTypeConfig[iconType] || {
+        icon: Target,
+        color: "text-gray-500",
+        gradient: "from-gray-500 to-gray-600",
+        lightBg: "bg-gray-50",
+      }
+    );
   };
 
   const formatDate = (dateStr: string) => {
@@ -109,105 +136,109 @@ const GoalDetailPage = () => {
     });
   };
 
+  const calculateProgress = (milestones: Milestone[]) => {
+    if (!milestones || milestones.length === 0) return 0;
+    const completedCount = milestones.filter((m) => m.completed).length;
+    return Math.round((completedCount / milestones.length) * 100);
+  };
+
   const handleAddMilestone = () => {
-    if (!goal || !newMilestone.title || !newMilestone.targetValue) return;
+    if (!goal || !newMilestone.title || !newMilestone.targetPercentage) return;
+
+    const percentage = parseFloat(newMilestone.targetPercentage);
+    if (percentage < 0 || percentage > 100) {
+      alert("Percentage must be between 0 and 100");
+      return;
+    }
 
     const milestone: Milestone = {
       id: `m${Date.now()}`,
       title: newMilestone.title,
-      targetValue: parseFloat(newMilestone.targetValue),
+      targetValue: percentage,
       completed: false,
     };
 
-    setGoal({
-      ...goal,
-      milestones: [...(goal.milestones || []), milestone].sort(
-        (a, b) => a.targetValue - b.targetValue
-      ),
-    });
-    setNewMilestone({ title: "", targetValue: "" });
+    const updatedMilestones = [...(goal.milestones || []), milestone].sort(
+      (a, b) => a.targetValue - b.targetValue
+    );
+
+    setGoal({ ...goal, milestones: updatedMilestones });
+    updateGoal(goal.id, { milestones: updatedMilestones } as any);
+    setNewMilestone({ title: "", targetPercentage: "" });
     setShowAddMilestone(false);
   };
 
-  const toggleMilestone = (milestoneId: string) => {
+  const toggleMilestone = async (milestoneId: string) => {
     if (!goal) return;
 
-    setGoal({
-      ...goal,
-      milestones: (goal.milestones || []).map((m) =>
-        m.id === milestoneId
-          ? {
-              ...m,
-              completed: !m.completed,
-              completedDate: !m.completed
-                ? new Date().toISOString().split("T")[0]
-                : undefined,
-            }
-          : m
-      ),
-    });
+    const milestone = goal.milestones?.find((m) => m.id === milestoneId);
+    if (!milestone) return;
+
+    const newCompleted = !milestone.completed;
+    const updatedMilestones = (goal.milestones || []).map((m) =>
+      m.id === milestoneId
+        ? {
+            ...m,
+            completed: newCompleted,
+            completedDate: newCompleted
+              ? new Date().toISOString().split("T")[0]
+              : undefined,
+          }
+        : m
+    );
+
+    const newProgress = calculateProgress(updatedMilestones);
+    setGoal({ ...goal, milestones: updatedMilestones, current: newProgress });
+
+    try {
+      await storeMilestoneUpdate(goal.id, milestoneId, newCompleted);
+    } catch (error) {
+      console.error("Failed to update milestone:", error);
+    }
   };
 
   const deleteMilestone = (milestoneId: string) => {
     if (!goal) return;
 
-    setGoal({
-      ...goal,
-      milestones: (goal.milestones || []).filter((m) => m.id !== milestoneId),
-    });
-  };
-
-  const handleUpdateProgress = async () => {
-    if (!goal || !newProgress || !user?._id) return;
-
-    const newValue = parseFloat(newProgress);
-    const today = new Date().toISOString().split("T")[0];
-
-    // Update local state
-    setGoal({
-      ...goal,
-      current: newValue,
-      progressHistory: [
-        ...(goal.progressHistory || []).filter((p) => p.date !== today),
-        { date: today, value: newValue },
-      ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
-    });
-
-    // Update store and API
-    await storeUpdateProgress(goal.id, newValue);
-
-    setNewProgress("");
-    setShowUpdateProgress(false);
-  };
-
-  // Calculate chart dimensions
-  const getChartPath = () => {
-    const progressHistory = goal?.progressHistory || [];
-    if (!goal || progressHistory.length < 2) return "";
-
-    const maxValue = Math.max(
-      goal.target,
-      ...progressHistory.map((p) => p.value)
+    const updatedMilestones = (goal.milestones || []).filter(
+      (m) => m.id !== milestoneId
     );
-    const width = 100;
-    const height = 100;
-    const padding = 10;
 
-    const points = progressHistory.map((entry, index) => {
-      const x =
-        padding +
-        (index / (progressHistory.length - 1)) * (width - 2 * padding);
-      const y =
-        height - padding - (entry.value / maxValue) * (height - 2 * padding);
-      return { x, y };
+    setGoal({
+      ...goal,
+      milestones: updatedMilestones,
+      current: calculateProgress(updatedMilestones),
     });
+    updateGoal(goal.id, { milestones: updatedMilestones } as any);
+  };
 
-    const path = points.reduce((acc, point, index) => {
-      if (index === 0) return `M ${point.x} ${point.y}`;
-      return `${acc} L ${point.x} ${point.y}`;
-    }, "");
+  const handleSaveNote = async () => {
+    if (!goal || !progressNote.trim()) return;
 
-    return path;
+    setIsSaving(true);
+    const today = new Date().toISOString().split("T")[0];
+    const progress = calculateProgress(goal.milestones || []);
+
+    const newEntry = {
+      date: today,
+      value: progress,
+      note: progressNote.trim(),
+    };
+    const updatedHistory = [
+      ...(goal.progressHistory || []).filter((p) => p.date !== today),
+      newEntry,
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    setGoal({ ...goal, progressHistory: updatedHistory });
+
+    try {
+      await updateGoal(goal.id, { progressHistory: updatedHistory } as any);
+      setProgressNote("");
+    } catch (error) {
+      console.error("Failed to save note:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!goal) {
@@ -220,282 +251,259 @@ const GoalDetailPage = () => {
     );
   }
 
-  const progress = getProgressPercentage(goal.current, goal.target);
+  const config = getGoalConfig(goal.icon);
+  const GoalIcon = config.icon;
   const milestones = goal.milestones || [];
   const progressHistory = goal.progressHistory || [];
   const completedMilestones = milestones.filter((m) => m.completed).length;
+  const progress = calculateProgress(milestones);
+  const isComplete = progress === 100;
 
   return (
-    <DashboardLayout bgColor="bg-gray-50" showNavBar={false}>
+    <DashboardLayout bgColor="bg-gray-100" showNavBar={false}>
       <div className="min-h-screen pb-24">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-4 py-4 sticky top-14 z-40">
-          <div className="flex items-center gap-3">
+        {/* Hero Header with Gradient */}
+        <div
+          className={`bg-gradient-to-br ${config.gradient} px-4 pt-4 pb-32 relative overflow-hidden`}
+        >
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 left-10 w-32 h-32 rounded-full bg-white/30 blur-2xl" />
+            <div className="absolute bottom-10 right-10 w-40 h-40 rounded-full bg-white/20 blur-3xl" />
+          </div>
+
+          {/* Header */}
+          <div className="relative flex items-center justify-between mb-6">
             <button
               onClick={() => navigate("/goals")}
-              className="p-2 hover:bg-gray-100 rounded-full transition"
+              className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition backdrop-blur-sm"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-700" />
+              <ArrowLeft className="w-5 h-5 text-white" />
             </button>
-            <h1 className="text-lg font-semibold text-gray-900">
-              Goal Details
-            </h1>
+            <div className="flex items-center gap-2">
+              {isComplete && (
+                <div className="flex items-center gap-1 px-3 py-1 bg-yellow-400 rounded-full">
+                  <Trophy className="w-4 h-4 text-yellow-900" />
+                  <span className="text-xs font-bold text-yellow-900">
+                    ACHIEVED!
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Goal Info */}
+          <div className="relative text-center text-white">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-2xl backdrop-blur-sm mb-4">
+              <GoalIcon className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">{goal.title}</h1>
+            <p className="text-white/80 text-sm max-w-xs mx-auto">
+              {goal.description}
+            </p>
           </div>
         </div>
 
-        {/* Goal Overview Card */}
-        <div className="px-4 py-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-start gap-4 mb-6">
-              {getIcon(goal.icon)}
-              <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-900 mb-1">
-                  {goal.title}
-                </h2>
-                <p className="text-sm text-gray-600">{goal.description}</p>
-              </div>
-            </div>
-
-            {/* Progress Circle */}
+        {/* Progress Card - Overlapping */}
+        <div className="px-4 -mt-20 relative z-10">
+          <div className="bg-white rounded-3xl p-6 shadow-xl border border-gray-100">
+            {/* Progress Ring */}
             <div className="flex items-center justify-center mb-6">
-              <div className="relative w-32 h-32">
+              <div className="relative w-36 h-36">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
+                    cx="72"
+                    cy="72"
+                    r="62"
                     fill="none"
-                    stroke="#e5e7eb"
-                    strokeWidth="12"
+                    stroke="#f3f4f6"
+                    strokeWidth="14"
                   />
                   <circle
-                    cx="64"
-                    cy="64"
-                    r="56"
+                    cx="72"
+                    cy="72"
+                    r="62"
                     fill="none"
-                    stroke={goal.status === "achieved" ? "#22c55e" : "#f97316"}
-                    strokeWidth="12"
+                    stroke={isComplete ? "#22c55e" : "url(#progressGradient)"}
+                    strokeWidth="14"
                     strokeLinecap="round"
-                    strokeDasharray={`${progress * 3.52} 352`}
-                    className="transition-all duration-500"
+                    strokeDasharray={`${progress * 3.89} 389`}
+                    className="transition-all duration-700 ease-out"
                   />
+                  <defs>
+                    <linearGradient
+                      id="progressGradient"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="100%" stopColor="#eab308" />
+                    </linearGradient>
+                  </defs>
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-900">
-                    {goal.current}
+                  <span className="text-4xl font-black text-gray-900">
+                    {progress}%
                   </span>
-                  <span className="text-sm text-gray-500">
-                    of {goal.target} {goal.unit}
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Complete
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <Calendar className="w-5 h-5 mx-auto mb-1 text-gray-500" />
-                <div className="text-xs text-gray-500">Started</div>
-                <div className="text-sm font-semibold text-gray-900">
+            {/* Stats Row */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className={`text-center p-3 ${config.lightBg} rounded-2xl`}>
+                <Calendar className={`w-5 h-5 mx-auto mb-1 ${config.color}`} />
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Started
+                </div>
+                <div className="text-sm font-bold text-gray-900">
                   {formatDate(goal.startDate || new Date().toISOString())}
                 </div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <Target className="w-5 h-5 mx-auto mb-1 text-gray-500" />
-                <div className="text-xs text-gray-500">Milestones</div>
-                <div className="text-sm font-semibold text-gray-900">
+              <div className={`text-center p-3 ${config.lightBg} rounded-2xl`}>
+                <Target className={`w-5 h-5 mx-auto mb-1 ${config.color}`} />
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Milestones
+                </div>
+                <div className="text-sm font-bold text-gray-900">
                   {completedMilestones}/{milestones.length}
                 </div>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-xl">
-                <TrendingUp className="w-5 h-5 mx-auto mb-1 text-gray-500" />
-                <div className="text-xs text-gray-500">Progress</div>
-                <div className="text-sm font-semibold text-gray-900">
-                  {Math.round(progress)}%
+              <div
+                className={`text-center p-3 rounded-2xl ${
+                  isComplete
+                    ? "bg-green-100"
+                    : progress > 50
+                    ? "bg-yellow-100"
+                    : "bg-orange-100"
+                }`}
+              >
+                <Zap
+                  className={`w-5 h-5 mx-auto mb-1 ${
+                    isComplete
+                      ? "text-green-600"
+                      : progress > 50
+                      ? "text-yellow-600"
+                      : "text-orange-600"
+                  }`}
+                />
+                <div className="text-[10px] text-gray-500 uppercase tracking-wide">
+                  Status
                 </div>
-              </div>
-            </div>
-
-            {/* Update Progress Button */}
-            <button
-              onClick={() => setShowUpdateProgress(true)}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3 rounded-xl transition"
-            >
-              Update Progress
-            </button>
-          </div>
-        </div>
-
-        {/* Progress History Chart */}
-        <div className="px-4 mb-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-green-500" />
-              Progress Over Time
-            </h3>
-
-            {progressHistory.length > 1 ? (
-              <div className="relative h-40">
-                <svg
-                  viewBox="0 0 100 100"
-                  className="w-full h-full"
-                  preserveAspectRatio="none"
+                <div
+                  className={`text-sm font-bold ${
+                    isComplete
+                      ? "text-green-600"
+                      : progress > 50
+                      ? "text-yellow-600"
+                      : "text-orange-600"
+                  }`}
                 >
-                  {/* Grid lines */}
-                  <line
-                    x1="10"
-                    y1="90"
-                    x2="90"
-                    y2="90"
-                    stroke="#e5e7eb"
-                    strokeWidth="0.5"
-                  />
-                  <line
-                    x1="10"
-                    y1="50"
-                    x2="90"
-                    y2="50"
-                    stroke="#e5e7eb"
-                    strokeWidth="0.5"
-                    strokeDasharray="2"
-                  />
-                  <line
-                    x1="10"
-                    y1="10"
-                    x2="90"
-                    y2="10"
-                    stroke="#e5e7eb"
-                    strokeWidth="0.5"
-                    strokeDasharray="2"
-                  />
-
-                  {/* Progress line */}
-                  <path
-                    d={getChartPath()}
-                    fill="none"
-                    stroke="#22c55e"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-
-                  {/* Data points */}
-                  {progressHistory.map((entry, index) => {
-                    const maxValue = Math.max(
-                      goal.target,
-                      ...progressHistory.map((p) => p.value)
-                    );
-                    const x = 10 + (index / (progressHistory.length - 1)) * 80;
-                    const y = 90 - (entry.value / maxValue) * 80;
-                    return (
-                      <circle
-                        key={entry.date}
-                        cx={x}
-                        cy={y}
-                        r="2"
-                        fill="#22c55e"
-                      />
-                    );
-                  })}
-                </svg>
-
-                {/* X-axis labels */}
-                <div className="flex justify-between mt-2 px-2">
-                  <span className="text-xs text-gray-500">
-                    {formatDate(progressHistory[0].date)}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatDate(
-                      progressHistory[progressHistory.length - 1].date
-                    )}
-                  </span>
+                  {isComplete ? "Done!" : progress > 50 ? "Great!" : "Going"}
                 </div>
               </div>
-            ) : (
-              <div className="h-40 flex items-center justify-center text-gray-400 text-sm">
-                Add more progress entries to see the chart
-              </div>
-            )}
-
-            {/* Recent Progress List */}
-            <div className="mt-4 space-y-2">
-              {progressHistory
-                .slice(-5)
-                .reverse()
-                .map((entry) => (
-                  <div
-                    key={entry.date}
-                    className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-                  >
-                    <span className="text-sm text-gray-600">
-                      {formatDate(entry.date)}
-                    </span>
-                    <span className="text-sm font-medium text-gray-900">
-                      {entry.value} {goal.unit}
-                    </span>
-                  </div>
-                ))}
             </div>
           </div>
         </div>
 
         {/* Milestones Section */}
-        <div className="px-4 mb-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="px-4 mt-6">
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Target className="w-5 h-5 text-orange-500" />
-                Milestones
-              </h3>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-8 h-8 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}
+                >
+                  <Target className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900">Milestones</h3>
+              </div>
               <button
                 onClick={() => setShowAddMilestone(true)}
-                className="p-2 hover:bg-gray-100 rounded-full transition"
+                className={`flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r ${config.gradient} text-white rounded-full text-xs font-semibold hover:opacity-90 transition shadow-sm`}
               >
-                <Plus className="w-5 h-5 text-gray-600" />
+                <Plus className="w-3 h-3" />
+                Add
               </button>
             </div>
 
-            <div className="space-y-3">
-              {milestones.map((milestone) => (
+            {/* Progress bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-gray-500">Progress</span>
+                <span className="font-semibold text-gray-700">
+                  {completedMilestones}/{milestones.length}
+                </span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`bg-gradient-to-r ${config.gradient} h-2.5 rounded-full transition-all duration-700`}
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {milestones.map((milestone, index) => (
                 <div
                   key={milestone.id}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition ${
+                  className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
                     milestone.completed
                       ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200"
+                      : "bg-gray-50 border-gray-100 hover:border-gray-200"
                   }`}
                 >
                   <button
                     onClick={() => toggleMilestone(milestone.id)}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                       milestone.completed
-                        ? "bg-green-500 text-white"
-                        : "border-2 border-gray-300 hover:border-green-500"
+                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        : `border-2 border-gray-300 hover:border-current ${config.color}`
                     }`}
                   >
-                    {milestone.completed && <Check className="w-4 h-4" />}
+                    {milestone.completed ? (
+                      <Check className="w-4 h-4" />
+                    ) : (
+                      <span className="text-xs font-bold text-gray-400">
+                        {index + 1}
+                      </span>
+                    )}
                   </button>
                   <div className="flex-1 min-w-0">
                     <div
-                      className={`font-medium text-sm ${
-                        milestone.completed ? "text-green-600" : "text-gray-900"
+                      className={`font-semibold text-sm ${
+                        milestone.completed
+                          ? "text-green-700 line-through"
+                          : "text-gray-900"
                       }`}
                     >
                       {milestone.title}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Target: {milestone.targetValue} {goal.unit}
+                    <div className="flex items-center gap-2 text-xs">
+                      <span
+                        className={`px-2 py-0.5 rounded-full ${
+                          milestone.completed
+                            ? "bg-green-100 text-green-600"
+                            : `${config.lightBg} ${config.color}`
+                        }`}
+                      >
+                        {milestone.targetValue}%
+                      </span>
                       {milestone.completedDate && (
-                        <span>
-                          {" "}
-                          • Completed {formatDate(milestone.completedDate)}
+                        <span className="text-green-600">
+                          ✓ {formatDate(milestone.completedDate)}
                         </span>
                       )}
                     </div>
                   </div>
                   <button
                     onClick={() => deleteMilestone(milestone.id)}
-                    className="p-1.5 hover:bg-red-100 rounded-full transition text-gray-400 hover:text-red-500"
+                    className="p-2 hover:bg-red-100 rounded-xl transition text-gray-300 hover:text-red-500"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -503,8 +511,89 @@ const GoalDetailPage = () => {
               ))}
 
               {milestones.length === 0 && (
+                <div className="text-center py-8">
+                  <div
+                    className={`w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center opacity-50`}
+                  >
+                    <Target className="w-8 h-8 text-white" />
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    No milestones yet. Add some to track your progress!
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Progress Notes Section */}
+        <div className="px-4 mt-6 mb-6">
+          <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center">
+                <FileText className="w-4 h-4 text-white" />
+              </div>
+              <h3 className="font-bold text-gray-900">Progress Journal</h3>
+            </div>
+
+            {/* Add Note */}
+            <div className="mb-4">
+              <textarea
+                value={progressNote}
+                onChange={(e) => setProgressNote(e.target.value)}
+                placeholder="How's your progress going? Add a note..."
+                rows={3}
+                className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-300 focus:bg-white resize-none text-sm transition"
+              />
+              <button
+                onClick={handleSaveNote}
+                disabled={!progressNote.trim() || isSaving}
+                className="mt-2 w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 disabled:from-gray-200 disabled:to-gray-300 disabled:text-gray-400 text-white rounded-2xl font-semibold transition flex items-center justify-center gap-2 shadow-sm"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Note"
+                )}
+              </button>
+            </div>
+
+            {/* Notes History */}
+            <div className="space-y-3">
+              {progressHistory
+                .slice()
+                .reverse()
+                .filter((entry: any) => entry.note)
+                .slice(0, 5)
+                .map((entry: any) => (
+                  <div
+                    key={entry.date}
+                    className="p-4 bg-gradient-to-r from-gray-50 to-blue-50/50 rounded-2xl border border-gray-100"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-semibold text-gray-500">
+                        {formatDate(entry.date)}
+                      </span>
+                      <span
+                        className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                          entry.value === 100
+                            ? "bg-green-100 text-green-600"
+                            : "bg-blue-100 text-blue-600"
+                        }`}
+                      >
+                        {entry.value}%
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700">{entry.note}</p>
+                  </div>
+                ))}
+
+              {progressHistory.filter((e: any) => e.note).length === 0 && (
                 <div className="text-center py-6 text-gray-400 text-sm">
-                  No milestones yet. Add one to track your progress!
+                  No notes yet. Start journaling your progress!
                 </div>
               )}
             </div>
@@ -513,14 +602,21 @@ const GoalDetailPage = () => {
 
         {/* Add Milestone Modal */}
         {showAddMilestone && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Add Milestone
-              </h3>
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${config.gradient} flex items-center justify-center`}
+                >
+                  <Target className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  Add Milestone
+                </h3>
+              </div>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Milestone Title
                   </label>
                   <input
@@ -532,81 +628,50 @@ const GoalDetailPage = () => {
                         title: e.target.value,
                       })
                     }
-                    placeholder="e.g., Complete first 2km"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
+                    placeholder="e.g., Complete first phase"
+                    className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-300 focus:bg-white transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Target Value ({goal.unit})
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Target Percentage
                   </label>
-                  <input
-                    type="number"
-                    value={newMilestone.targetValue}
-                    onChange={(e) =>
-                      setNewMilestone({
-                        ...newMilestone,
-                        targetValue: e.target.value,
-                      })
-                    }
-                    placeholder="e.g., 2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={newMilestone.targetPercentage}
+                      onChange={(e) =>
+                        setNewMilestone({
+                          ...newMilestone,
+                          targetPercentage: e.target.value,
+                        })
+                      }
+                      placeholder="25"
+                      className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-300 focus:bg-white transition pr-12"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">
+                      %
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    What % of your goal does this represent?
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowAddMilestone(false)}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition"
+                  className="flex-1 py-3 bg-gray-100 rounded-2xl text-gray-700 font-semibold hover:bg-gray-200 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddMilestone}
-                  className="flex-1 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition"
+                  className={`flex-1 py-3 bg-gradient-to-r ${config.gradient} text-white rounded-2xl font-semibold hover:opacity-90 transition shadow-sm`}
                 >
                   Add
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Update Progress Modal */}
-        {showUpdateProgress && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Update Progress
-              </h3>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Current Progress ({goal.unit})
-                </label>
-                <input
-                  type="number"
-                  value={newProgress}
-                  onChange={(e) => setNewProgress(e.target.value)}
-                  placeholder={`e.g., ${goal.current}`}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-                <p className="mt-2 text-xs text-gray-500">
-                  Previous: {goal.current} {goal.unit} • Target: {goal.target}{" "}
-                  {goal.unit}
-                </p>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowUpdateProgress(false)}
-                  className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateProgress}
-                  className="flex-1 py-2.5 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition"
-                >
-                  Update
                 </button>
               </div>
             </div>

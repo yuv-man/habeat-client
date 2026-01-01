@@ -7,6 +7,7 @@ import uncheckedIcon from "@/assets/empty_check.svg";
 import "@/styles/mealPlanCell.css";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
+import { formatMealName } from "@/lib/formatters";
 
 interface MealPlanCellProps {
   meal: IMeal;
@@ -59,8 +60,8 @@ const MealPlanCell = memo(
             : ""
         }`}
       >
-        <p className="cell-name-text" title={meal.name}>
-          {meal.name}
+        <p className="cell-name-text" title={formatMealName(meal.name)}>
+          {formatMealName(meal.name)}
         </p>
         <button className="complete-button" onClick={onComplete} type="button">
           {isCompleted ? (

@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
+import { formatMealName } from "@/lib/formatters";
 
 interface MealCardProps {
   meal: IMeal;
@@ -39,6 +40,7 @@ const MealCard = ({
   isSnack = false,
 }: MealCardProps) => {
   const navigate = useNavigate();
+  const displayName = formatMealName(meal.name);
   const { user, updateFavorite } = useAuthStore();
   const { completeMeal, todayProgress } = useProgressStore();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -90,7 +92,7 @@ const MealCard = ({
   const handleMealChange = (newMeal: IMeal) => {
     if (onMealChange) {
       onMealChange(newMeal);
-      toast.success(`Meal changed to ${newMeal.name}`, {
+      toast.success(`Meal changed to ${formatMealName(newMeal.name)}`, {
         duration: 2000,
       });
     }
@@ -102,7 +104,9 @@ const MealCard = ({
       <div className="bg-white border border-gray-200 rounded-lg p-2.5 mb-2 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-gray-900 text-sm">{meal.name}</h3>
+            <h3 className="font-medium text-gray-900 text-sm break-words line-clamp-2">
+              {displayName}
+            </h3>
             <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -181,14 +185,14 @@ const MealCard = ({
         {/* Meal Image */}
         <img
           src={getMealImageVite(meal.name, meal.icon)}
-          alt={meal.name}
+          alt={displayName}
           className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
         />
 
         {/* Meal Details */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 text-base mb-1">
-            {meal.name}
+          <h3 className="font-bold text-gray-900 text-base mb-1 break-words line-clamp-2">
+            {displayName}
           </h3>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <div className="flex items-center gap-1">

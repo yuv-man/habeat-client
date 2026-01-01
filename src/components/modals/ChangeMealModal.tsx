@@ -5,6 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { userAPI, MealCriteria } from "@/services/api";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import { toLocalDateString } from "@/lib/dateUtils";
+import { formatMealName } from "@/lib/formatters";
 import { toast } from "sonner";
 import MealLoader from "@/components/helper/MealLoader";
 
@@ -483,8 +484,8 @@ const ChangeMealModal = ({
                           disabled={isSaving}
                           className="w-full p-4 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <div className="font-medium text-gray-900">
-                            {meal.name}
+                          <div className="font-medium text-gray-900 break-words">
+                            {formatMealName(meal.name)}
                           </div>
                           <div className="text-sm text-gray-500 mt-1">
                             {meal.calories} cal • {meal.macros?.protein || 0}g
@@ -515,12 +516,12 @@ const ChangeMealModal = ({
                       >
                         <img
                           src={getMealImageVite(meal.name)}
-                          alt={meal.name}
+                          alt={formatMealName(meal.name)}
                           className="w-14 h-14 rounded-lg object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {meal.name}
+                          <div className="font-medium text-gray-900 truncate" title={formatMealName(meal.name)}>
+                            {formatMealName(meal.name)}
                           </div>
                           <div className="text-sm text-gray-500">
                             {meal.calories} cal • {meal.macros?.protein || 0}g

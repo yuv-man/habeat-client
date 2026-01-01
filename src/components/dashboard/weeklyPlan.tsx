@@ -20,6 +20,7 @@ import WeeklyPlanTable from "./WeeklyPlanTable";
 import WorkoutModal from "@/components/modals/WorkoutModal";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import AddSnackModal from "@/components/modals/AddSnackModal";
+import { formatMealName } from "@/lib/formatters";
 
 // Components
 const MacroCard = ({
@@ -92,9 +93,11 @@ const MealItem = ({
   isSnack?: boolean;
 }) => (
   <div className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
-    <div className="flex-1">
+    <div className="flex-1 min-w-0">
       <div className="text-gray-600 text-sm capitalize">{mealType}</div>
-      <div className="font-medium text-gray-900">{meal.name}</div>
+      <div className="font-medium text-gray-900 break-words line-clamp-2">
+        {formatMealName(meal.name)}
+      </div>
       <div className="flex items-center gap-3 text-gray-500 text-xs mt-0.5">
         <span>{meal.calories} kcal</span>
         {!isSnack && meal.prepTime > 0 && (
@@ -796,7 +799,9 @@ export default function WeeklyMealPlan() {
                   ✕
                 </Button>
               </CardTitle>
-              <p className="text-xs text-gray-500">{selectedMeal.meal.name}</p>
+              <p className="text-xs text-gray-500 break-words">
+                {formatMealName(selectedMeal.meal.name)}
+              </p>
             </CardHeader>
             <CardContent className="p-3 pt-0 space-y-2">
               <Button

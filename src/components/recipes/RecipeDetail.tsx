@@ -15,16 +15,12 @@ import { useAuthStore } from "@/stores/authStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import { getRecipeNote } from "@/mocks/mockRecipeData";
+import { formatIngredientName, formatMealName } from "@/lib/formatters";
 
 interface RecipeDetailProps {
   recipe: IRecipe;
   onBack: () => void;
 }
-
-// Format ingredient name (replace underscores with spaces)
-const formatIngredientName = (name: string) => {
-  return name?.replace(/_/g, " ") || "";
-};
 
 const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
   const navigate = useNavigate();
@@ -54,9 +50,10 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
   const handleShare = async () => {
     if (navigator.share) {
       try {
+        const displayName = formatMealName(recipe.mealName);
         await navigator.share({
-          title: recipe.mealName,
-          text: `Check out this recipe: ${recipe.mealName}`,
+          title: displayName,
+          text: `Check out this recipe: ${displayName}`,
           url: window.location.href,
         });
       } catch (err) {
@@ -113,8 +110,8 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
 
         {/* Title on Image */}
         <div className="absolute bottom-6 left-4 right-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
-            {recipe.mealName}
+          <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow-lg break-words">
+            {formatMealName(recipe.mealName)}
           </h1>
         </div>
       </div>

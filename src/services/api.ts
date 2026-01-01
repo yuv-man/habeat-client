@@ -177,18 +177,19 @@ const initiateOAuth = async (
     const frontendBaseURL = window.location.origin;
     const frontendRedirectUri = `${frontendBaseURL}/auth/callback?provider=${provider}&action=${action}`;
 
-    // Determine backend base URL
-    // If API_URL is a relative path (/api), assume backend is on same origin
-    // If API_URL is a full URL, use that as the base
-    let backendBaseURL: string;
-    if (API_URL.startsWith("http")) {
-      // Full URL (e.g., "http://localhost:5000/api")
-      backendBaseURL = API_URL.replace("/api", "");
-    } else {
-      // Relative path (e.g., "/api") - backend is on same origin
-      backendBaseURL = frontendBaseURL;
-    }
-    const redirectUri = `${backendBaseURL}/api/auth/${provider}/callback`;
+    // Build the backend callback URL
+    // API_URL = "https://habeat-server.vercel.app/api"
+    // Auth callback should be at: /api/auth/google/callback
+    const redirectUri = `${API_URL}/auth/${provider}/callback`;
+
+    // Debug logging
+    console.log("[OAuth Debug] API_URL:", API_URL);
+    console.log("[OAuth Debug] redirectUri (backend callback):", redirectUri);
+    console.log("[OAuth Debug] frontendRedirectUri:", frontendRedirectUri);
+    console.log(
+      "[OAuth Debug] Make sure this EXACT URL is in Google Cloud Console:",
+      redirectUri
+    );
 
     // IMPORTANT: Backend must return JSON with { authUrl: string }, NOT a 302 redirect
     // If backend returns a redirect, axios will try to follow it and hit CORS errors

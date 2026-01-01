@@ -8,7 +8,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Loader2,
   Scale,
   Dumbbell,
   GlassWater,
@@ -24,6 +23,7 @@ import { useGoalsStore } from "@/stores/goalsStore";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI } from "@/services/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import MealLoader from "@/components/helper/MealLoader";
 import type { Milestone, Goal } from "@/components/goals/Goals";
 
 interface MilestoneInput {
@@ -210,7 +210,7 @@ const CreateGoalPage = () => {
 
     setIsGenerating(true);
     try {
-      const response = await userAPI.generateGoal({
+      const response = await userAPI.generateGoal(user._id, {
         userId: user._id,
         title: aiTitle || `${selectedGoalType?.name} Goal`,
         description:
@@ -224,7 +224,7 @@ const CreateGoalPage = () => {
       if (response.data) {
         const apiGoal = response.data;
         setGeneratedGoal({
-          title: apiGoal.name || aiTitle || `${selectedGoalType?.name} Goal`,
+          title: apiGoal.title || aiTitle || `${selectedGoalType?.name} Goal`,
           description:
             apiGoal.description ||
             aiDescription ||
@@ -423,8 +423,8 @@ const CreateGoalPage = () => {
               {mode === "select"
                 ? "Create Goal"
                 : mode === "ai"
-                  ? "AI Goal Generator"
-                  : "Manual Goal"}
+                ? "AI Goal Generator"
+                : "Manual Goal"}
             </h1>
             <div className="w-6 h-6" />
           </div>
@@ -595,7 +595,7 @@ const CreateGoalPage = () => {
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <MealLoader size="small" />
                   Generating your goal...
                 </>
               ) : (
@@ -676,7 +676,7 @@ const CreateGoalPage = () => {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <MealLoader size="small" />
                   Saving...
                 </>
               ) : (
@@ -892,7 +892,11 @@ const CreateGoalPage = () => {
                         />
                       ) : (
                         <span
-                          className={`flex-1 text-sm ${milestone.completed ? "text-gray-400 line-through" : "text-gray-900"}`}
+                          className={`flex-1 text-sm ${
+                            milestone.completed
+                              ? "text-gray-400 line-through"
+                              : "text-gray-900"
+                          }`}
                         >
                           {milestone.title}
                         </span>
@@ -923,7 +927,7 @@ const CreateGoalPage = () => {
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <MealLoader size="small" />
                   Saving...
                 </>
               ) : (

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X } from "lucide-react";
+import MealLoader from "@/components/helper/MealLoader";
 
 interface AddSnackModalProps {
   isOpen: boolean;
@@ -106,7 +107,7 @@ const AddSnackModal = ({
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <MealLoader size="small" />
                 Adding...
               </>
             ) : (

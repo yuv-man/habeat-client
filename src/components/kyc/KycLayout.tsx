@@ -1,5 +1,6 @@
-import { ChevronLeft, ChevronRight, Loader } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
+import MealLoader from "@/components/helper/MealLoader";
 
 interface KycLayoutProps {
   title: string;
@@ -81,7 +82,7 @@ export default function KycLayout({
           `}
         >
           {loading ? (
-            <Loader className="w-6 h-6 animate-spin" />
+            <MealLoader size="small" />
           ) : (
             <>
               {submitText}

@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Loader from "@/components/helper/loader";
+import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Eagerly loaded pages (critical path)
@@ -34,7 +34,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<Loader />}>
+          <Suspense fallback={<MealLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/register" element={<Registration />} />

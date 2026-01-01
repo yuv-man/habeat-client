@@ -13,7 +13,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import Loader from "@/components/helper/loader";
+import MealLoader from "@/components/helper/MealLoader";
 import { userAPI } from "@/services/api";
 import mealPlanIcon from "@/assets/add_plan.svg";
 import WeeklyPlanTable from "./WeeklyPlanTable";
@@ -577,7 +577,7 @@ export default function WeeklyMealPlan() {
   };
 
   if (loading) {
-    return <Loader />;
+    return <MealLoader />;
   }
 
   // Show expired plan message

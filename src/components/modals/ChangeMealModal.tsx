@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from "react";
-import { X, Sparkles, Heart, Loader2, AlertCircle } from "lucide-react";
+import { X, Sparkles, Heart, AlertCircle } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI, MealCriteria } from "@/services/api";
@@ -421,7 +421,7 @@ const ChangeMealModal = ({
                   >
                     {isSaving ? (
                       <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <MealLoader size="small" />
                         Saving...
                       </>
                     ) : (
@@ -504,7 +504,7 @@ const ChangeMealModal = ({
                 <div className="space-y-3">
                   {isLoadingFavorites ? (
                     <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                      <MealLoader size="small" />
                     </div>
                   ) : favoriteMealsData && favoriteMealsData.length > 0 ? (
                     favoriteMealsData.map((meal) => (
@@ -548,7 +548,7 @@ const ChangeMealModal = ({
             {isSaving && (
               <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-2xl">
                 <div className="flex items-center gap-2 text-emerald-600">
-                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <MealLoader size="small" />
                   <span className="font-medium">Saving...</span>
                 </div>
               </div>

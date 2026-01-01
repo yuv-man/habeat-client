@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyProgress, WorkoutData } from "@/types/interfaces";
-import Loader from "../helper/loader";
+import MealLoader from "../helper/MealLoader";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import MealCard from "./MealCard";
@@ -260,7 +260,7 @@ const DailyMealScreen = () => {
 
       <div className="min-h-screen bg-white">
         {loading ? (
-          <Loader />
+          <MealLoader />
         ) : isPlanExpired ? (
           <div className="min-h-screen flex items-center justify-center flex-col gap-6 p-6">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full">

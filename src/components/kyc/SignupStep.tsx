@@ -1,7 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
-import { Loader } from "lucide-react";
 import { AuthData } from "./types";
 import GoogleIcon from "@/assets/icons/google";
+import MealLoader from "@/components/helper/MealLoader";
 
 interface SignupStepProps {
   authData: AuthData;
@@ -96,7 +96,7 @@ export default function SignupStep({
               className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50"
             >
               {loading ? (
-                <Loader className="w-5 h-5 animate-spin mx-auto" />
+                <MealLoader size="small" />
               ) : (
                 "Sign Up"
               )}

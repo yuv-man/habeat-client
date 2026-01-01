@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import MealLoader from "@/components/helper/MealLoader";
 
 const KYC_STORAGE_KEY = "habeat_current_step";
 
@@ -63,18 +63,22 @@ const OAuthCallback = () => {
 
         // Check if user was in KYC flow (signup action)
         const kycStep = localStorage.getItem(KYC_STORAGE_KEY);
-        const wasInKycFlow = kycStep === "google_oauth_pending" || action === "signup";
+        const wasInKycFlow =
+          kycStep === "google_oauth_pending" || action === "signup";
 
         if (wasInKycFlow && currentUser && !currentPlan) {
           // User signed up via Google but hasn't completed KYC
           // Update KYC state with Google user info and redirect to continue KYC
           localStorage.setItem(KYC_STORAGE_KEY, "diet");
-          localStorage.setItem("habeat_auth_data", JSON.stringify({
-            name: currentUser.name || "",
-            email: currentUser.email || "",
-            password: "",
-            authMethod: "google",
-          }));
+          localStorage.setItem(
+            "habeat_auth_data",
+            JSON.stringify({
+              name: currentUser.name || "",
+              email: currentUser.email || "",
+              password: "",
+              authMethod: "google",
+            })
+          );
           navigate("/register");
           return;
         }
@@ -128,7 +132,7 @@ const OAuthCallback = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <MealLoader />
           </CardContent>
         </Card>
       </div>

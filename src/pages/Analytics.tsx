@@ -12,9 +12,9 @@ import {
   Calendar,
   Target,
   Award,
-  Loader,
   ArrowLeft,
 } from "lucide-react";
+import MealLoader from "@/components/helper/MealLoader";
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -181,7 +181,7 @@ const Analytics = () => {
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <Loader className="w-8 h-8 animate-spin text-green-500" />
+            <MealLoader />
           </div>
         )}
 

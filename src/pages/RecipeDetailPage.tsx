@@ -42,7 +42,10 @@ const RecipeDetailPage = () => {
         // Fetch recipe from backend using meal ID
         // First time: AI generates the recipe (takes time)
         // Subsequent times: Returns from DB (instant)
-        const response = await userAPI.getRecipeByMealId(mealId, user._id);
+        const response = await userAPI.getRecipeByMealId(
+          mealId,
+          user?._id || ""
+        );
         if (response.data) {
           setRecipe(response.data);
         } else {

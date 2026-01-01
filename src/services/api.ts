@@ -663,11 +663,12 @@ interface GenerateGoalDto {
 }
 
 const generateGoal = async (
+  userId: string,
   data: GenerateGoalDto
 ): Promise<ApiResponse<IGoal>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.post<ApiResponse<IGoal>>(
-      `/goals/generate`,
+    const response = await mealGenerationClient.post<ApiResponse<IGoal>>(
+      `/goals/${userId}/generate`,
       { ...data, language: data.language || "en" },
       { headers: getAuthHeaders() }
     );

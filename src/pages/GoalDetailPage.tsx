@@ -12,7 +12,6 @@ import {
   Leaf,
   Trash2,
   FileText,
-  Loader2,
   Footprints,
   Flame,
   Moon,
@@ -23,6 +22,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useGoalsStore } from "@/stores/goalsStore";
 import { useAuthStore } from "@/stores/authStore";
+import MealLoader from "@/components/helper/MealLoader";
 import type { Goal, Milestone } from "@/components/goals/Goals";
 
 const GoalDetailPage = () => {
@@ -552,7 +552,7 @@ const GoalDetailPage = () => {
               >
                 {isSaving ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <MealLoader size="small" />
                     Saving...
                   </>
                 ) : (

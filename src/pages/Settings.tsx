@@ -18,7 +18,6 @@ import {
   X,
   Plus,
   Save,
-  Loader,
   LogOut,
   Check,
   Camera,
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
+import MealLoader from "@/components/helper/MealLoader";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -256,8 +256,8 @@ const Settings = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin mx-auto mb-4 text-gray-400" />
-          <p className="text-gray-600 text-sm">Loading settings...</p>
+          <MealLoader />
+          <p className="text-gray-600 text-sm mt-4">Loading settings...</p>
         </div>
       </div>
     );
@@ -670,7 +670,7 @@ const Settings = () => {
             >
               {isSaving ? (
                 <>
-                  <Loader className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  <MealLoader size="small" />
                   Saving...
                 </>
               ) : (

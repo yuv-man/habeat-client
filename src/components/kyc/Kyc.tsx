@@ -232,7 +232,7 @@ export default function KYCFlow() {
         keto: "keto",
         "healthy-balance": "healthy",
         "muscle-up": "gain-muscle",
-        running: "healthy",
+        running: "running",
         "lose-weight": "lose-weight",
         fasting: "fasting",
       };

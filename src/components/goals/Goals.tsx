@@ -91,15 +91,22 @@ const Goals = ({
     }
   };
 
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
+  const calculateProgressFromMilestones = (milestones?: Milestone[]) => {
+    if (!milestones || milestones.length === 0) return 0;
+    const completedCount = milestones.filter((m) => m.completed).length;
+    return Math.round((completedCount / milestones.length) * 100);
   };
 
-  const formatValue = (value: number, unit: string) => {
-    if (unit === "times" || unit === "portions") {
-      return `${value} ${unit}`;
+  const getProgressPercentage = (goal: Goal) => {
+    // Use milestone-based progress if milestones exist, otherwise fallback to current/target
+    if (goal.milestones && goal.milestones.length > 0) {
+      return calculateProgressFromMilestones(goal.milestones);
     }
-    return `${value} ${unit}`;
+    // Fallback for goals without milestones
+    if (goal.target > 0) {
+      return Math.min((goal.current / goal.target) * 100, 100);
+    }
+    return 0;
   };
 
   return (
@@ -117,8 +124,10 @@ const Goals = ({
       {/* Goals List */}
       <div className="px-4 py-6 space-y-4">
         {goals.map((goal) => {
-          const progress = getProgressPercentage(goal.current, goal.target);
-          const isAchieved = goal.status === "achieved";
+          const progress = getProgressPercentage(goal);
+          const isAchieved = goal.status === "achieved" || progress === 100;
+          const completedMilestones = goal.milestones?.filter((m) => m.completed).length || 0;
+          const totalMilestones = goal.milestones?.length || 0;
 
           return (
             <div
@@ -144,10 +153,12 @@ const Goals = ({
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">
-                    {formatValue(goal.current, goal.unit)}
+                    {totalMilestones > 0 
+                      ? `${completedMilestones}/${totalMilestones} milestones`
+                      : `${progress}% complete`}
                   </span>
                   <span className="text-sm font-medium text-gray-700">
-                    {formatValue(goal.target, goal.unit)}
+                    {progress}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5">

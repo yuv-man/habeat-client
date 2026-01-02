@@ -618,7 +618,7 @@ export default function WeeklyMealPlan() {
             >
               {isGenerating ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <MealLoader size="small" />
                   <span>Generating New Plan...</span>
                 </>
               ) : (
@@ -648,7 +648,7 @@ export default function WeeklyMealPlan() {
               >
                 {isGenerating ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <MealLoader size="small" />
                     <span>Generating...</span>
                   </>
                 ) : (

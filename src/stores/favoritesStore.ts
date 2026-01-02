@@ -111,35 +111,31 @@ export const useFavoritesStore = create<FavoritesStore>()(
       toggleFavoriteMeal: async (userId: string, mealId: string) => {
         const { favoriteMealIds, isMealFavorite } = get();
         const isFavorite = isMealFavorite(mealId);
+        const originalFavoriteMealIds = [...favoriteMealIds];
+
+        // Optimistically update UI immediately
+        if (isFavorite) {
+          set({
+            favoriteMealIds: favoriteMealIds.filter((id) => id !== mealId),
+          });
+        } else {
+          set({
+            favoriteMealIds: [...favoriteMealIds, mealId],
+          });
+        }
 
         if (config.testFrontend) {
-          // Update local state in test mode
-          if (isFavorite) {
-            set({
-              favoriteMealIds: favoriteMealIds.filter((id) => id !== mealId),
-            });
-          } else {
-            set({
-              favoriteMealIds: [...favoriteMealIds, mealId],
-            });
-          }
           return;
         }
 
+        // Update backend in background
         try {
           await userAPI.updateFavorite(userId, mealId, !isFavorite);
-
-          if (isFavorite) {
-            set({
-              favoriteMealIds: favoriteMealIds.filter((id) => id !== mealId),
-            });
-          } else {
-            set({
-              favoriteMealIds: [...favoriteMealIds, mealId],
-            });
-          }
         } catch (error: any) {
+          // Rollback on error
+          set({ favoriteMealIds: originalFavoriteMealIds });
           set({ error: error.message || "Failed to update favorite meal" });
+          throw error;
         }
       },
 

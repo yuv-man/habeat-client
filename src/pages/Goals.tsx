@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useGoalsStore } from "@/stores/goalsStore";
 import Goals from "@/components/goals/Goals";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import MealLoader from "@/components/helper/MealLoader";
 
 const GoalsPage = () => {
   const navigate = useNavigate();
@@ -52,8 +53,7 @@ const GoalsPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your goals...</p>
+          <MealLoader customMessages={["Loading your goals..."]} />
         </div>
       </div>
     );

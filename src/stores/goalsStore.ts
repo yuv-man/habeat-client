@@ -251,23 +251,45 @@ export const useGoalsStore = create<GoalsStore>()(
         milestoneId: string,
         completed: boolean
       ) => {
+        // Helper function to calculate progress from milestones
+        const calculateProgress = (milestones: any[]) => {
+          if (!milestones || milestones.length === 0) return 0;
+          const completedCount = milestones.filter((m) => m.completed).length;
+          return Math.round((completedCount / milestones.length) * 100);
+        };
+
+        const { goals } = get();
+        const goal = goals.find((g) => g.id === goalId);
+        if (!goal) return;
+
+        // Store original state for rollback
+        const originalGoals = [...goals];
+
+        // Optimistically update UI immediately
+        const updatedMilestones = goal.milestones?.map((m) =>
+          m.id === milestoneId ? { ...m, completed } : m
+        ) || [];
+        const newProgress = calculateProgress(updatedMilestones);
+        
+        set({
+          goals: goals.map((g) => {
+            if (g.id === goalId) {
+              return {
+                ...g,
+                milestones: updatedMilestones,
+                current: newProgress,
+                status: newProgress === 100 ? "achieved" : g.status,
+              };
+            }
+            return g;
+          }),
+        });
+
         if (config.testFrontend) {
-          const { goals } = get();
-          set({
-            goals: goals.map((goal) =>
-              goal.id === goalId
-                ? {
-                    ...goal,
-                    milestones: goal.milestones?.map((m) =>
-                      m.id === milestoneId ? { ...m, completed } : m
-                    ),
-                  }
-                : goal
-            ),
-          });
           return;
         }
 
+        // Update backend in background
         try {
           const response = await userAPI.updateMilestone(
             goalId,
@@ -275,19 +297,28 @@ export const useGoalsStore = create<GoalsStore>()(
             completed
           );
           const apiGoal = response.data;
-          const { goals } = get();
+          const { goals: currentGoals } = get();
+          // Sync with server response
           set({
-            goals: goals.map((goal) =>
-              goal.id === goalId
-                ? {
-                    ...goal,
-                    milestones: apiGoal.milestones || goal.milestones,
-                  }
-                : goal
-            ),
+            goals: currentGoals.map((g) => {
+              if (g.id === goalId) {
+                const serverMilestones = apiGoal.milestones || g.milestones || [];
+                const serverProgress = calculateProgress(serverMilestones);
+                return {
+                  ...g,
+                  milestones: serverMilestones,
+                  current: serverProgress,
+                  status: serverProgress === 100 ? "achieved" : g.status,
+                };
+              }
+              return g;
+            }),
           });
         } catch (error: any) {
+          // Rollback on error
+          set({ goals: originalGoals });
           set({ error: error.message || "Failed to update milestone" });
+          throw error;
         }
       },
     }),

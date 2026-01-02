@@ -114,9 +114,6 @@ const CreateGoalPage = () => {
   // Form state for manual mode
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [targetValue, setTargetValue] = useState<number>(0);
-  const [currentValue, setCurrentValue] = useState<number>(0);
-  const [unit, setUnit] = useState("");
   const [startDate, setStartDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -152,13 +149,7 @@ const CreateGoalPage = () => {
 
   // Handle goal type selection
   const handleSelectType = (typeId: string) => {
-    const type = GOAL_TYPES.find((t) => t.id === typeId);
-    if (type) {
-      setSelectedType(typeId);
-      // For manual mode, pre-fill defaults
-      setUnit(type.defaultUnit);
-      setTargetValue(type.defaultTarget);
-    }
+    setSelectedType(typeId);
   };
 
   // Handle mode selection after choosing type
@@ -168,9 +159,6 @@ const CreateGoalPage = () => {
       // Pre-fill manual form with defaults
       setTitle("");
       setDescription("");
-      setTargetValue(selectedGoalType.defaultTarget);
-      setCurrentValue(0);
-      setUnit(selectedGoalType.defaultUnit);
       setMilestones([]);
     }
   };
@@ -278,9 +266,9 @@ const CreateGoalPage = () => {
         (m, index) => ({
           id: m.id,
           title: m.title,
-          targetValue:
-            ((index + 1) / generatedGoal.milestones.length) *
-            generatedGoal.target,
+          targetValue: Math.round(
+            ((index + 1) / generatedGoal.milestones.length) * 100
+          ),
           completed: m.completed,
         })
       );
@@ -288,9 +276,9 @@ const CreateGoalPage = () => {
       await createGoal({
         title: generatedGoal.title,
         description: generatedGoal.description,
-        current: 0,
-        target: generatedGoal.target,
-        unit: generatedGoal.unit,
+        current: 0, // Start at 0, will be calculated from milestones
+        target: 100, // Always 100% for milestone-based goals
+        unit: "", // No unit needed for milestone-based goals
         icon: selectedType as Goal["icon"],
         status: "in_progress",
         startDate: startDate,
@@ -361,27 +349,32 @@ const CreateGoalPage = () => {
       return;
     }
 
+    if (milestones.length === 0) {
+      alert("Please add at least one milestone");
+      return;
+    }
+
     setIsSaving(true);
     try {
       const goalMilestones: Milestone[] = milestones.map((m, index) => ({
         id: m.id,
         title: m.title,
-        targetValue: ((index + 1) / milestones.length) * targetValue,
+        targetValue: Math.round(((index + 1) / milestones.length) * 100),
         completed: m.completed,
       }));
 
       await createGoal({
         title: title.trim(),
         description: description.trim(),
-        current: currentValue,
-        target: targetValue,
-        unit: unit,
+        current: 0, // Start at 0, will be calculated from milestones
+        target: 100, // Always 100% for milestone-based goals
+        unit: "", // No unit needed for milestone-based goals
         icon: selectedType as Goal["icon"],
         status: "in_progress",
         startDate: startDate,
         milestones: goalMilestones,
         progressHistory: [
-          { date: new Date().toISOString().split("T")[0], value: currentValue },
+          { date: new Date().toISOString().split("T")[0], value: 0 },
         ],
       });
 
@@ -637,13 +630,6 @@ const CreateGoalPage = () => {
                   </p>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between py-2 border-t border-gray-200">
-                <span className="text-sm text-gray-600">Target</span>
-                <span className="font-semibold text-gray-900">
-                  {generatedGoal.target} {generatedGoal.unit}
-                </span>
-              </div>
             </div>
 
             {/* Milestones */}
@@ -739,46 +725,6 @@ const CreateGoalPage = () => {
                 rows={2}
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               />
-            </div>
-
-            {/* Target & Current Values */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={currentValue}
-                    onChange={(e) => setCurrentValue(Number(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  {unit && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                      {unit.split("/")[0]}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Target <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={targetValue}
-                    onChange={(e) => setTargetValue(Number(e.target.value))}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                  {unit && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                      {unit.split("/")[0]}
-                    </span>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Duration */}

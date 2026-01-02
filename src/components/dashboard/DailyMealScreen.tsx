@@ -156,51 +156,51 @@ const DailyMealScreen = () => {
     const workout = dailyProgress.workouts[workoutIndex];
     if (!workout) return;
 
+    const newDoneState = !(workout.done ?? false);
+    const workoutData: WorkoutData = {
+      name: workout.name,
+      category: workout.category,
+      caloriesBurned: workout.caloriesBurned,
+      duration: workout.duration,
+      done: newDoneState,
+    };
+
+    // Store original state for rollback
+    const originalProgress = { ...dailyProgress };
+
+    // Optimistically update UI immediately
+    const updatedWorkouts = [...dailyProgress.workouts];
+    updatedWorkouts[workoutIndex] = { ...workout, done: newDoneState };
+    const updatedProgress = {
+      ...dailyProgress,
+      workouts: updatedWorkouts,
+    };
+
+    setTodayProgress(updatedProgress);
+
+    // Show encouraging toast when workout is completed
+    if (newDoneState) {
+      toast.success("💪 Well done! Keep crushing it!", {
+        duration: 3000,
+      });
+    }
+
+    if (config.testFrontend) {
+      return;
+    }
+
+    // Update backend in background
     try {
-      const newDoneState = !(workout.done ?? false);
-      const workoutData: WorkoutData = {
-        name: workout.name,
-        category: workout.category,
-        caloriesBurned: workout.caloriesBurned,
-        duration: workout.duration,
-        done: newDoneState,
-      };
-
-      const updatedWorkouts = [...dailyProgress.workouts];
-      updatedWorkouts[workoutIndex] = { ...workout, done: newDoneState };
-      const updatedProgress = {
-        ...dailyProgress,
-        workouts: updatedWorkouts,
-      };
-
-      if (config.testFrontend) {
-        // Update store in test mode
-        setTodayProgress(updatedProgress);
-        if (newDoneState) {
-          toast.success("💪 Well done! Keep crushing it!", {
-            duration: 3000,
-          });
-        }
-        return;
-      }
-
       await userAPI.completeWorkout(
         user._id,
         currentDate.toISOString(),
         workoutData
       );
-
-      // Update store (which syncs to local state)
-      setTodayProgress(updatedProgress);
-
-      // Show encouraging toast when workout is completed
-      if (newDoneState) {
-        toast.success("💪 Well done! Keep crushing it!", {
-          duration: 3000,
-        });
-      }
     } catch (error) {
       console.error("Failed to complete workout:", error);
+      // Rollback on error
+      setTodayProgress(originalProgress);
+      toast.error("Failed to update workout. Please try again.");
     }
   };
 

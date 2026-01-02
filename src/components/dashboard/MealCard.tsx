@@ -76,7 +76,12 @@ const MealCard = ({
   const handleComplete = async () => {
     if (user?._id && todayProgress && mealId) {
       const date = todayProgress.date;
-      await completeMeal(user._id, date, mealType, mealId);
+      try {
+        await completeMeal(user._id, date, mealType, mealId);
+      } catch (error) {
+        // Error handling is done in the store with rollback
+        toast.error("Failed to update meal. Please try again.");
+      }
     }
   };
 

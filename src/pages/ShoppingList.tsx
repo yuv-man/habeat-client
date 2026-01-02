@@ -9,6 +9,7 @@ import { mockShoppingIngredients } from "@/mocks/shoppingListMock";
 import config from "@/services/config";
 import ShoppingBag from "@/components/shopping/ShoppingBag";
 import AddItemModal from "@/components/shopping/AddItemModal";
+import MealLoader from "@/components/helper/MealLoader";
 
 const ShoppingList = () => {
   const navigate = useNavigate();
@@ -107,7 +108,7 @@ const ShoppingList = () => {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <MealLoader customMessages={["Loading shopping list..."]} />
           <p className="text-gray-600">Loading shopping list...</p>
         </div>
       </div>

@@ -435,7 +435,8 @@ describe("ChangeMealModal", () => {
       fireEvent.click(screen.getByText("Change Meal"));
       fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
 
-      // Should show loading spinner initially
+      // Should show loading state initially
+      expect(screen.getByText("Loading favorites...")).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: "Favorites" })
       ).toBeInTheDocument();

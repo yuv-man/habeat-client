@@ -19,6 +19,7 @@ import {
 import { workoutCategories } from "@/lib/dietry";
 import { Activity, Clock, Flame } from "lucide-react";
 import { WorkoutData } from "@/types/interfaces";
+import MealLoader from "../helper/MealLoader";
 
 interface WorkoutModalProps {
   children: React.ReactNode;
@@ -216,7 +217,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
             >
               {isSubmitting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  <MealLoader size="small" />
                   Adding...
                 </>
               ) : (

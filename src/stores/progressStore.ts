@@ -137,138 +137,150 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
     mealType: string,
     mealId: string
   ) => {
-    const updateMealState = () => {
-      const { todayProgress } = get();
-      if (!todayProgress) return;
+    const { todayProgress } = get();
+    if (!todayProgress) return;
 
-      const mealData =
-        todayProgress.meals[mealType as keyof typeof todayProgress.meals];
-      if (!mealData) return;
+    const mealData =
+      todayProgress.meals[mealType as keyof typeof todayProgress.meals];
+    if (!mealData) return;
 
-      // Helper to update nutrition values
-      const updateNutrition = (meal: any, isCompleting: boolean) => {
-        const multiplier = isCompleting ? 1 : -1;
-        const calories = meal.calories || 0;
-        const protein = meal.macros?.protein || 0;
-        const fat = meal.macros?.fat || 0;
-        const carbs = meal.macros?.carbs || 0;
+    // Store original state for rollback (deep copy)
+    const originalProgress = JSON.parse(JSON.stringify(todayProgress));
 
-        return {
-          caloriesConsumed: Math.max(0, todayProgress.caloriesConsumed + (calories * multiplier)),
-          protein: {
-            ...todayProgress.protein,
-            consumed: Math.max(0, todayProgress.protein.consumed + (protein * multiplier)),
-          },
-          fat: {
-            ...todayProgress.fat,
-            consumed: Math.max(0, todayProgress.fat.consumed + (fat * multiplier)),
-          },
-          carbs: {
-            ...todayProgress.carbs,
-            consumed: Math.max(0, todayProgress.carbs.consumed + (carbs * multiplier)),
-          },
-        };
+    // Helper to update nutrition values
+    const updateNutrition = (meal: any, isCompleting: boolean) => {
+      const multiplier = isCompleting ? 1 : -1;
+      const calories = meal.calories || 0;
+      const protein = meal.macros?.protein || 0;
+      const fat = meal.macros?.fat || 0;
+      const carbs = meal.macros?.carbs || 0;
+
+      return {
+        caloriesConsumed: Math.max(0, todayProgress.caloriesConsumed + (calories * multiplier)),
+        protein: {
+          ...todayProgress.protein,
+          consumed: Math.max(0, todayProgress.protein.consumed + (protein * multiplier)),
+        },
+        fat: {
+          ...todayProgress.fat,
+          consumed: Math.max(0, todayProgress.fat.consumed + (fat * multiplier)),
+        },
+        carbs: {
+          ...todayProgress.carbs,
+          consumed: Math.max(0, todayProgress.carbs.consumed + (carbs * multiplier)),
+        },
       };
-
-      // Handle snacks (array) differently from other meals (single object)
-      if (mealType === "snacks" && Array.isArray(mealData)) {
-        const snackIndex = mealData.findIndex(
-          (snack: any) => snack._id === mealId
-        );
-        if (snackIndex !== -1) {
-          const snack = mealData[snackIndex];
-          const isCompleting = !snack.done;
-          const nutritionUpdates = updateNutrition(snack, isCompleting);
-          
-          const updatedSnacks = [...mealData];
-          updatedSnacks[snackIndex] = {
-            ...updatedSnacks[snackIndex],
-            done: isCompleting,
-          };
-          set({
-            todayProgress: {
-              ...todayProgress,
-              ...nutritionUpdates,
-              meals: {
-                ...todayProgress.meals,
-                snacks: updatedSnacks,
-              },
-            },
-          });
-        }
-      } else {
-        // Single meal (breakfast, lunch, dinner)
-        const meal = mealData as any;
-        if (meal && meal._id === mealId) {
-          const isCompleting = !meal.done;
-          const nutritionUpdates = updateNutrition(meal, isCompleting);
-          
-          set({
-            todayProgress: {
-              ...todayProgress,
-              ...nutritionUpdates,
-              meals: {
-                ...todayProgress.meals,
-                [mealType]: { ...meal, done: isCompleting },
-              },
-            },
-          });
-        }
-      }
     };
 
+    // Optimistically update UI immediately
+    if (mealType === "snacks" && Array.isArray(mealData)) {
+      const snackIndex = mealData.findIndex(
+        (snack: any) => snack._id === mealId
+      );
+      if (snackIndex !== -1) {
+        const snack = mealData[snackIndex];
+        const isCompleting = !snack.done;
+        const nutritionUpdates = updateNutrition(snack, isCompleting);
+        
+        const updatedSnacks = [...mealData];
+        updatedSnacks[snackIndex] = {
+          ...updatedSnacks[snackIndex],
+          done: isCompleting,
+        };
+        set({
+          todayProgress: {
+            ...todayProgress,
+            ...nutritionUpdates,
+            meals: {
+              ...todayProgress.meals,
+              snacks: updatedSnacks,
+            },
+          },
+        });
+      }
+    } else {
+      // Single meal (breakfast, lunch, dinner)
+      const meal = mealData as any;
+      if (meal && meal._id === mealId) {
+        const isCompleting = !meal.done;
+        const nutritionUpdates = updateNutrition(meal, isCompleting);
+        
+        set({
+          todayProgress: {
+            ...todayProgress,
+            ...nutritionUpdates,
+            meals: {
+              ...todayProgress.meals,
+              [mealType]: { ...meal, done: isCompleting },
+            },
+          },
+        });
+      }
+    }
+
     if (config.testFrontend) {
-      updateMealState();
       return;
     }
 
+    // Update backend in background
     try {
       await userAPI.completeMeal(userId, date, mealType, mealId);
-      updateMealState();
     } catch (error: any) {
+      // Rollback on error
+      set({ todayProgress: originalProgress });
       set({ error: error.message || "Failed to complete meal" });
+      throw error;
     }
   },
 
   addWaterGlass: async (userId: string, date: string) => {
-    if (config.testFrontend) {
-      // Update local state in test mode
-      const { todayProgress } = get();
-      if (
-        todayProgress &&
-        todayProgress.water.consumed < todayProgress.water.goal
-      ) {
-        set({
-          todayProgress: {
-            ...todayProgress,
-            water: {
-              ...todayProgress.water,
-              consumed: todayProgress.water.consumed + 1,
-            },
+    const { todayProgress } = get();
+    if (!todayProgress) return;
+
+    // Store original state for rollback
+    const originalProgress = { ...todayProgress };
+    const originalWaterConsumed = todayProgress.water.consumed;
+
+    // Optimistically update UI immediately
+    if (todayProgress.water.consumed < todayProgress.water.goal) {
+      set({
+        todayProgress: {
+          ...todayProgress,
+          water: {
+            ...todayProgress.water,
+            consumed: todayProgress.water.consumed + 1,
           },
-        });
-      }
+        },
+      });
+    }
+
+    if (config.testFrontend) {
       return;
     }
 
+    // Update backend in background
     try {
       const response = await userAPI.addWaterGlass(userId, date, 1);
       const progress = response.data.progress;
-      const { todayProgress } = get();
-      if (todayProgress) {
+      const { todayProgress: currentProgress } = get();
+      if (currentProgress) {
+        // Sync with server response
         set({
           todayProgress: {
-            ...todayProgress,
+            ...currentProgress,
             water: {
-              ...todayProgress.water,
+              ...currentProgress.water,
               consumed:
-                progress.water?.consumed || todayProgress.water.consumed + 1,
+                progress.water?.consumed || currentProgress.water.consumed,
             },
           },
         });
       }
     } catch (error: any) {
+      // Rollback on error
+      set({ todayProgress: originalProgress });
       set({ error: error.message || "Failed to add water glass" });
+      throw error;
     }
   },
 }));

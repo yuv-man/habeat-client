@@ -39,7 +39,6 @@ const GoalDetailPage = () => {
   const [showAddMilestone, setShowAddMilestone] = useState(false);
   const [newMilestone, setNewMilestone] = useState({
     title: "",
-    targetPercentage: "",
   });
   const [progressNote, setProgressNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -143,55 +142,87 @@ const GoalDetailPage = () => {
   };
 
   const handleAddMilestone = () => {
-    if (!goal || !newMilestone.title || !newMilestone.targetPercentage) return;
+    if (!goal || !newMilestone.title.trim()) return;
 
-    const percentage = parseFloat(newMilestone.targetPercentage);
-    if (percentage < 0 || percentage > 100) {
-      alert("Percentage must be between 0 and 100");
-      return;
-    }
+    const currentMilestones = goal.milestones || [];
+    const newMilestoneCount = currentMilestones.length + 1;
 
     const milestone: Milestone = {
       id: `m${Date.now()}`,
-      title: newMilestone.title,
-      targetValue: percentage,
+      title: newMilestone.title.trim(),
+      targetValue: 0, // Will be recalculated below
       completed: false,
     };
 
-    const updatedMilestones = [...(goal.milestones || []), milestone].sort(
-      (a, b) => a.targetValue - b.targetValue
-    );
+    // Recalculate percentages for all milestones to ensure they're sequential
+    // Each milestone represents a step: 1st = 33%, 2nd = 67%, 3rd = 100% (for 3 milestones)
+    const updatedMilestones = [...currentMilestones, milestone].map((m, index) => ({
+      ...m,
+      targetValue: Math.round(((index + 1) / newMilestoneCount) * 100),
+    }));
 
     setGoal({ ...goal, milestones: updatedMilestones });
     updateGoal(goal.id, { milestones: updatedMilestones } as any);
-    setNewMilestone({ title: "", targetPercentage: "" });
+    setNewMilestone({ title: "" });
     setShowAddMilestone(false);
   };
 
   const toggleMilestone = async (milestoneId: string) => {
     if (!goal) return;
 
-    const milestone = goal.milestones?.find((m) => m.id === milestoneId);
+    const milestones = goal.milestones || [];
+    const milestoneIndex = milestones.findIndex((m) => m.id === milestoneId);
+    const milestone = milestones[milestoneIndex];
+    
     if (!milestone) return;
 
     const newCompleted = !milestone.completed;
-    const updatedMilestones = (goal.milestones || []).map((m) =>
-      m.id === milestoneId
-        ? {
-            ...m,
-            completed: newCompleted,
-            completedDate: newCompleted
-              ? new Date().toISOString().split("T")[0]
-              : undefined,
-          }
-        : m
-    );
+
+    // If trying to complete a milestone, check if all previous milestones are completed
+    if (newCompleted && milestoneIndex > 0) {
+      const previousMilestones = milestones.slice(0, milestoneIndex);
+      const allPreviousCompleted = previousMilestones.every((m) => m.completed);
+      
+      if (!allPreviousCompleted) {
+        alert("Please complete previous milestones first");
+        return;
+      }
+    }
+
+    // If uncompleting a milestone, also uncomplete all subsequent milestones
+    const updatedMilestones = milestones.map((m, index) => {
+      if (m.id === milestoneId) {
+        return {
+          ...m,
+          completed: newCompleted,
+          completedDate: newCompleted
+            ? new Date().toISOString().split("T")[0]
+            : undefined,
+        };
+      }
+      // Uncomplete all milestones after this one if we're uncompleting
+      if (!newCompleted && index > milestoneIndex && m.completed) {
+        return {
+          ...m,
+          completed: false,
+          completedDate: undefined,
+        };
+      }
+      return m;
+    });
 
     const newProgress = calculateProgress(updatedMilestones);
     setGoal({ ...goal, milestones: updatedMilestones, current: newProgress });
 
     try {
-      await storeMilestoneUpdate(goal.id, milestoneId, newCompleted);
+      // Update all changed milestones
+      for (let i = milestoneIndex; i < updatedMilestones.length; i++) {
+        const m = updatedMilestones[i];
+        const originalM = milestones[i];
+        if (m.completed !== originalM.completed) {
+          await storeMilestoneUpdate(goal.id, m.id, m.completed);
+        }
+      }
     } catch (error) {
       console.error("Failed to update milestone:", error);
     }
@@ -200,16 +231,23 @@ const GoalDetailPage = () => {
   const deleteMilestone = (milestoneId: string) => {
     if (!goal) return;
 
-    const updatedMilestones = (goal.milestones || []).filter(
-      (m) => m.id !== milestoneId
-    );
+    const milestones = goal.milestones || [];
+    const updatedMilestones = milestones.filter((m) => m.id !== milestoneId);
+    
+    // Recalculate percentages for remaining milestones
+    const recalculatedMilestones = updatedMilestones.map((m, index) => ({
+      ...m,
+      targetValue: updatedMilestones.length > 0 
+        ? Math.round(((index + 1) / updatedMilestones.length) * 100)
+        : 0,
+    }));
 
     setGoal({
       ...goal,
-      milestones: updatedMilestones,
-      current: calculateProgress(updatedMilestones),
+      milestones: recalculatedMilestones,
+      current: calculateProgress(recalculatedMilestones),
     });
-    updateGoal(goal.id, { milestones: updatedMilestones } as any);
+    updateGoal(goal.id, { milestones: recalculatedMilestones } as any);
   };
 
   const handleSaveNote = async () => {
@@ -449,21 +487,31 @@ const GoalDetailPage = () => {
             </div>
 
             <div className="space-y-2">
-              {milestones.map((milestone, index) => (
+              {milestones.map((milestone, index) => {
+                const previousMilestones = milestones.slice(0, index);
+                const allPreviousCompleted = previousMilestones.every((m) => m.completed);
+                const canComplete = milestone.completed || index === 0 || allPreviousCompleted;
+                
+                return (
                 <div
                   key={milestone.id}
                   className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
                     milestone.completed
                       ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-100 hover:border-gray-200"
+                      : canComplete
+                      ? "bg-gray-50 border-gray-100 hover:border-gray-200"
+                      : "bg-gray-50 border-gray-100 opacity-60"
                   }`}
                 >
                   <button
                     onClick={() => toggleMilestone(milestone.id)}
+                    disabled={!canComplete && !milestone.completed}
                     className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                       milestone.completed
                         ? "bg-green-500 text-white shadow-md shadow-green-200"
-                        : `border-2 border-gray-300 hover:border-current ${config.color}`
+                        : canComplete
+                        ? `border-2 border-gray-300 hover:border-current ${config.color} cursor-pointer`
+                        : "border-2 border-gray-200 bg-gray-100 cursor-not-allowed opacity-50"
                     }`}
                   >
                     {milestone.completed ? (
@@ -508,7 +556,8 @@ const GoalDetailPage = () => {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              ))}
+                );
+              })}
 
               {milestones.length === 0 && (
                 <div className="text-center py-8">
@@ -630,33 +679,15 @@ const GoalDetailPage = () => {
                     }
                     placeholder="e.g., Complete first phase"
                     className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-300 focus:bg-white transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Target Percentage
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={newMilestone.targetPercentage}
-                      onChange={(e) =>
-                        setNewMilestone({
-                          ...newMilestone,
-                          targetPercentage: e.target.value,
-                        })
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newMilestone.title.trim()) {
+                        handleAddMilestone();
                       }
-                      placeholder="25"
-                      className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-100 rounded-2xl focus:outline-none focus:border-blue-300 focus:bg-white transition pr-12"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-semibold">
-                      %
-                    </span>
-                  </div>
+                    }}
+                    autoFocus
+                  />
                   <p className="mt-2 text-xs text-gray-500">
-                    What % of your goal does this represent?
+                    Milestones will be completed in order. This will be milestone #{((goal?.milestones?.length || 0) + 1)}.
                   </p>
                 </div>
               </div>

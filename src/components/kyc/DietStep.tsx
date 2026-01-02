@@ -11,6 +11,7 @@ import {
   Dumbbell,
   Timer,
   Scale,
+  Vegan,
 } from "lucide-react";
 import { KYCData, dietGoals, dietaryRestrictions } from "./types";
 import KycLayout from "./KycLayout";
@@ -66,20 +67,7 @@ const DietIcon = ({
       return <Timer {...iconProps} />;
     // Dietary restrictions
     case "vegan":
-      return (
-        <svg
-          className={iconProps.className}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={iconProps.strokeWidth}
-          strokeLinecap="round"
-        >
-          <path d="M12 3c-4.5 6-4 12 0 18" />
-          <path d="M12 3c4.5 6 4 12 0 18" />
-          <path d="M12 3v18" />
-        </svg>
-      );
+      return <Vegan {...iconProps} />;
     case "vegetarian":
       return <Leaf {...iconProps} />;
     case "pescatarian":

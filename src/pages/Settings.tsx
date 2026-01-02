@@ -696,7 +696,7 @@ const Settings = () => {
                 size="sm"
                 onClick={() => {
                   logout();
-                  navigate("/register");
+                  navigate("/");
                 }}
                 className="h-8 text-xs"
               >

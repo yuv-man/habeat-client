@@ -45,6 +45,13 @@ const GoalsPage = () => {
     navigate("/goals/create");
   };
 
+  const handleDeleteGoal = async (_goalId: string) => {
+    // Refresh goals list after deletion to ensure sync
+    if (user?._id) {
+      await fetchGoals(user._id);
+    }
+  };
+
   if (!user) {
     return <div>Redirecting...</div>;
   }
@@ -60,12 +67,13 @@ const GoalsPage = () => {
   }
 
   return (
-    <DashboardLayout bgColor="bg-white" showNavBar={true}>
+    <DashboardLayout bgColor="bg-white" showNavBar={true} hidePlanBanner={true}>
       <Goals
         goals={goals}
         onUpdateProgress={handleUpdateProgress}
         onMarkAchieved={handleMarkAchieved}
         onAddGoal={handleAddGoal}
+        onDeleteGoal={handleDeleteGoal}
       />
     </DashboardLayout>
   );

@@ -8,6 +8,10 @@ import {
   Plus,
   Trash2,
   CalendarDays,
+  Flame,
+  Beef,
+  Wheat,
+  CircleDot,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
@@ -28,16 +32,32 @@ const MacroCard = ({
   value,
   unit,
   color,
+  icon: Icon,
+  iconBgColor,
 }: {
   label: string;
   value: number;
   unit: string;
   color: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconBgColor: string;
 }) => (
-  <div className="flex-1">
-    <div className={`text-3xl font-bold ${color}`}>{value}</div>
-    <div className="text-gray-600 text-sm">
-      {label} {unit}
+  <div className="flex-1 bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
+    <div className="flex items-center gap-2 justify-between">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className={`p-1.5 rounded-lg ${iconBgColor} flex-shrink-0`}>
+          <Icon className={`w-3.5 h-3.5 ${color}`} />
+        </div>
+        <span className="text-xs font-medium text-gray-600 truncate">
+          {label}
+        </span>
+      </div>
+      <div className="flex items-baseline gap-1 flex-shrink-0">
+        <span className={`text-lg font-bold ${color}`}>
+          {Math.round(value)}
+        </span>
+        <span className="text-xs text-gray-500">{unit}</span>
+      </div>
     </div>
   </div>
 );
@@ -47,30 +67,38 @@ const MacroSummary = ({
 }: {
   macros: { calories: number; protein: number; carbs: number; fat: number };
 }) => (
-  <div className="grid grid-cols-4 gap-3 mb-6">
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
     <MacroCard
       label="Calories"
       value={macros.calories}
       unit="kcal"
       color="text-orange-500"
+      icon={Flame}
+      iconBgColor="bg-orange-100"
     />
     <MacroCard
       label="Protein"
       value={macros.protein}
       unit="g"
       color="text-teal-500"
+      icon={Beef}
+      iconBgColor="bg-teal-100"
     />
     <MacroCard
       label="Carbs"
       value={macros.carbs}
       unit="g"
       color="text-blue-500"
+      icon={Wheat}
+      iconBgColor="bg-blue-100"
     />
     <MacroCard
       label="Fats"
       value={macros.fat}
       unit="g"
       color="text-purple-500"
+      icon={CircleDot}
+      iconBgColor="bg-purple-100"
     />
   </div>
 );
@@ -698,7 +726,7 @@ export default function WeeklyMealPlan() {
         <button
           onClick={generatePlan}
           disabled={isGenerating}
-          className="w-full bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg mb-8 transition disabled:opacity-50"
+          className="w-full bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg mb-4 transition disabled:opacity-50"
         >
           {isGenerating ? "Generating..." : "Generate AI Meal Plan"}
         </button>

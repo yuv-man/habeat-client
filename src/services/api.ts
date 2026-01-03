@@ -137,14 +137,14 @@ const oauthAuth = async (
   accessToken?: string
 ): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
   try {
-    // Both signin and signup use the same endpoint after OAuth callback
-    // The user is already created by the OAuth callback flow
-    // We just need to fetch the user data using the userId and token
+    // Use different endpoints for signin and signup
+    // Signup: /api/auth/google/signup
+    // Signin: /api/auth/google/signin
     const payload: any = { provider, userId, accessToken };
 
     const response: AxiosResponse<{
       data: { token: string; user: IUser; plan?: IPlan };
-    }> = await userClient.post(`/auth/${provider}/signin`, payload);
+    }> = await userClient.post(`/auth/${provider}/${action}`, payload);
 
     return {
       data: {

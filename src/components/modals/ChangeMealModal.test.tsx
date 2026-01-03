@@ -513,8 +513,8 @@ describe("ChangeMealModal", () => {
     it("shows empty state when no favorites", async () => {
       const { userAPI } = await import("@/services/api");
       vi.mocked(userAPI.getFavoritesByUserId).mockResolvedValueOnce({
-        data: { favoriteMeals: [] },
-      });
+        data: { favoriteMeals: [] as IMeal[] },
+      } as any);
 
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Share2,
@@ -7,7 +8,23 @@ import {
   GlassWater,
   Leaf,
   ChevronRight,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
+import { useAuthStore } from "@/stores/authStore";
+import { useGoalsStore } from "@/stores/goalsStore";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Milestone {
   id: string;
@@ -41,6 +58,7 @@ interface GoalsProps {
   onUpdateProgress?: (goalId: string) => void;
   onMarkAchieved?: (goalId: string) => void;
   onAddGoal?: () => void;
+  onDeleteGoal?: (goalId: string) => void;
 }
 
 const Goals = ({
@@ -48,11 +66,51 @@ const Goals = ({
   onUpdateProgress: _onUpdateProgress,
   onMarkAchieved: _onMarkAchieved,
   onAddGoal,
+  onDeleteGoal,
 }: GoalsProps) => {
   // These callbacks are available for parent components to use if needed
   void _onUpdateProgress;
   void _onMarkAchieved;
   const navigate = useNavigate();
+  const { plan } = useAuthStore();
+  const deleteGoal = useGoalsStore((state) => state.deleteGoal);
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+
+  // Check if user has no plan
+  const hasNoPlan =
+    !plan || !plan.weeklyPlan || Object.keys(plan.weeklyPlan).length === 0;
+
+  const handleDeleteClick = (e: React.MouseEvent, goal: Goal) => {
+    e.stopPropagation(); // Prevent navigation when clicking delete
+    setGoalToDelete(goal);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!goalToDelete) return;
+
+    try {
+      await deleteGoal(goalToDelete.id);
+      if (onDeleteGoal) {
+        onDeleteGoal(goalToDelete.id);
+      }
+      toast({
+        title: "Goal deleted",
+        description: "The goal has been successfully deleted.",
+      });
+      setDeleteDialogOpen(false);
+      setGoalToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to delete goal",
+        variant: "destructive",
+      });
+    }
+  };
   const getIcon = (iconType: Goal["icon"]) => {
     const iconClass = "w-6 h-6 text-white";
     switch (iconType) {
@@ -121,12 +179,40 @@ const Goals = ({
         </div>
       </div>
 
+      {/* No Plan Banner */}
+      {hasNoPlan && (
+        <div className="mx-4 mt-4 bg-amber-50 border-2 border-amber-400 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <Sparkles className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-amber-900 text-base mb-1">
+                There is no plan. Please generate.
+              </p>
+              <p className="text-amber-700 text-sm mb-3">
+                Create a meal plan to start tracking your nutrition goals.
+              </p>
+              <Button
+                onClick={() => navigate("/weekly-overview")}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 flex items-center gap-2"
+                size="sm"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate Plan
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Goals List */}
       <div className="px-4 py-6 space-y-4">
         {goals.map((goal) => {
           const progress = getProgressPercentage(goal);
           const isAchieved = goal.status === "achieved" || progress === 100;
-          const completedMilestones = goal.milestones?.filter((m) => m.completed).length || 0;
+          const completedMilestones =
+            goal.milestones?.filter((m) => m.completed).length || 0;
           const totalMilestones = goal.milestones?.length || 0;
 
           return (
@@ -142,18 +228,26 @@ const Goals = ({
                   <h2 className="font-bold text-gray-900 text-lg mb-1">
                     {goal.title}
                   </h2>
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  <p className="text-sm text-gray-600 leading-relaxed line-clamp-2">
                     {goal.description}
                   </p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={(e) => handleDeleteClick(e, goal)}
+                    className="p-2 hover:bg-red-50 rounded-full transition-colors text-gray-400 hover:text-red-600"
+                    aria-label="Delete goal"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Progress Bar */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">
-                    {totalMilestones > 0 
+                    {totalMilestones > 0
                       ? `${completedMilestones}/${totalMilestones} milestones`
                       : `${progress}% complete`}
                   </span>
@@ -196,6 +290,30 @@ const Goals = ({
       >
         <Plus className="w-6 h-6" />
       </button>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Goal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{goalToDelete?.title}"? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setGoalToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

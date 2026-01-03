@@ -26,6 +26,7 @@ const availableImages = [
   "chicken-breast-and-sweet-potato",
   "chicken-curry",
   "chicken-fajitas",
+  "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
   "chicken-parmesan",
   "chicken-salad",
   "chicken-noodle-soup",
@@ -194,7 +195,10 @@ const keywordMappings: { [key: string]: string[] } = {
     "thai-green-curry",
     "rice-with-curry",
   ],
-  fajitas: ["chicken-fajitas"],
+  fajitas: [
+    "chicken-fajitas",
+    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
+  ],
   parmesan: ["chicken-parmesan"],
   butter: ["butter-chicken-and-rice"],
 
@@ -348,6 +352,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "beef-and-bean-chili",
     "lean-beef-stir-fry-with-brown-rice",
     "lean-beef-with-quinoa-and-roasted-root-vegetables",
+    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
   ],
   steak: [
     "steak-with-mashed-potatoes",
@@ -362,6 +367,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-beef-stir-fry-with-brown-rice",
     "lean-beef-with-quinoa-and-roasted-root-vegetables",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
+    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],

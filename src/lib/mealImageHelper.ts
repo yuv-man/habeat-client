@@ -121,6 +121,7 @@ const availableImages = [
   "lemon-herb-chicken-with-brown-rice-and-broccoli",
   "lean-beef-with-quinoa-and-roasted-root-vegetables",
   "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
+  "turkey-and-hummus-wrap-with-side-salad",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -375,6 +376,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "turkey-sandwich",
     "turkey-stirfry",
     "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
+    "turkey-and-hummus-wrap-with-side-salad",
   ],
   schnitzel: ["schnitzel-and-fries"],
 
@@ -435,11 +437,13 @@ const keywordMappings: { [key: string]: string[] } = {
     "turkey-sandwich",
     "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
     "black-bean-burger-on-whole-wheat-bun",
+    "turkey-and-hummus-wrap-with-side-salad",
   ],
   wrap: [
     "avocado-chicken-wrap",
     "grilled-vegetable-wrap",
     "chicken-and-veggie-whole-wheat-wrap",
+    "turkey-and-hummus-wrap-with-side-salad",
   ],
 
   // Shrimp

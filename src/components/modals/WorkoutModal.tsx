@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { workoutCategories } from "@/lib/dietry";
+import { calculateWorkoutCalories } from "@/lib/workoutHelper";
+import { useAuthStore } from "@/stores/authStore";
 import { Activity, Clock, Flame } from "lucide-react";
 import { WorkoutData } from "@/types/interfaces";
 import MealLoader from "../helper/MealLoader";
@@ -35,10 +37,12 @@ const INITIAL_WORKOUT_DATA: WorkoutData = {
 };
 
 const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
+  const { user } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const [workoutData, setWorkoutData] =
     useState<WorkoutData>(INITIAL_WORKOUT_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [calculatedCalories, setCalculatedCalories] = useState<number>(0);
 
   const updateWorkoutData = (
     field: keyof WorkoutData,
@@ -47,17 +51,34 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
     setWorkoutData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // Calculate calories when workout type or duration changes
+  useEffect(() => {
+    if (workoutData.category && workoutData.duration > 0 && user?.weight) {
+      const calories = calculateWorkoutCalories(
+        workoutData.category,
+        workoutData.duration,
+        user.weight
+      );
+      setCalculatedCalories(calories);
+      setWorkoutData((prev) => ({ ...prev, caloriesBurned: calories }));
+    } else {
+      setCalculatedCalories(0);
+      setWorkoutData((prev) => ({ ...prev, caloriesBurned: 0 }));
+    }
+  }, [workoutData.category, workoutData.duration, user?.weight]);
+
   const resetForm = () => {
     setWorkoutData(INITIAL_WORKOUT_DATA);
+    setCalculatedCalories(0);
   };
 
   const isFormValid = () => {
     return (
       workoutData.name.trim() !== "" &&
       workoutData.category !== "" &&
-      workoutData.caloriesBurned > 0 &&
       workoutData.duration > 0 &&
-      workoutData.time !== ""
+      workoutData.time !== "" &&
+      calculatedCalories > 0
     );
   };
 
@@ -116,20 +137,21 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="workout-category" className="text-sm font-medium">
-              Category
+            <Label htmlFor="workout-type" className="text-sm font-medium">
+              Workout Type
             </Label>
             <Select
               value={workoutData.category}
               onValueChange={(value) => updateWorkoutData("category", value)}
             >
-              <SelectTrigger id="workout-category" className="h-11">
-                <SelectValue placeholder="Select workout category" />
+              <SelectTrigger id="workout-type" className="h-11">
+                <SelectValue placeholder="Select workout type" />
               </SelectTrigger>
               <SelectContent>
                 {workoutCategories.map((category) => (
                   <SelectItem key={category} value={category}>
-                    {category}
+                    {category.charAt(0).toUpperCase() +
+                      category.slice(1).replace(/-/g, " ")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -156,30 +178,6 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label
-                htmlFor="workout-calories"
-                className="text-sm font-medium flex items-center gap-1"
-              >
-                <Flame className="w-4 h-4 text-orange-500" />
-                Calories Burned
-              </Label>
-              <Input
-                id="workout-calories"
-                type="number"
-                placeholder="150"
-                min="1"
-                value={workoutData.caloriesBurned || ""}
-                onChange={(e) =>
-                  updateWorkoutData(
-                    "caloriesBurned",
-                    parseInt(e.target.value) || 0
-                  )
-                }
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
                 htmlFor="workout-duration"
                 className="text-sm font-medium flex items-center gap-1"
               >
@@ -197,6 +195,35 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
                 }
                 className="h-11"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="workout-calories"
+                className="text-sm font-medium flex items-center gap-1"
+              >
+                <Flame className="w-4 h-4 text-orange-500" />
+                Calories Burned
+              </Label>
+              <div className="relative">
+                <Input
+                  id="workout-calories"
+                  type="number"
+                  value={calculatedCalories || ""}
+                  readOnly
+                  className="h-11 bg-gray-50 text-gray-700 cursor-not-allowed"
+                />
+                {calculatedCalories > 0 && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500">
+                    Calculated
+                  </div>
+                )}
+              </div>
+              {!user?.weight && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Weight not set. Calories calculation requires user weight.
+                </p>
+              )}
             </div>
           </div>
 

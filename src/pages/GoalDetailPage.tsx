@@ -6,16 +6,8 @@ import {
   Check,
   Calendar,
   Target,
-  Scale,
-  Dumbbell,
-  GlassWater,
-  Leaf,
   Trash2,
   FileText,
-  Footprints,
-  Flame,
-  Moon,
-  Apple,
   Trophy,
   Zap,
 } from "lucide-react";
@@ -23,6 +15,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useGoalsStore } from "@/stores/goalsStore";
 import { useAuthStore } from "@/stores/authStore";
 import MealLoader from "@/components/helper/MealLoader";
+import { getGoalConfig } from "@/lib/goalTypes";
 import type { Goal, Milestone } from "@/components/goals/Goals";
 
 const GoalDetailPage = () => {
@@ -62,72 +55,6 @@ const GoalDetailPage = () => {
     }
   }, [goals, goalId]);
 
-  // Goal type configurations
-  const goalTypeConfig: Record<
-    string,
-    { icon: any; color: string; gradient: string; lightBg: string }
-  > = {
-    run: {
-      icon: Footprints,
-      color: "text-pink-500",
-      gradient: "from-pink-500 to-rose-500",
-      lightBg: "bg-pink-50",
-    },
-    weight: {
-      icon: Scale,
-      color: "text-orange-500",
-      gradient: "from-orange-500 to-amber-500",
-      lightBg: "bg-orange-50",
-    },
-    workout: {
-      icon: Dumbbell,
-      color: "text-blue-500",
-      gradient: "from-blue-500 to-indigo-500",
-      lightBg: "bg-blue-50",
-    },
-    water: {
-      icon: GlassWater,
-      color: "text-cyan-500",
-      gradient: "from-cyan-500 to-teal-500",
-      lightBg: "bg-cyan-50",
-    },
-    veggies: {
-      icon: Leaf,
-      color: "text-green-500",
-      gradient: "from-green-500 to-emerald-500",
-      lightBg: "bg-green-50",
-    },
-    calories: {
-      icon: Flame,
-      color: "text-red-500",
-      gradient: "from-red-500 to-orange-500",
-      lightBg: "bg-red-50",
-    },
-    sleep: {
-      icon: Moon,
-      color: "text-indigo-500",
-      gradient: "from-indigo-500 to-purple-500",
-      lightBg: "bg-indigo-50",
-    },
-    protein: {
-      icon: Apple,
-      color: "text-amber-500",
-      gradient: "from-amber-500 to-yellow-500",
-      lightBg: "bg-amber-50",
-    },
-  };
-
-  const getGoalConfig = (iconType: string) => {
-    return (
-      goalTypeConfig[iconType] || {
-        icon: Target,
-        color: "text-gray-500",
-        gradient: "from-gray-500 to-gray-600",
-        lightBg: "bg-gray-50",
-      }
-    );
-  };
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("en-US", {
       month: "short",
@@ -156,10 +83,12 @@ const GoalDetailPage = () => {
 
     // Recalculate percentages for all milestones to ensure they're sequential
     // Each milestone represents a step: 1st = 33%, 2nd = 67%, 3rd = 100% (for 3 milestones)
-    const updatedMilestones = [...currentMilestones, milestone].map((m, index) => ({
-      ...m,
-      targetValue: Math.round(((index + 1) / newMilestoneCount) * 100),
-    }));
+    const updatedMilestones = [...currentMilestones, milestone].map(
+      (m, index) => ({
+        ...m,
+        targetValue: Math.round(((index + 1) / newMilestoneCount) * 100),
+      })
+    );
 
     setGoal({ ...goal, milestones: updatedMilestones });
     updateGoal(goal.id, { milestones: updatedMilestones } as any);
@@ -173,7 +102,7 @@ const GoalDetailPage = () => {
     const milestones = goal.milestones || [];
     const milestoneIndex = milestones.findIndex((m) => m.id === milestoneId);
     const milestone = milestones[milestoneIndex];
-    
+
     if (!milestone) return;
 
     const newCompleted = !milestone.completed;
@@ -182,7 +111,7 @@ const GoalDetailPage = () => {
     if (newCompleted && milestoneIndex > 0) {
       const previousMilestones = milestones.slice(0, milestoneIndex);
       const allPreviousCompleted = previousMilestones.every((m) => m.completed);
-      
+
       if (!allPreviousCompleted) {
         alert("Please complete previous milestones first");
         return;
@@ -233,13 +162,14 @@ const GoalDetailPage = () => {
 
     const milestones = goal.milestones || [];
     const updatedMilestones = milestones.filter((m) => m.id !== milestoneId);
-    
+
     // Recalculate percentages for remaining milestones
     const recalculatedMilestones = updatedMilestones.map((m, index) => ({
       ...m,
-      targetValue: updatedMilestones.length > 0 
-        ? Math.round(((index + 1) / updatedMilestones.length) * 100)
-        : 0,
+      targetValue:
+        updatedMilestones.length > 0
+          ? Math.round(((index + 1) / updatedMilestones.length) * 100)
+          : 0,
     }));
 
     setGoal({
@@ -489,73 +419,76 @@ const GoalDetailPage = () => {
             <div className="space-y-2">
               {milestones.map((milestone, index) => {
                 const previousMilestones = milestones.slice(0, index);
-                const allPreviousCompleted = previousMilestones.every((m) => m.completed);
-                const canComplete = milestone.completed || index === 0 || allPreviousCompleted;
-                
+                const allPreviousCompleted = previousMilestones.every(
+                  (m) => m.completed
+                );
+                const canComplete =
+                  milestone.completed || index === 0 || allPreviousCompleted;
+
                 return (
-                <div
-                  key={milestone.id}
-                  className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
-                    milestone.completed
-                      ? "bg-green-50 border-green-200"
-                      : canComplete
-                      ? "bg-gray-50 border-gray-100 hover:border-gray-200"
-                      : "bg-gray-50 border-gray-100 opacity-60"
-                  }`}
-                >
-                  <button
-                    onClick={() => toggleMilestone(milestone.id)}
-                    disabled={!canComplete && !milestone.completed}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  <div
+                    key={milestone.id}
+                    className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all ${
                       milestone.completed
-                        ? "bg-green-500 text-white shadow-md shadow-green-200"
+                        ? "bg-green-50 border-green-200"
                         : canComplete
-                        ? `border-2 border-gray-300 hover:border-current ${config.color} cursor-pointer`
-                        : "border-2 border-gray-200 bg-gray-100 cursor-not-allowed opacity-50"
+                        ? "bg-gray-50 border-gray-100 hover:border-gray-200"
+                        : "bg-gray-50 border-gray-100 opacity-60"
                     }`}
                   >
-                    {milestone.completed ? (
-                      <Check className="w-4 h-4" />
-                    ) : (
-                      <span className="text-xs font-bold text-gray-400">
-                        {index + 1}
-                      </span>
-                    )}
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`font-semibold text-sm ${
+                    <button
+                      onClick={() => toggleMilestone(milestone.id)}
+                      disabled={!canComplete && !milestone.completed}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                         milestone.completed
-                          ? "text-green-700 line-through"
-                          : "text-gray-900"
+                          ? "bg-green-500 text-white shadow-md shadow-green-200"
+                          : canComplete
+                          ? `border-2 border-gray-300 hover:border-current ${config.color} cursor-pointer`
+                          : "border-2 border-gray-200 bg-gray-100 cursor-not-allowed opacity-50"
                       }`}
                     >
-                      {milestone.title}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span
-                        className={`px-2 py-0.5 rounded-full ${
-                          milestone.completed
-                            ? "bg-green-100 text-green-600"
-                            : `${config.lightBg} ${config.color}`
-                        }`}
-                      >
-                        {milestone.targetValue}%
-                      </span>
-                      {milestone.completedDate && (
-                        <span className="text-green-600">
-                          ✓ {formatDate(milestone.completedDate)}
+                      {milestone.completed ? (
+                        <Check className="w-4 h-4" />
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400">
+                          {index + 1}
                         </span>
                       )}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div
+                        className={`font-semibold text-sm ${
+                          milestone.completed
+                            ? "text-green-700 line-through"
+                            : "text-gray-900"
+                        }`}
+                      >
+                        {milestone.title}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span
+                          className={`px-2 py-0.5 rounded-full ${
+                            milestone.completed
+                              ? "bg-green-100 text-green-600"
+                              : `${config.lightBg} ${config.color}`
+                          }`}
+                        >
+                          {milestone.targetValue}%
+                        </span>
+                        {milestone.completedDate && (
+                          <span className="text-green-600">
+                            ✓ {formatDate(milestone.completedDate)}
+                          </span>
+                        )}
+                      </div>
                     </div>
+                    <button
+                      onClick={() => deleteMilestone(milestone.id)}
+                      className="p-2 hover:bg-red-100 rounded-xl transition text-gray-300 hover:text-red-500"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => deleteMilestone(milestone.id)}
-                    className="p-2 hover:bg-red-100 rounded-xl transition text-gray-300 hover:text-red-500"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
                 );
               })}
 
@@ -687,7 +620,8 @@ const GoalDetailPage = () => {
                     autoFocus
                   />
                   <p className="mt-2 text-xs text-gray-500">
-                    Milestones will be completed in order. This will be milestone #{((goal?.milestones?.length || 0) + 1)}.
+                    Milestones will be completed in order. This will be
+                    milestone #{(goal?.milestones?.length || 0) + 1}.
                   </p>
                 </div>
               </div>

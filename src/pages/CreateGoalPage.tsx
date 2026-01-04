@@ -8,14 +8,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  Scale,
-  Dumbbell,
-  GlassWater,
-  Leaf,
-  Footprints,
-  Apple,
-  Flame,
-  Moon,
   Wand2,
   FileText,
 } from "lucide-react";
@@ -24,6 +16,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { userAPI } from "@/services/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
+import { GOAL_TYPES } from "@/lib/goalTypes";
 import type { Milestone, Goal } from "@/components/goals/Goals";
 
 interface MilestoneInput {
@@ -31,74 +24,6 @@ interface MilestoneInput {
   title: string;
   completed: boolean;
 }
-
-// Goal type templates specific to nutrition & fitness
-const GOAL_TYPES = [
-  {
-    id: "weight",
-    name: "Weight",
-    icon: Scale,
-    color: "bg-orange-400",
-    defaultUnit: "kg",
-    defaultTarget: 70,
-  },
-  {
-    id: "workout",
-    name: "Workout",
-    icon: Dumbbell,
-    color: "bg-blue-400",
-    defaultUnit: "workouts",
-    defaultTarget: 20,
-  },
-  {
-    id: "water",
-    name: "Hydration",
-    icon: GlassWater,
-    color: "bg-cyan-400",
-    defaultUnit: "glasses/day",
-    defaultTarget: 8,
-  },
-  {
-    id: "veggies",
-    name: "Nutrition",
-    icon: Leaf,
-    color: "bg-green-400",
-    defaultUnit: "portions/day",
-    defaultTarget: 5,
-  },
-  {
-    id: "run",
-    name: "Cardio",
-    icon: Footprints,
-    color: "bg-pink-400",
-    defaultUnit: "km",
-    defaultTarget: 50,
-  },
-  {
-    id: "calories",
-    name: "Calories",
-    icon: Flame,
-    color: "bg-red-400",
-    defaultUnit: "kcal/day",
-    defaultTarget: 2000,
-  },
-  {
-    id: "sleep",
-    name: "Sleep",
-    icon: Moon,
-    color: "bg-indigo-400",
-    defaultUnit: "hours/night",
-    defaultTarget: 8,
-  },
-  {
-    id: "protein",
-    name: "Protein",
-    icon: Apple,
-    color: "bg-amber-400",
-    defaultUnit: "g/day",
-    defaultTarget: 120,
-  },
-];
 
 type CreationMode = "select" | "manual" | "ai";
 

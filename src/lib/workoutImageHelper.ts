@@ -103,6 +103,7 @@ const keywordMappings: { [key: string]: string[] } = {
   "body weight training": ["bodyweight"],
   pushup: ["calistenics"],
   pullup: ["calistenics"],
+  cardio: ["calistenics"],
 
   // Pilates
   pilates: ["pilates"],

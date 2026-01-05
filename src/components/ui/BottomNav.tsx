@@ -47,25 +47,22 @@ const BottomNav = () => {
       return (
         <button
           onClick={() => navigate(path)}
-          className={`flex flex-col items-center gap-1 py-2 px-4 min-w-0 transition-all relative ${
+          className={`flex flex-col items-center gap-1 py-1.5 px-3 min-w-0 transition-all relative ${
             active ? "text-green-600" : "text-gray-600 hover:text-gray-900"
           }`}
         >
           <div
-            className={`absolute -top-2 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full transition-all ${
-              active
-                ? "bg-green-100 shadow-lg shadow-green-200/50"
-                : "bg-transparent"
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              active ? "bg-green-100" : "bg-transparent"
             }`}
-          />
-          <Icon
-            className={`relative z-10 transition-all ${
-              active ? "w-7 h-7" : "w-6 h-6"
-            }`}
-          />
+          >
+            <Icon
+              className={`transition-all ${active ? "w-6 h-6" : "w-5 h-5"}`}
+            />
+          </div>
           <span
-            className={`relative z-10 font-semibold transition-all ${
-              active ? "text-[11px]" : "text-[10px]"
+            className={`text-[10px] font-semibold transition-all ${
+              active ? "text-green-600" : "text-gray-600"
             }`}
           >
             {label}
@@ -81,16 +78,10 @@ const BottomNav = () => {
           active ? "text-green-600" : "text-gray-600 hover:text-gray-900"
         }`}
       >
-        <Icon
-          className={`w-5 h-5 transition-all ${active ? "scale-110" : ""}`}
-        />
-        <span
-          className={`text-[10px] font-medium ${active ? "font-semibold" : ""}`}
-        >
-          {label}
-        </span>
+        <Icon className="w-5 h-5" />
+        <span className="text-[10px] font-medium">{label}</span>
         {active && (
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-green-600 rounded-full" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-green-600 rounded-full" />
         )}
       </button>
     );
@@ -98,7 +89,7 @@ const BottomNav = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 md:hidden z-50 shadow-lg">
-      <div className="flex items-end justify-around max-w-md mx-auto">
+      <div className="flex items-center justify-around max-w-md mx-auto">
         <NavButton path="/weekly-overview" icon={Calendar} label="Plan" />
         <NavButton path="/recipes" icon={Heart} label="Favorites" />
         <NavButton

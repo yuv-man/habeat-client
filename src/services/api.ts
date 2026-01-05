@@ -16,7 +16,7 @@ const API_URL = config.baseURL;
 
 const userClient = axios.create({
   baseURL: API_URL,
-  timeout: 10000,
+  timeout: 15000,
 });
 
 const mealGenerationClient = axios.create({

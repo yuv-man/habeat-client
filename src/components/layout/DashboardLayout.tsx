@@ -6,6 +6,7 @@ import MobileHeader from "@/components/ui/MobileHeader";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Sparkles, AlertCircle } from "lucide-react";
+import { ChatButton, ChatPanel } from "@/components/chat";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -100,6 +101,10 @@ const DashboardLayout = ({
       )}
       {children}
       <BottomNav />
+
+      {/* Nutrition Chat */}
+      <ChatButton />
+      <ChatPanel />
     </div>
   );
 };

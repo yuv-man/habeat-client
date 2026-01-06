@@ -123,6 +123,7 @@ const availableImages = [
   "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
   "turkey-and-hummus-wrap-with-side-salad",
   "lean-steak-with-quinoa-and-asparagus",
+  "baked-cod-with-sweet-potato-wedges-and-green-beans",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -217,12 +218,16 @@ const keywordMappings: { [key: string]: string[] } = {
     "fish-tacos",
     "baked-cod-with-quinoa",
     "baked-salmon-with-roasted-sweet-potatoes",
+    "baked-cod-with-sweet-potato-wedges-and-green-beans",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
     "chicken-teriyaki-bowl-with-brown-rice",
   ],
-  cod: ["baked-cod-with-quinoa"],
+  cod: [
+    "baked-cod-with-quinoa",
+    "baked-cod-with-sweet-potato-wedges-and-green-beans",
+  ],
   // Eggs
   egg: [
     "scrambled-eggs-and-toast",

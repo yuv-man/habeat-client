@@ -851,6 +851,119 @@ const deleteSnack = async (
   }, "Failed to delete snack. Please try again.");
 };
 
+// ============================================================================
+// CHAT API
+// ============================================================================
+
+interface ChatHistoryResponse {
+  success: boolean;
+  data: {
+    messages: Array<{
+      _id: string;
+      role: "user" | "assistant";
+      content: string;
+      timestamp: string;
+      proposedAction?: {
+        type: string;
+        payload: Record<string, unknown>;
+        status: "pending" | "accepted" | "rejected";
+      };
+    }>;
+    totalMessages: number;
+  };
+}
+
+interface ChatMessageResponse {
+  success: boolean;
+  data: {
+    response: string;
+    proposedAction?: {
+      type: string;
+      payload: Record<string, unknown>;
+      status: "pending" | "accepted" | "rejected";
+      messageId?: string;
+    };
+    messageId: string;
+  };
+}
+
+interface ChatActionResponse {
+  success: boolean;
+  data: {
+    message: string;
+    plan?: IPlan;
+  };
+}
+
+const getChatHistory = async (
+  userId: string,
+  limit?: number
+): Promise<ChatHistoryResponse> => {
+  return withErrorHandling(async () => {
+    const params = limit ? `?limit=${limit}` : "";
+    const response = await userClient.get<ChatHistoryResponse>(
+      `/chat/${userId}${params}`,
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to fetch chat history. Please try again.");
+};
+
+const sendChatMessage = async (
+  userId: string,
+  message: string,
+  context?: { currentScreen?: string; selectedDate?: string }
+): Promise<ChatMessageResponse> => {
+  return withErrorHandling(async () => {
+    const response = await mealGenerationClient.post<ChatMessageResponse>(
+      `/chat/${userId}/message`,
+      { message, context },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to send message. Please try again.");
+};
+
+const acceptChatAction = async (
+  userId: string,
+  messageId: string
+): Promise<ChatActionResponse> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<ChatActionResponse>(
+      `/chat/${userId}/action/${messageId}`,
+      { decision: "accept" },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to apply action. Please try again.");
+};
+
+const rejectChatAction = async (
+  userId: string,
+  messageId: string
+): Promise<ChatActionResponse> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<ChatActionResponse>(
+      `/chat/${userId}/action/${messageId}`,
+      { decision: "reject" },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to reject action. Please try again.");
+};
+
+const clearChatHistory = async (
+  userId: string
+): Promise<{ success: boolean; message: string }> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      message: string;
+    }>(`/chat/${userId}`, { headers: getAuthHeaders() });
+    return response.data;
+  }, "Failed to clear chat history. Please try again.");
+};
+
 export const userAPI = {
   getAllUsers,
   getUserById,
@@ -904,4 +1017,10 @@ export const userAPI = {
   changeMealInPlan,
   addSnack,
   deleteSnack,
+  // Chat
+  getChatHistory,
+  sendChatMessage,
+  acceptChatAction,
+  rejectChatAction,
+  clearChatHistory,
 };

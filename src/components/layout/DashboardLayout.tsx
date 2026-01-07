@@ -28,26 +28,27 @@ const DashboardLayout = ({
   const { plan } = useAuthStore();
 
   // Check if we're on Goals page
-  const isGoalsPage = location.pathname === "/goals" || location.pathname.startsWith("/goals/");
+  const isGoalsPage =
+    location.pathname === "/goals" || location.pathname.startsWith("/goals/");
 
   // Check if plan is missing or expired
   const showPlanBanner = useMemo(() => {
     if (hidePlanBanner || isGoalsPage) return false;
-    
+
     // No plan at all
     if (!plan || !plan.weeklyPlan) return true;
-    
+
     // Check if plan is expired
     const dates = Object.keys(plan.weeklyPlan).sort();
     if (dates.length === 0) return true;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const lastDateStr = dates[dates.length - 1];
     const lastDate = new Date(lastDateStr);
     lastDate.setHours(0, 0, 0, 0);
-    
+
     return lastDate < today;
   }, [plan, hidePlanBanner, isGoalsPage]);
 

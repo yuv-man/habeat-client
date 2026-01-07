@@ -22,7 +22,7 @@ const ShoppingList = () => {
 
   useEffect(() => {
     if (!loading && !user && !token) {
-      navigate("/register");
+      navigate("/");
     }
   }, [user, loading, token, navigate]);
 
@@ -142,7 +142,7 @@ const ShoppingList = () => {
         {/* Add Item Button */}
         <button
           onClick={() => setShowAddModal(true)}
-          className="fixed bottom-20 right-6 md:bottom-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-40"
+          className="fixed bottom-24 right-20 md:bottom-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-40"
         >
           <Plus className="w-6 h-6" />
         </button>

@@ -164,6 +164,36 @@ const oauthAuth = async (
   }
 };
 
+// Mobile Google Auth - sends idToken directly (for Capacitor)
+const mobileGoogleAuth = async (
+  action: "signin" | "signup",
+  idToken: string
+): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
+  try {
+    const payload = { token: idToken };
+
+    const response: AxiosResponse<{
+      data: { token: string; user: IUser; plan?: IPlan };
+    }> = await userClient.post(`/auth/google/mobile/${action}`, payload);
+
+    return {
+      data: {
+        token: response.data.data.token,
+        user: response.data.data.user,
+        plan: response.data.data.plan,
+      },
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(
+        error.response?.data?.message ||
+          `Google ${action} failed. Please try again.`
+      );
+    }
+    throw new Error(`An unexpected error occurred during Google ${action}.`);
+  }
+};
+
 const initiateOAuth = async (
   provider: string,
   action: "signin" | "signup" = "signin"
@@ -974,6 +1004,7 @@ export const userAPI = {
   signup,
   fetchUser,
   oauthAuth,
+  mobileGoogleAuth,
   initiateOAuth,
   getTodayProgress,
   generateMealPlan,

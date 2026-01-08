@@ -12,7 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatStore } from "@/stores/chatStore";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatMessage } from "./ChatMessage";
-import nutritionIcon from "@/assets/nutritionist.webp";
+import nutritionIcon from "@/assets/nutritionist-avatar.webp";
 
 export function ChatPanel() {
   const {
@@ -109,7 +109,7 @@ export function ChatPanel() {
                 <img
                   src={nutritionIcon}
                   alt="Chat Icon"
-                  className="w-60 h-auto"
+                  className="w-36 h-auto"
                 />
               </div>
               <h3 className="mb-2 font-medium text-gray-900">

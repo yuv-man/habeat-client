@@ -166,6 +166,33 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  // Direct Google Auth for mobile (uses Capacitor) or web (uses Google Identity Services)
+  googleAuth: async (action: "signin" | "signup") => {
+    try {
+      set({ loading: true });
+      const { signInWithGoogle } = await import("@/lib/googleAuth");
+      const idToken = await signInWithGoogle(action);
+
+      // Send idToken to backend
+      const response = await userAPI.mobileGoogleAuth(action, idToken);
+      const { token, user, plan } = response.data;
+
+      get().setToken(token);
+      get().setUser(user);
+      get().setPlan(plan || null);
+
+      // For signin, fetch plan if not returned
+      if (action === "signin" && !plan) {
+        const { plan: fetchedPlan } = await userAPI.fetchUser(token);
+        get().setPlan(fetchedPlan);
+      }
+      set({ loading: false });
+    } catch (error) {
+      set({ loading: false });
+      throw error;
+    }
+  },
+
   // Handle OAuth callback with tokens
   handleOAuthCallback: async (
     provider: string,

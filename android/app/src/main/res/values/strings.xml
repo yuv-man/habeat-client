@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">habeats</string>
+    <string name="title_activity_main">habeats</string>
+    <string name="package_name">app.vercel.habeats</string>
+    <string name="custom_url_scheme">app.vercel.habeats</string>
+</resources>

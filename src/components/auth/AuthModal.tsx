@@ -42,7 +42,7 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
     phone: "",
   });
 
-  const { login, signup, oauthSignin, oauthSignup } = useAuthStore();
+  const { login, signup, oauthSignin, oauthSignup, googleAuth } = useAuthStore();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,14 +90,31 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
     try {
       setIsLoading(true);
       setLoadingType(provider as "google" | "facebook");
-      // Use oauthSignup for signup flow, oauthSignin for login flow
-      if (isLogin) {
-        await oauthSignin(provider);
+      
+      // For Google, use unified auth (mobile or web)
+      if (provider === "google") {
+        const action = isLogin ? "signin" : "signup";
+        await googleAuth(action);
+        
+        toast({
+          title: isLogin ? "Welcome back!" : "Account created!",
+          description: isLogin
+            ? "You've successfully logged in."
+            : "Your account has been created successfully.",
+        });
+        
+        setIsOpen(false);
+        onSuccess?.();
       } else {
-        await oauthSignup(provider);
+        // For other providers (Facebook), use redirect flow
+        if (isLogin) {
+          await oauthSignin(provider);
+        } else {
+          await oauthSignup(provider);
+        }
+        // The OAuth flow will redirect to the provider, so we don't need to handle the response here
+        // Note: setIsLoading(false) is not called here because the redirect will unmount this component
       }
-      // The OAuth flow will redirect to the provider, so we don't need to handle the response here
-      // Note: setIsLoading(false) is not called here because the redirect will unmount this component
     } catch (error) {
       toast({
         title: "OAuth Error",

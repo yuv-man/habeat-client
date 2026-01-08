@@ -1,0 +1,16 @@
+{
+  "appId": "app.vercel.habeats",
+  "appName": "Habeats",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": [
+        "profile",
+        "email"
+      ],
+      "serverClientId": "841911005748-spbrlll6ubcc54gjg8govgs6e7o7p533.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}

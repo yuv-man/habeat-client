@@ -10,9 +10,21 @@ declare module "@southdevs/capacitor-google-auth" {
     };
   }
 
+  export interface GoogleAuthInitOptions {
+    clientId?: string;
+    serverClientId?: string;
+    scopes?: string[];
+    grantOfflineAccess?: boolean;
+  }
+
+  export interface GoogleAuthSignInOptions {
+    scopes?: string[];
+    serverClientId?: string;
+  }
+
   export interface GoogleAuth {
-    initialize(): void;
-    signIn(): Promise<GoogleAuthUser>;
+    initialize(options?: GoogleAuthInitOptions): Promise<void>;
+    signIn(options?: GoogleAuthSignInOptions): Promise<GoogleAuthUser>;
     signOut(): Promise<void>;
   }
 

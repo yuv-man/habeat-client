@@ -12,12 +12,20 @@ export const signInWithGoogle = async (
   _action: "signin" | "signup" = "signin"
 ): Promise<string> => {
   if (isNativePlatform()) {
-    // Native mobile authentication using Capacitor
+    // Native mobile authentication using Capacitor Social Login
     try {
       // Dynamic import to avoid TypeScript errors on web
-      const { GoogleAuth } = await import("@southdevs/capacitor-google-auth");
-      const user = await GoogleAuth.signIn();
-      const idToken = user.authentication.idToken;
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+
+      // Sign in with Google using the new SocialLogin API
+      const result = await SocialLogin.login({
+        provider: "google",
+        options: {
+          scopes: ["email", "profile"],
+        },
+      });
+
+      const idToken = result.result.idToken;
 
       if (!idToken) {
         throw new Error("Failed to get ID token from Google");
@@ -55,8 +63,8 @@ export const signOutFromGoogle = async (): Promise<void> => {
   if (isNativePlatform()) {
     try {
       // Dynamic import to avoid TypeScript errors on web
-      const { GoogleAuth } = await import("@southdevs/capacitor-google-auth");
-      await GoogleAuth.signOut();
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      await SocialLogin.logout({ provider: "google" });
     } catch (error) {
       console.error("Failed to sign out from Google:", error);
       // Don't throw - sign out failure shouldn't block the app

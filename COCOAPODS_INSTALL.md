@@ -67,6 +67,7 @@ export PATH="$HOME/.gem/ruby/2.6.0/bin:$PATH"
 ```
 
 Then reload:
+
 ```bash
 source ~/.zshrc
 ```
@@ -74,4 +75,3 @@ source ~/.zshrc
 ### Ruby Version Issues
 
 If you see Ruby version errors, use Homebrew to install CocoaPods (Option 1) as it handles Ruby dependencies automatically.
-

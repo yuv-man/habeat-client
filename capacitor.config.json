@@ -10,7 +10,16 @@
         "email"
       ],
       "serverClientId": "841911005748-spbrlll6ubcc54gjg8govgs6e7o7p533.apps.googleusercontent.com",
-      "forceCodeForRefreshToken": true
+      "forceCodeForRefreshToken": true,
+      "iosClientId": "841911005748-ml037ut5apt36r01gciqm1b208a9dh7v.apps.googleusercontent.com",
+      "androidClientId": "841911005748-hb5dp126gaoap19s8s0ri83pqo9isiaf.apps.googleusercontent.com"
+    },
+    "SocialLogin": {
+      "google": {
+        "webClientId": "841911005748-spbrlll6ubcc54gjg8govgs6e7o7p533.apps.googleusercontent.com",
+        "iosClientId": "841911005748-ml037ut5apt36r01gciqm1b208a9dh7v.apps.googleusercontent.com",
+        "androidClientId": "841911005748-hb5dp126gaoap19s8s0ri83pqo9isiaf.apps.googleusercontent.com"
+      }
     }
   }
 }

@@ -16,6 +16,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useNavigate } from "react-router-dom";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
+import TiredButton from "@/components/dashboard/TiredButton";
 import { formatMealName } from "@/lib/formatters";
 
 interface MealCardProps {
@@ -214,6 +215,14 @@ const MealCard = ({
 
         {/* Action Buttons - Always Visible */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {/* I'm Tired Button - Quick meal swap */}
+          <TiredButton
+            meal={meal}
+            mealType={mealType as "breakfast" | "lunch" | "dinner"}
+            date={date}
+            onMealChange={handleMealChange}
+          />
+
           {/* Favorite Button */}
           <button
             onClick={handleFavorite}

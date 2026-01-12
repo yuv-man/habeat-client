@@ -850,6 +850,32 @@ const changeMealInPlan = async (
   }, "Failed to change meal. Please try again.");
 };
 
+// Get quick rescue meal ("I'm Tired" button feature)
+const getRescueMeal = async (
+  userId: string,
+  planId: string,
+  date: string,
+  mealType: "breakfast" | "lunch" | "dinner",
+  targetCalories: number,
+  targetMacros?: { protein: number; carbs: number; fat: number }
+): Promise<ApiResponse<{ rescueMeal: IMeal; originalMealName: string }>> => {
+  return withErrorHandling(async () => {
+    const response = await mealGenerationClient.post<
+      ApiResponse<{ rescueMeal: IMeal; originalMealName: string }>
+    >(
+      `/generate/rescue-meal/${userId}/${planId}`,
+      {
+        date,
+        mealType,
+        targetCalories,
+        targetMacros,
+      },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to get rescue meal. Please try again.");
+};
+
 // Add snack to plan
 const addSnack = async (
   planId: string,
@@ -1046,6 +1072,7 @@ export const userAPI = {
   // Meal Changes
   getAIMealSuggestions,
   changeMealInPlan,
+  getRescueMeal,
   addSnack,
   deleteSnack,
   // Chat

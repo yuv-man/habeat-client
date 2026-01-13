@@ -329,8 +329,8 @@ export interface AuthActions {
   setToken: (token: string | null) => void;
   setMealTimes: (mealTimes: Partial<MealTimes>) => void;
   fetchUser: (token: string, onSuccess?: () => void) => Promise<void>;
-  oauthSignin: (provider: string) => Promise<void>;
-  oauthSignup: (provider: string) => Promise<void>;
+  oauthSignin: (provider: string, userId?: string) => Promise<void>;
+  oauthSignup: (provider: string, userId?: string) => Promise<void>;
   handleOAuthCallback: (
     provider: string,
     action: "signin" | "signup",

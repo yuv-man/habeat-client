@@ -215,14 +215,6 @@ const MealCard = ({
 
         {/* Action Buttons - Always Visible */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* I'm Tired Button - Quick meal swap */}
-          <TiredButton
-            meal={meal}
-            mealType={mealType as "breakfast" | "lunch" | "dinner"}
-            date={date}
-            onMealChange={handleMealChange}
-          />
-
           {/* Favorite Button */}
           <button
             onClick={handleFavorite}
@@ -283,6 +275,13 @@ const MealCard = ({
 
           {/* Action Buttons - Inside Fold */}
           <div className="flex items-center justify-center gap-4 pt-2 border-t border-gray-100">
+            {/* I'm Tired Button - Quick meal swap */}
+            <TiredButton
+              meal={meal}
+              mealType={mealType as "breakfast" | "lunch" | "dinner"}
+              date={date}
+              onMealChange={handleMealChange}
+            />
             <button
               onClick={handleViewRecipe}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"

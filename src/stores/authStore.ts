@@ -169,13 +169,37 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // Direct Google Auth for mobile (uses Capacitor) or web (uses Google Identity Services)
   googleAuth: async (action: "signin" | "signup") => {
     try {
+      // For signup, userId is not required (user doesn't exist yet)
+      // For signin, userId is optional but can be used if available
+      const userId = get().user?._id;
+      
       set({ loading: true });
+      console.log(`[googleAuth] Starting ${action} flow`);
+      
       const { signInWithGoogle } = await import("@/lib/googleAuth");
+      const { shouldUseMobileAuth } = await import("@/lib/platform");
       const idToken = await signInWithGoogle(action);
+      
+      console.log(`[googleAuth] Got idToken, length: ${idToken.length}`);
 
-      // Send idToken to backend
-      const response = await userAPI.mobileGoogleAuth(action, idToken);
+      // Determine which API endpoint to use based on auth mode
+      const useMobile = shouldUseMobileAuth();
+      console.log(`[googleAuth] Using ${useMobile ? 'mobile' : 'web'} API endpoint`);
+      
+      // Send idToken to backend using appropriate endpoint
+      // For signup, userId is not required and will be ignored by backend
+      // For signin, userId is optional - backend will handle both cases
+      const response = useMobile
+        ? await userAPI.mobileGoogleAuth(action, userId || "", idToken)
+        : await userAPI.webGoogleAuth(action, userId || "", idToken);
+      
+      console.log(`[googleAuth] Got response from API:`, response);
+      
       const { token, user, plan } = response.data;
+
+      if (!token || !user) {
+        throw new Error("Invalid response from server: missing token or user");
+      }
 
       get().setToken(token);
       get().setUser(user);
@@ -187,7 +211,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().setPlan(fetchedPlan);
       }
       set({ loading: false });
+      console.log(`[googleAuth] ${action} completed successfully`);
     } catch (error) {
+      console.error(`[googleAuth] Error during ${action}:`, error);
       set({ loading: false });
       throw error;
     }

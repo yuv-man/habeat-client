@@ -51,6 +51,25 @@ When test mode is enabled:
 
 **Note:** Remember to set `VITE_TEST_FRONTEND=false` or remove it when you want to connect to the backend.
 
+## Google OAuth Configuration
+
+The app supports both mobile (Capacitor) and web Google OAuth authentication. By default, the app automatically detects the platform and uses the appropriate method.
+
+You can force a specific mode by setting the `VITE_GOOGLE_AUTH_MODE` environment variable:
+
+```sh
+# Force mobile mode (uses Capacitor Social Login)
+VITE_GOOGLE_AUTH_MODE=mobile
+
+# Force web mode (uses Google Identity Services)
+VITE_GOOGLE_AUTH_MODE=web
+```
+
+**Note:** If not set, the app will automatically detect the platform:
+
+- Native iOS/Android apps → uses mobile endpoints (`/auth/google/mobile/signin` or `/auth/google/mobile/signup`)
+- Web browsers → uses web endpoints (`/auth/google/web/signin` or `/auth/google/web/signup`)
+
 **Edit a file directly in GitHub**
 
 - Navigate to the desired file(s).

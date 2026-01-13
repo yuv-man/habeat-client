@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogTrigger,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -42,7 +43,7 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
     phone: "",
   });
 
-  const { login, signup, oauthSignin, oauthSignup, googleAuth } = useAuthStore();
+  const { login, signup, oauthSignin, oauthSignup, googleAuth, user } = useAuthStore();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -136,6 +137,11 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
         <DialogTitle className="sr-only">
           {isLogin ? "Sign In" : "Create Account"}
         </DialogTitle>
+        <DialogDescription className="sr-only">
+          {isLogin
+            ? "Sign in to your Habeats account"
+            : "Join Habeats and start your health journey"}
+        </DialogDescription>
         <Card className="border-0 shadow-none">
           <CardHeader className="text-center">
             <CardTitle>{isLogin ? "Welcome back" : "Create account"}</CardTitle>

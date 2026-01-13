@@ -67,30 +67,159 @@ export const initGoogleOAuth = async (
     );
   }
 
-  await loadGoogleScript();
+  try {
+    await loadGoogleScript();
+  } catch (error) {
+    throw new Error(
+      "Failed to load Google Identity Services script. Please check your internet connection."
+    );
+  }
 
   if (!window.google?.accounts?.id) {
-    throw new Error("Google Identity Services failed to load");
+    throw new Error(
+      "Google Identity Services failed to load. Please refresh the page and try again."
+    );
   }
 
   // Set up Google OAuth with a callback
   // When user signs in, Google calls this callback with response.credential
   // The credential IS the idToken (JWT token) that you need
-  window.google.accounts.id.initialize({
-    client_id: GOOGLE_CLIENT_ID,
-    callback: (response) => {
-      // response.credential is the idToken (JWT) from Google
-      callback(response.credential);
-    },
-  });
+  try {
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (response) => {
+        // Check if response has credential
+        if (!response || !response.credential) {
+          console.error(
+            "Google sign-in response missing credential:",
+            response
+          );
+          return;
+        }
+        // response.credential is the idToken (JWT) from Google
+        callback(response.credential);
+      },
+    });
+  } catch (error) {
+    throw new Error(
+      `Failed to initialize Google sign-in: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
 };
 
-// Trigger Google Sign-In
-export const triggerGoogleSignIn = (): void => {
-  if (!window.google?.accounts?.id) {
-    throw new Error("Google Identity Services not initialized");
-  }
-  window.google.accounts.id.prompt();
+// Trigger Google Sign-In using a programmatic button click
+// This is more reliable than prompt() which may not show if One Tap was dismissed
+export const triggerGoogleSignIn = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!window.google?.accounts?.id) {
+      reject(new Error("Google Identity Services not initialized"));
+      return;
+    }
+
+    const clientId = GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      reject(new Error("Google Client ID is not configured"));
+      return;
+    }
+
+    // Create a temporary container for the button
+    const containerId = `google-signin-temp-${Date.now()}`;
+    const container = document.createElement("div");
+    container.id = containerId;
+    container.style.position = "fixed";
+    container.style.left = "-9999px";
+    container.style.top = "-9999px";
+    container.style.opacity = "0";
+    container.style.pointerEvents = "none";
+    document.body.appendChild(container);
+
+    let resolved = false;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    // Set timeout
+    timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
+        reject(new Error("Google sign-in timed out. Please try again."));
+      }
+    }, 60000);
+
+    // Initialize callback
+    const callback = (credential: string) => {
+      if (!resolved) {
+        resolved = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        if (document.body.contains(container)) {
+          document.body.removeChild(container);
+        }
+        resolve(credential);
+      }
+    };
+
+    // Initialize Google OAuth
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: (response) => {
+        if (response?.credential) {
+          callback(response.credential);
+        }
+      },
+    });
+
+    // Render button and click it programmatically
+    try {
+      window.google.accounts.id.renderButton(container, {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+        text: "signin_with",
+      });
+
+      // Wait a bit for button to render, then click it
+      setTimeout(() => {
+        const button = container.querySelector(
+          "div[role='button']"
+        ) as HTMLElement;
+        if (button) {
+          button.click();
+        } else {
+          // Fallback: try prompt() if button click doesn't work
+          try {
+            if (window.google?.accounts?.id) {
+              window.google.accounts.id.prompt();
+            }
+          } catch (promptError) {
+            if (!resolved) {
+              resolved = true;
+              if (timeoutId) clearTimeout(timeoutId);
+              if (document.body.contains(container)) {
+                document.body.removeChild(container);
+              }
+              reject(
+                new Error("Failed to trigger Google sign-in. Please try again.")
+              );
+            }
+          }
+        }
+      }, 100);
+    } catch (error) {
+      if (!resolved) {
+        resolved = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        document.body.removeChild(container);
+        reject(
+          error instanceof Error
+            ? error
+            : new Error("Failed to initialize Google sign-in")
+        );
+      }
+    }
+  });
 };
 
 // One Tap Sign-In (automatic prompt)

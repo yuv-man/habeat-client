@@ -1,9 +1,9 @@
-import { isNativePlatform } from "./platform";
-import { initGoogleOAuth, triggerGoogleSignIn } from "./googleOAuth";
+import { shouldUseMobileAuth } from "./platform";
 
 /**
  * Unified Google Authentication
  * Uses native Capacitor Google Auth on mobile, web OAuth on web
+ * Can be forced via VITE_GOOGLE_AUTH_MODE env variable
  *
  * @param action - "signin" or "signup"
  * @returns Promise resolving to the idToken (JWT) from Google
@@ -11,7 +11,9 @@ import { initGoogleOAuth, triggerGoogleSignIn } from "./googleOAuth";
 export const signInWithGoogle = async (
   _action: "signin" | "signup" = "signin"
 ): Promise<string> => {
-  if (isNativePlatform()) {
+  const useMobile = shouldUseMobileAuth();
+
+  if (useMobile) {
     // Native mobile authentication using Capacitor Social Login
     try {
       // Dynamic import to avoid TypeScript errors on web
@@ -40,19 +42,36 @@ export const signInWithGoogle = async (
       throw error;
     }
   } else {
-    // Web authentication using Google Identity Services
-    return new Promise((resolve, reject) => {
-      initGoogleOAuth((credential) => {
-        // credential is the idToken (JWT) from Google
-        resolve(credential);
-      })
-        .then(() => {
-          triggerGoogleSignIn();
-        })
-        .catch((error) => {
-          reject(error);
-        });
-    });
+    // Web authentication using Google Identity Services with popup
+    try {
+      console.log("[signInWithGoogle] Starting web Google OAuth");
+
+      // Load Google script first
+      const { loadGoogleScript, triggerGoogleSignIn } = await import(
+        "./googleOAuth"
+      );
+      await loadGoogleScript();
+
+      // Trigger popup-based sign-in
+      const idToken = await triggerGoogleSignIn();
+
+      if (!idToken) {
+        throw new Error("Failed to get ID token from Google");
+      }
+
+      console.log("[signInWithGoogle] Successfully got idToken");
+      return idToken;
+    } catch (error) {
+      console.error("[signInWithGoogle] Error:", error);
+      // Handle user cancellation
+      if (
+        error instanceof Error &&
+        (error.message.includes("cancel") || error.message.includes("blocked"))
+      ) {
+        throw new Error("Google sign-in was cancelled");
+      }
+      throw error;
+    }
   }
 };
 
@@ -60,7 +79,9 @@ export const signInWithGoogle = async (
  * Sign out from Google (only applicable for native platforms)
  */
 export const signOutFromGoogle = async (): Promise<void> => {
-  if (isNativePlatform()) {
+  const useMobile = shouldUseMobileAuth();
+
+  if (useMobile) {
     try {
       // Dynamic import to avoid TypeScript errors on web
       const { SocialLogin } = await import("@capgo/capacitor-social-login");

@@ -167,28 +167,138 @@ const oauthAuth = async (
 // Mobile Google Auth - sends idToken directly (for Capacitor)
 const mobileGoogleAuth = async (
   action: "signin" | "signup",
+  userId: string,
   idToken: string
 ): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
   try {
-    const payload = { token: idToken };
+    // Mobile endpoints expect idToken, not accessToken
+    // For signup, userId is not required
+    const payload: { idToken: string; userId?: string; userData?: any } = {
+      idToken: idToken,
+    };
+    
+    // Only include userId if provided (though mobile endpoints don't require it)
+    if (userId) {
+      payload.userId = userId;
+    }
+
+    console.log(
+      `[mobileGoogleAuth] Calling /auth/google/mobile/${action} with payload:`,
+      { token: idToken.substring(0, 20) + "...", hasUserId: !!payload.userId }
+    );
 
     const response: AxiosResponse<{
-      data: { token: string; user: IUser; plan?: IPlan };
+      data?: { token: string; user: IUser; plan?: IPlan };
+      token?: string;
+      user?: IUser;
+      plan?: IPlan;
     }> = await userClient.post(`/auth/google/mobile/${action}`, payload);
+
+    console.log(`[mobileGoogleAuth] Response:`, response.data);
+
+    // Handle different response structures
+    // Structure 1: { data: { token, user, plan } }
+    // Structure 2: { token, user, plan } (direct)
+    const responseData = response.data.data || response.data;
+
+    if (!responseData.token || !responseData.user) {
+      console.error(
+        "[mobileGoogleAuth] Invalid response structure:",
+        response.data
+      );
+      throw new Error("Invalid response from server");
+    }
 
     return {
       data: {
-        token: response.data.data.token,
-        user: response.data.data.user,
-        plan: response.data.data.plan,
+        token: responseData.token,
+        user: responseData.user,
+        plan: responseData.plan,
       },
     };
   } catch (error) {
+    console.error(`[mobileGoogleAuth] Error:`, error);
     if (axios.isAxiosError(error)) {
-      throw new Error(
+      const errorMessage =
         error.response?.data?.message ||
-          `Google ${action} failed. Please try again.`
+        error.message ||
+        `Google ${action} failed. Please try again.`;
+      console.error(`[mobileGoogleAuth] Error details:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      throw new Error(errorMessage);
+    }
+    throw new Error(`An unexpected error occurred during Google ${action}.`);
+  }
+};
+
+// Web Google Auth - sends idToken directly (for web browser)
+const webGoogleAuth = async (
+  action: "signin" | "signup",
+  userId: string,
+  idToken: string
+): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
+  try {
+    // For signup, userId is not required and should not be sent
+    // For signin, userId is optional (backend handles both cases)
+    const payload: { accessToken: string; userId?: string; userData?: any } = {
+      accessToken: idToken,
+    };
+    
+    // Only include userId if provided and it's signin
+    if (userId && action === "signin") {
+      payload.userId = userId;
+    }
+
+    console.log(
+      `[webGoogleAuth] Calling /auth/google/web/${action} with payload:`,
+      { token: idToken.substring(0, 20) + "...", hasUserId: !!payload.userId }
+    );
+
+    const response: AxiosResponse<{
+      data?: { token: string; user: IUser; plan?: IPlan };
+      token?: string;
+      user?: IUser;
+      plan?: IPlan;
+    }> = await userClient.post(`/auth/google/web/${action}`, payload);
+
+    console.log(`[webGoogleAuth] Response:`, response.data);
+
+    // Handle different response structures
+    // Structure 1: { data: { token, user, plan } }
+    // Structure 2: { token, user, plan } (direct)
+    const responseData = response.data.data || response.data;
+
+    if (!responseData.token || !responseData.user) {
+      console.error(
+        "[webGoogleAuth] Invalid response structure:",
+        response.data
       );
+      throw new Error("Invalid response from server");
+    }
+
+    return {
+      data: {
+        token: responseData.token,
+        user: responseData.user,
+        plan: responseData.plan,
+      },
+    };
+  } catch (error) {
+    console.error(`[webGoogleAuth] Error:`, error);
+    if (axios.isAxiosError(error)) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        `Google ${action} failed. Please try again.`;
+      console.error(`[webGoogleAuth] Error details:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      });
+      throw new Error(errorMessage);
     }
     throw new Error(`An unexpected error occurred during Google ${action}.`);
   }
@@ -1031,6 +1141,7 @@ export const userAPI = {
   fetchUser,
   oauthAuth,
   mobileGoogleAuth,
+  webGoogleAuth,
   initiateOAuth,
   getTodayProgress,
   generateMealPlan,

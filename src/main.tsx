@@ -3,6 +3,35 @@ import App from "./App.tsx";
 import "./index.css";
 import { isNativePlatform } from "./lib/platform";
 
+// Suppress harmless browser extension errors
+window.addEventListener("error", (event) => {
+  // Suppress the common browser extension message channel error
+  if (
+    event.message?.includes(
+      "A listener indicated an asynchronous response by returning true"
+    ) ||
+    event.message?.includes("message channel closed")
+  ) {
+    event.preventDefault();
+    console.warn("Suppressed browser extension error:", event.message);
+    return false;
+  }
+});
+
+// Also catch unhandled promise rejections
+window.addEventListener("unhandledrejection", (event) => {
+  if (
+    event.reason?.message?.includes(
+      "A listener indicated an asynchronous response by returning true"
+    ) ||
+    event.reason?.message?.includes("message channel closed")
+  ) {
+    event.preventDefault();
+    console.warn("Suppressed browser extension promise rejection:", event.reason);
+    return false;
+  }
+});
+
 // Initialize Social Login plugin for native platforms
 if (isNativePlatform()) {
   import("@capgo/capacitor-social-login")

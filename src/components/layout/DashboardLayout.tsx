@@ -65,7 +65,12 @@ const DashboardLayout = ({
   };
 
   return (
-    <div className={`min-h-screen ${bgColor} pt-14 md:pt-16 pb-16 md:pb-0`}>
+    <div 
+      className={`min-h-screen ${bgColor} pb-16 md:pb-0 md:pt-16`}
+      style={{ 
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' // 3.5rem = 56px (h-14), safe area for mobile status bar
+      }}
+    >
       <MobileHeader />
       {showNavBar && (
         <NavBar currentView={currentView} onViewChange={handleViewChange} />

@@ -47,7 +47,10 @@ const MobileHeader = () => {
   ];
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+    <div 
+      className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       <div className="flex items-center justify-between h-14 px-4">
         <Link to="/daily-tracker" className="flex items-center gap-2">
           <img src={logo} alt="logo" className="w-10 h-10" />

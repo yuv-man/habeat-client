@@ -149,3 +149,8 @@
     @apply font-mons;
   }
 }
+
+/* Chat Panel - Adjust close button for safe area */
+.chat-panel-sheet > button[data-radix-dialog-close] {
+  top: calc(env(safe-area-inset-top, 0px) + 1rem) !important;
+}

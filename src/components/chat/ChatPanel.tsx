@@ -76,7 +76,10 @@ export function ChatPanel() {
         className="flex w-full flex-col p-0 sm:max-w-md"
       >
         {/* Header */}
-        <SheetHeader className="border-b px-4 py-3">
+        <SheetHeader 
+          className="border-b px-4 py-3"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+        >
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <span className="text-xl">Nutrition Assistant</span>

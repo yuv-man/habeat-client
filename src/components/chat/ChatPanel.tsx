@@ -73,8 +73,9 @@ export function ChatPanel() {
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeChat()}>
       <SheetContent
         side="right"
-        className="chat-panel-sheet flex w-full flex-col p-0 sm:max-w-md"
+        className="flex w-full flex-col p-0 sm:max-w-md"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        closeButtonTop="calc(env(safe-area-inset-top, 0px) + 1rem)"
       >
         {/* Header */}
         <SheetHeader 

@@ -1,14 +1,23 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { IDailyProgress } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
+import {
+  getCachedData,
+  setCachedData,
+  removeCachedData,
+  DEFAULT_TTL,
+} from "@/lib/cache";
 
 interface ProgressState {
   todayProgress: IDailyProgress | null;
   progressHistory: IDailyProgress[];
   loading: boolean;
   error: string | null;
+  lastFetchTime: number | null; // Timestamp of last successful fetch
+  cachedDate: string | null; // Date string for which we have cached data
 }
 
 interface ProgressActions {
@@ -38,40 +47,144 @@ interface ProgressActions {
 
 type ProgressStore = ProgressState & ProgressActions;
 
-export const useProgressStore = create<ProgressStore>((set, get) => ({
-  // State
-  todayProgress: null,
-  progressHistory: [],
-  loading: false,
-  error: null,
+// Helper to get today's date string (YYYY-MM-DD)
+const getTodayDateString = (): string => {
+  const today = new Date();
+  return today.toISOString().split("T")[0];
+};
 
-  // Actions
-  setTodayProgress: (progress) => set({ todayProgress: progress }),
-  setProgressHistory: (history) => set({ progressHistory: history }),
-  setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error }),
+// Custom storage with TTL support for progress data
+const createProgressStorage = () => {
+  return {
+    getItem: (name: string): string | null => {
+      try {
+        const cached = getCachedData<ProgressState>(
+          name,
+          { ttl: DEFAULT_TTL.PROGRESS }
+        );
+        if (cached) {
+          // Check if cached data is for today
+          const today = getTodayDateString();
+          if (cached.cachedDate === today && cached.todayProgress) {
+            return JSON.stringify(cached);
+          }
+        }
+        // Return null if cache expired or not for today
+        return null;
+      } catch (error) {
+        console.error("Error reading progress cache:", error);
+        return null;
+      }
+    },
+    setItem: (name: string, value: string): void => {
+      try {
+        const state: ProgressState = JSON.parse(value);
+        const today = getTodayDateString();
+        setCachedData(
+          name,
+          {
+            ...state,
+            cachedDate: today,
+            lastFetchTime: Date.now(),
+          },
+          DEFAULT_TTL.PROGRESS
+        );
+      } catch (error) {
+        console.error("Error setting progress cache:", error);
+      }
+    },
+    removeItem: (name: string): void => {
+      removeCachedData(name);
+    },
+  };
+};
 
-  fetchTodayProgress: async (userId: string) => {
-    if (config.testFrontend) {
-      // Use mock data in test mode
-      set({ todayProgress: mockDailyProgress as IDailyProgress });
-      return;
-    }
+export const useProgressStore = create<ProgressStore>()(
+  persist(
+    (set, get) => ({
+      // State
+      todayProgress: null,
+      progressHistory: [],
+      loading: false,
+      error: null,
+      lastFetchTime: null,
+      cachedDate: null,
 
-    try {
-      set({ loading: true, error: null });
-      const response = await userAPI.getTodayProgress(userId);
-      set({
-        todayProgress: response.progress,
-        loading: false,
-      });
-    } catch (error: any) {
-      set({
-        error: error.message || "Failed to fetch today's progress",
-        loading: false,
-      });
-    }
-  },
+      // Actions
+      setTodayProgress: (progress) => set({ todayProgress: progress }),
+      setProgressHistory: (history) => set({ progressHistory: history }),
+      setLoading: (loading) => set({ loading }),
+      setError: (error) => set({ error }),
+
+      fetchTodayProgress: async (userId: string) => {
+        if (config.testFrontend) {
+          // Use mock data in test mode
+          set({ todayProgress: mockDailyProgress as IDailyProgress });
+          return;
+        }
+
+        const today = getTodayDateString();
+        const { todayProgress, cachedDate, lastFetchTime } = get();
+
+        // Cache-first strategy: Use cached data if available and valid
+        if (
+          todayProgress &&
+          cachedDate === today &&
+          lastFetchTime &&
+          Date.now() - lastFetchTime < DEFAULT_TTL.PROGRESS
+        ) {
+          // Cache is valid, use it immediately
+          set({ loading: false, error: null });
+          
+          // Refresh in background if cache is getting stale (> 1 minute old)
+          if (Date.now() - lastFetchTime > 60 * 1000) {
+            // Background refresh - don't set loading state
+            userAPI
+              .getTodayProgress(userId)
+              .then((response) => {
+                const currentState = get();
+                // Only update if still on the same date
+                if (currentState.cachedDate === today) {
+                  set({
+                    todayProgress: response.progress,
+                    lastFetchTime: Date.now(),
+                  });
+                }
+              })
+              .catch((error) => {
+                // Silently fail background refresh - keep using cache
+                console.warn("Background refresh failed, using cache:", error);
+              });
+          }
+          return;
+        }
+
+        // No valid cache or force refresh - fetch from API
+        try {
+          set({ loading: true, error: null });
+          const response = await userAPI.getTodayProgress(userId);
+          set({
+            todayProgress: response.progress,
+            loading: false,
+            lastFetchTime: Date.now(),
+            cachedDate: today,
+          });
+        } catch (error: any) {
+          // On error, try to use stale cache if available
+          if (todayProgress && cachedDate === today) {
+            console.warn("API fetch failed, using stale cache:", error);
+            set({
+              loading: false,
+              error: null, // Don't show error if we have cache
+            });
+          } else {
+            set({
+              error: error.message || "Failed to fetch today's progress",
+              loading: false,
+            });
+          }
+        }
+      },
 
   fetchProgressHistory: async (
     userId: string,
@@ -283,4 +396,16 @@ export const useProgressStore = create<ProgressStore>((set, get) => ({
       throw error;
     }
   },
-}));
+    }),
+    {
+      name: "progress-storage",
+      storage: createJSONStorage(() => createProgressStorage()),
+      partialize: (state) => ({
+        todayProgress: state.todayProgress,
+        progressHistory: state.progressHistory,
+        lastFetchTime: state.lastFetchTime,
+        cachedDate: state.cachedDate,
+      }),
+    }
+  )
+);

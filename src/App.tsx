@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { clearExpiredCache } from "@/lib/cache";
 
 // Eagerly loaded pages (critical path)
 import Index from "./pages/Index";
@@ -27,36 +28,43 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<MealLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/register" element={<Registration />} />
-              <Route path="/daily-tracker" element={<DailyTracker />} />
-              <Route path="/weekly-overview" element={<WeeklyOverview />} />
-              <Route path="/goals" element={<Goals />} />
-              <Route path="/goals/create" element={<CreateGoalPage />} />
-              <Route path="/goals/:goalId" element={<GoalDetailPage />} />
-              <Route path="/recipes" element={<Recipes />} />
-              <Route path="/recipes/:recipeId" element={<RecipeDetailPage />} />
-              <Route path="/shopping-list" element={<ShoppingList />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/auth/callback" element={<OAuthCallback />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+const App = () => {
+  // Clear expired cache on app start for better performance
+  useEffect(() => {
+    clearExpiredCache();
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<MealLoader />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/register" element={<Registration />} />
+                <Route path="/daily-tracker" element={<DailyTracker />} />
+                <Route path="/weekly-overview" element={<WeeklyOverview />} />
+                <Route path="/goals" element={<Goals />} />
+                <Route path="/goals/create" element={<CreateGoalPage />} />
+                <Route path="/goals/:goalId" element={<GoalDetailPage />} />
+                <Route path="/recipes" element={<Recipes />} />
+                <Route path="/recipes/:recipeId" element={<RecipeDetailPage />} />
+                <Route path="/shopping-list" element={<ShoppingList />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/auth/callback" element={<OAuthCallback />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

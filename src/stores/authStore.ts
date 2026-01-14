@@ -262,7 +262,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       set({ loading: false });
       console.log(`[googleAuth] ${action} completed successfully`);
     } catch (error) {
-      console.error(`[googleAuth] Error during ${action}:`, error);
+      console.error(`[googleAuth] Error during ${action}:`, {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        // If it's an axios error, log response details
+        response: (error as any)?.response ? {
+          status: (error as any).response.status,
+          statusText: (error as any).response.statusText,
+          data: (error as any).response.data,
+        } : undefined,
+      });
       set({ loading: false });
       throw error;
     }

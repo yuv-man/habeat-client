@@ -182,10 +182,10 @@ const mobileGoogleAuth = async (
       payload.userId = userId;
     }
 
-    console.log(
-      `[mobileGoogleAuth] Calling /auth/google/mobile/${action} with payload:`,
-      { token: idToken.substring(0, 20) + "...", hasUserId: !!payload.userId }
-    );
+    console.log(`[mobileGoogleAuth] Calling /auth/google/mobile/${action}`);
+    console.log(`  API_URL: ${API_URL}`);
+    console.log(`  Full URL: ${API_URL}/auth/google/mobile/${action}`);
+    console.log(`  Has UserId: ${!!payload.userId}`);
 
     const response: AxiosResponse<{
       data?: { token: string; user: IUser; plan?: IPlan };
@@ -217,18 +217,28 @@ const mobileGoogleAuth = async (
       },
     };
   } catch (error) {
-    console.error(`[mobileGoogleAuth] Error:`, error);
     if (axios.isAxiosError(error)) {
+      console.error(`[mobileGoogleAuth] Axios Error Details:`);
+      console.error(`  Message: ${error.message}`);
+      console.error(`  Code: ${error.code || 'none'}`);
+      console.error(`  Status: ${error.response?.status || 'none'}`);
+      console.error(`  StatusText: ${error.response?.statusText || 'none'}`);
+      console.error(`  URL: ${error.config?.url || 'none'}`);
+      console.error(`  BaseURL: ${error.config?.baseURL || 'none'}`);
+      console.error(`  FullURL: ${error.config?.baseURL ? `${error.config.baseURL}${error.config.url}` : error.config?.url || 'none'}`);
+      console.error(`  Method: ${error.config?.method || 'none'}`);
+      console.error(`  Response Data:`, error.response?.data);
+      
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
         `Google ${action} failed. Please try again.`;
-      console.error(`[mobileGoogleAuth] Error details:`, {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-      });
       throw new Error(errorMessage);
+    }
+    console.error(`[mobileGoogleAuth] Non-Axios error:`);
+    console.error(`  Message: ${error instanceof Error ? error.message : String(error)}`);
+    if (error instanceof Error && error.stack) {
+      console.error(`  Stack: ${error.stack}`);
     }
     throw new Error(`An unexpected error occurred during Google ${action}.`);
   }

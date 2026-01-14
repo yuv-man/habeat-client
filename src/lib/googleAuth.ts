@@ -1,6 +1,26 @@
 import { shouldUseMobileAuth } from "./platform";
 
 /**
+ * Initialize SocialLogin for native platforms
+ * Call this as soon as the app loads!
+ */
+export const initializeSocialLogin = async (): Promise<void> => {
+  const webClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+  
+  if (webClientId) {
+    // Dynamic import to avoid accessing plugin before Capacitor bridge is ready
+    const { SocialLogin } = await import('@capgo/capacitor-social-login');
+    await SocialLogin.initialize({
+      google: {
+        // CRITICAL: Use your WEB Client ID here, even for Android!
+        webClientId: webClientId,
+        mode: 'online' 
+      }
+    } as any);
+  }
+};
+
+/**
  * Unified Google Authentication
  * Uses native Capacitor Google Auth on mobile, web OAuth on web
  * Can be forced via VITE_GOOGLE_AUTH_MODE env variable
@@ -16,10 +36,14 @@ export const signInWithGoogle = async (
   if (useMobile) {
     // Native mobile authentication using Capacitor Social Login
     try {
+      console.log("[signInWithGoogle] Mobile flow - Starting Google Sign-In");
+      
       // Dynamic import to avoid TypeScript errors on web
       const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      console.log("[signInWithGoogle] Mobile flow - SocialLogin imported successfully");
 
       // Sign in with Google using the new SocialLogin API
+      console.log("[signInWithGoogle] Mobile flow - Calling SocialLogin.login()");
       const result = await SocialLogin.login({
         provider: "google",
         options: {
@@ -27,16 +51,34 @@ export const signInWithGoogle = async (
         },
       });
 
+      console.log("[signInWithGoogle] Mobile flow - Login result received:", {
+        provider: result.provider,
+        hasResult: !!result.result,
+        hasIdToken: !!result.result?.idToken,
+        hasAccessToken: !!result.result?.accessToken,
+        email: result.result?.email,
+      });
+
       const idToken = result.result.idToken;
 
       if (!idToken) {
+        console.error("[signInWithGoogle] Mobile flow - No idToken in result:", result);
         throw new Error("Failed to get ID token from Google");
       }
 
+      console.log("[signInWithGoogle] Mobile flow - Successfully got idToken, length:", idToken.length);
       return idToken;
     } catch (error) {
+      console.error("[signInWithGoogle] Mobile flow - Error caught:", {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+      });
+      
       // Handle user cancellation
       if (error instanceof Error && error.message.includes("cancel")) {
+        console.log("[signInWithGoogle] Mobile flow - User cancelled sign-in");
         throw new Error("Google sign-in was cancelled");
       }
       throw error;

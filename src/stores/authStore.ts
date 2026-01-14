@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   IUser,
   IMeal,
+  IPlan,
   AuthState,
   AuthActions,
   MealTimes,
@@ -9,6 +10,11 @@ import {
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockUser, mockPlan } from "@/mocks/planMock";
+import {
+  getCachedData,
+  setCachedData,
+  DEFAULT_TTL,
+} from "@/lib/cache";
 
 // Default meal times
 const DEFAULT_MEAL_TIMES: MealTimes = {
@@ -88,19 +94,62 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   fetchUser: async (token: string, onSuccess?: () => void) => {
+    const { user: cachedUser, plan: cachedPlan } = get();
+    
+    // Cache-first: If we have cached data, use it immediately and refresh in background
+    if (cachedUser && cachedPlan) {
+      // Set loading to false immediately to show cached data
+      set({ loading: false });
+      
+      // Refresh in background
+      try {
+        const { user, plan } = await userAPI.fetchUser(token);
+        get().setUser(user);
+        get().setPlan(plan);
+        // Cache the fresh data
+        setCachedData("auth_user", user, DEFAULT_TTL.AUTH);
+        if (plan) {
+          setCachedData("auth_plan", plan, DEFAULT_TTL.PLAN);
+        }
+        onSuccess?.();
+      } catch (error: any) {
+        console.error("Error refreshing user data:", error);
+        // Only logout if it's an auth error (401), not for network errors
+        if (error?.response?.status === 401 || error?.message?.includes("401")) {
+          get().logout();
+        }
+        // For other errors, keep using cached data
+      }
+      return;
+    }
+
+    // No cache available - fetch from API
     try {
+      set({ loading: true });
       const { user, plan } = await userAPI.fetchUser(token);
       get().setUser(user);
       get().setPlan(plan);
+      // Cache the fresh data
+      setCachedData("auth_user", user, DEFAULT_TTL.AUTH);
+      if (plan) {
+        setCachedData("auth_plan", plan, DEFAULT_TTL.PLAN);
+      }
       onSuccess?.();
     } catch (error: any) {
       console.error("Error fetching user:", error);
       // Only logout if it's an auth error (401), not for network errors
-      // This prevents losing session on temporary network issues
       if (error?.response?.status === 401 || error?.message?.includes("401")) {
         get().logout();
       }
-      // For other errors, keep the user data from localStorage
+      // For other errors, try to load from cache if available
+      const cachedUserData = getCachedData<IUser>("auth_user", { ttl: DEFAULT_TTL.AUTH });
+      const cachedPlanData = getCachedData<IPlan>("auth_plan", { ttl: DEFAULT_TTL.PLAN });
+      if (cachedUserData) {
+        get().setUser(cachedUserData);
+        if (cachedPlanData) {
+          get().setPlan(cachedPlanData);
+        }
+      }
     } finally {
       set({ loading: false });
     }

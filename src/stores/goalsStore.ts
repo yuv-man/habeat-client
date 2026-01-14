@@ -1,13 +1,19 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { Goal } from "@/components/goals/Goals";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
+import {
+  getCachedData,
+  setCachedData,
+  DEFAULT_TTL,
+} from "@/lib/cache";
 
 interface GoalsState {
   goals: Goal[];
   loading: boolean;
   error: string | null;
+  lastFetchTime: number | null; // Timestamp of last successful fetch
 }
 
 interface GoalsActions {
@@ -33,6 +39,49 @@ interface GoalsActions {
 
 type GoalsStore = GoalsState & GoalsActions;
 
+// Custom storage with TTL support for goals data
+const createGoalsStorage = () => {
+  return {
+    getItem: (name: string): string | null => {
+      try {
+        const cached = getCachedData<GoalsState>(
+          name,
+          { ttl: DEFAULT_TTL.GOALS }
+        );
+        if (cached) {
+          return JSON.stringify(cached);
+        }
+        return null;
+      } catch (error) {
+        console.error("Error reading goals cache:", error);
+        return null;
+      }
+    },
+    setItem: (name: string, value: string): void => {
+      try {
+        const state: GoalsState = JSON.parse(value);
+        setCachedData(
+          name,
+          {
+            ...state,
+            lastFetchTime: Date.now(),
+          },
+          DEFAULT_TTL.GOALS
+        );
+      } catch (error) {
+        console.error("Error setting goals cache:", error);
+      }
+    },
+    removeItem: (name: string): void => {
+      try {
+        localStorage.removeItem(`cache_${name}`);
+      } catch (error) {
+        console.error("Error removing goals cache:", error);
+      }
+    },
+  };
+};
+
 export const useGoalsStore = create<GoalsStore>()(
   persist(
     (set, get) => ({
@@ -40,6 +89,7 @@ export const useGoalsStore = create<GoalsStore>()(
       goals: [],
       loading: false,
       error: null,
+      lastFetchTime: null,
 
       // Actions
       setGoals: (goals) => set({ goals }),
@@ -52,6 +102,51 @@ export const useGoalsStore = create<GoalsStore>()(
           return;
         }
 
+        const { goals: cachedGoals, lastFetchTime } = get();
+
+        // Cache-first strategy: Use cached data if available and valid
+        if (
+          cachedGoals.length > 0 &&
+          lastFetchTime &&
+          Date.now() - lastFetchTime < DEFAULT_TTL.GOALS
+        ) {
+          // Cache is valid, use it immediately
+          set({ loading: false, error: null });
+          
+          // Refresh in background if cache is getting stale (> 5 minutes old)
+          if (Date.now() - lastFetchTime > 5 * 60 * 1000) {
+            // Background refresh - don't set loading state
+            userAPI
+              .getGoals(userId)
+              .then((response) => {
+                const apiGoals = response.data || [];
+                const mappedGoals: Goal[] = apiGoals.map((g: any) => ({
+                  id: g._id || g.id,
+                  title: g.title || "",
+                  description: g.description || "",
+                  current: g.current || 0,
+                  target: g.target || 0,
+                  unit: g.unit || "",
+                  icon: g.icon || "workout",
+                  status: g.achieved ? "achieved" : g.status || "in_progress",
+                  startDate: g.startDate,
+                  milestones: g.milestones,
+                  progressHistory: g.progressHistory,
+                }));
+                set({
+                  goals: mappedGoals,
+                  lastFetchTime: Date.now(),
+                });
+              })
+              .catch((error) => {
+                // Silently fail background refresh - keep using cache
+                console.warn("Background refresh failed, using cache:", error);
+              });
+          }
+          return;
+        }
+
+        // No valid cache or force refresh - fetch from API
         try {
           set({ loading: true, error: null });
           const response = await userAPI.getGoals(userId);
@@ -74,12 +169,22 @@ export const useGoalsStore = create<GoalsStore>()(
           set({
             goals: mappedGoals,
             loading: false,
+            lastFetchTime: Date.now(),
           });
         } catch (error: any) {
-          set({
-            error: error.message || "Failed to fetch goals",
-            loading: false,
-          });
+          // On error, try to use stale cache if available
+          if (cachedGoals.length > 0) {
+            console.warn("API fetch failed, using stale cache:", error);
+            set({
+              loading: false,
+              error: null, // Don't show error if we have cache
+            });
+          } else {
+            set({
+              error: error.message || "Failed to fetch goals",
+              loading: false,
+            });
+          }
         }
       },
 
@@ -324,8 +429,10 @@ export const useGoalsStore = create<GoalsStore>()(
     }),
     {
       name: "goals-storage",
+      storage: createJSONStorage(() => createGoalsStorage()),
       partialize: (state) => ({
         goals: state.goals,
+        lastFetchTime: state.lastFetchTime,
       }),
     }
   )

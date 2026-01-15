@@ -11,8 +11,8 @@ import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockUser, mockPlan } from "@/mocks/planMock";
 import {
-  getCachedData,
-  setCachedData,
+  getCachedDataSync,
+  setCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
 
@@ -103,14 +103,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       
       // Refresh in background
       try {
-        const { user, plan } = await userAPI.fetchUser(token);
-        get().setUser(user);
-        get().setPlan(plan);
-        // Cache the fresh data
-        setCachedData("auth_user", user, DEFAULT_TTL.AUTH);
-        if (plan) {
-          setCachedData("auth_plan", plan, DEFAULT_TTL.PLAN);
-        }
+      const { user, plan } = await userAPI.fetchUser(token);
+      get().setUser(user);
+      get().setPlan(plan);
+      // Cache the fresh data
+      setCachedDataSync("auth_user", user, DEFAULT_TTL.AUTH);
+      if (plan) {
+        setCachedDataSync("auth_plan", plan, DEFAULT_TTL.PLAN);
+      }
         onSuccess?.();
       } catch (error: any) {
         console.error("Error refreshing user data:", error);
@@ -130,9 +130,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       get().setUser(user);
       get().setPlan(plan);
       // Cache the fresh data
-      setCachedData("auth_user", user, DEFAULT_TTL.AUTH);
+      setCachedDataSync("auth_user", user, DEFAULT_TTL.AUTH);
       if (plan) {
-        setCachedData("auth_plan", plan, DEFAULT_TTL.PLAN);
+        setCachedDataSync("auth_plan", plan, DEFAULT_TTL.PLAN);
       }
       onSuccess?.();
     } catch (error: any) {
@@ -142,8 +142,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().logout();
       }
       // For other errors, try to load from cache if available
-      const cachedUserData = getCachedData<IUser>("auth_user", { ttl: DEFAULT_TTL.AUTH });
-      const cachedPlanData = getCachedData<IPlan>("auth_plan", { ttl: DEFAULT_TTL.PLAN });
+      const cachedUserData = getCachedDataSync<IUser>("auth_user", { ttl: DEFAULT_TTL.AUTH });
+      const cachedPlanData = getCachedDataSync<IPlan>("auth_plan", { ttl: DEFAULT_TTL.PLAN });
       if (cachedUserData) {
         get().setUser(cachedUserData);
         if (cachedPlanData) {

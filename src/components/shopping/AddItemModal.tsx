@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { IngredientInput } from "@/lib/shoppingHelpers";
+import { getCategoryIcon } from "@/lib/shoppingCategoryIcons";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -115,12 +116,18 @@ const AddItemModal = ({
                 onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white text-left flex items-center justify-between"
               >
-                <span
-                  className={
-                    newItem.category ? "text-gray-900" : "text-gray-400"
-                  }
-                >
-                  {newItem.category || "Select a category"}
+                <span className="flex items-center gap-2">
+                  {newItem.category ? (
+                    <>
+                      {(() => {
+                        const { icon: CategoryIcon, color } = getCategoryIcon(newItem.category);
+                        return <CategoryIcon className={`w-4 h-4 ${color}`} />;
+                      })()}
+                      <span className="text-gray-900">{newItem.category}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400">Select a category</span>
+                  )}
                 </span>
                 <ChevronDown
                   className={`w-5 h-5 text-gray-400 transition-transform ${
@@ -132,25 +139,29 @@ const AddItemModal = ({
               {/* Dropdown Menu */}
               {showCategoryDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-10">
-                  {categories.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => {
-                        setNewItem({ ...newItem, category });
-                        setShowCategoryDropdown(false);
-                      }}
-                      className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition ${
-                        newItem.category === category
-                          ? "bg-green-50 text-green-600"
-                          : "text-gray-700"
-                      } ${
-                        category === "Other" ? "border-t border-gray-100" : ""
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  ))}
+                  {categories.map((category) => {
+                    const { icon: CategoryIcon, color } = getCategoryIcon(category);
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => {
+                          setNewItem({ ...newItem, category });
+                          setShowCategoryDropdown(false);
+                        }}
+                        className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 transition flex items-center gap-2 ${
+                          newItem.category === category
+                            ? "bg-green-50 text-green-600"
+                            : "text-gray-700"
+                        } ${
+                          category === "Other" ? "border-t border-gray-100" : ""
+                        }`}
+                      >
+                        <CategoryIcon className={`w-4 h-4 ${color}`} />
+                        {category}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

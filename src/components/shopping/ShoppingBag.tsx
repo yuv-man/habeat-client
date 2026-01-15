@@ -1,36 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { IngredientInput } from "@/lib/shoppingHelpers";
+import { getCategoryIcon } from "@/lib/shoppingCategoryIcons";
 
 interface ShoppingBagProps {
   ingredients: IngredientInput[];
   onItemToggle?: (item: IngredientInput) => void;
   onItemDelete?: (itemName: string) => void;
 }
-
-// Generate a consistent color for a category based on its name
-const getCategoryColor = (category: string): string => {
-  const colors = [
-    "text-green-600",
-    "text-red-500",
-    "text-amber-600",
-    "text-orange-500",
-    "text-blue-500",
-    "text-purple-500",
-    "text-pink-500",
-    "text-teal-500",
-    "text-indigo-500",
-    "text-cyan-500",
-  ];
-
-  // Simple hash function to get consistent color per category
-  let hash = 0;
-  for (let i = 0; i < category.length; i++) {
-    hash = category.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % colors.length;
-  return colors[index];
-};
 
 const ShoppingBag = ({
   ingredients,
@@ -85,16 +62,19 @@ const ShoppingBag = ({
 
   return (
     <div className="space-y-6">
-      {sortedCategories.map((category) => (
-        <div
-          key={category}
-          className="bg-white rounded-lg shadow-sm border border-gray-100 p-4"
-        >
-          <h2
-            className={`font-bold text-lg mb-4 ${getCategoryColor(category)}`}
+      {sortedCategories.map((category) => {
+        const { icon: CategoryIcon, color } = getCategoryIcon(category);
+        return (
+          <div
+            key={category}
+            className="bg-white rounded-lg shadow-sm border border-gray-100 p-4"
           >
-            {category}
-          </h2>
+            <h2
+              className={`font-bold text-lg mb-4 ${color} flex items-center gap-2`}
+            >
+              <CategoryIcon className="w-5 h-5" />
+              {category}
+            </h2>
           <div className="space-y-0">
             {groupedByCategory[category].map((item, itemIndex) => (
               <div key={item.name}>
@@ -134,7 +114,8 @@ const ShoppingBag = ({
             ))}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

@@ -1,7 +1,17 @@
 /**
  * Cache utility with TTL (Time To Live) support
  * Provides cache expiration and invalidation for mobile app performance
+ * 
+ * Uses Capacitor Preferences API on native platforms for reliable storage
+ * Falls back to localStorage on web
  */
+
+import {
+  storageGetItem,
+  storageSetItem,
+  storageRemoveItem,
+  storageGetAllKeys,
+} from "./storage";
 
 export interface CacheEntry<T> {
   data: T;
@@ -35,8 +45,38 @@ export function isCacheValid<T>(entry: CacheEntry<T> | null): boolean {
 
 /**
  * Get cached data if valid, otherwise return null
+ * NOTE: This is async on native platforms. Use await or .then()
  */
-export function getCachedData<T>(
+export async function getCachedData<T>(
+  key: string,
+  config?: CacheConfig
+): Promise<T | null> {
+  try {
+    const fullKey = config?.keyPrefix
+      ? `${config.keyPrefix}_${key}`
+      : `cache_${key}`;
+    const cached = await storageGetItem(fullKey);
+    if (!cached) return null;
+
+    const entry: CacheEntry<T> = JSON.parse(cached);
+    if (isCacheValid(entry)) {
+      return entry.data;
+    }
+
+    // Cache expired, remove it
+    await storageRemoveItem(fullKey);
+    return null;
+  } catch (error) {
+    console.error(`Error reading cache for key ${key}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Synchronous version for compatibility (web only)
+ * On native platforms, returns null - use async version instead
+ */
+export function getCachedDataSync<T>(
   key: string,
   config?: CacheConfig
 ): T | null {
@@ -62,9 +102,51 @@ export function getCachedData<T>(
 }
 
 /**
- * Set cached data with TTL
+ * Set cached data with TTL (async)
  */
-export function setCachedData<T>(
+export async function setCachedData<T>(
+  key: string,
+  data: T,
+  ttl?: number,
+  config?: CacheConfig
+): Promise<void> {
+  try {
+    const fullKey = config?.keyPrefix
+      ? `${config.keyPrefix}_${key}`
+      : `cache_${key}`;
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: Date.now(),
+      ttl: ttl || config?.ttl || DEFAULT_TTL.PROGRESS,
+    };
+    await storageSetItem(fullKey, JSON.stringify(entry));
+  } catch (error) {
+    console.error(`Error setting cache for key ${key}:`, error);
+    // If storage is full, try to clear old cache entries
+    if (error instanceof Error && error.message.includes("QuotaExceededError")) {
+      await clearExpiredCache();
+      // Retry once
+      try {
+        const fullKey = config?.keyPrefix
+          ? `${config.keyPrefix}_${key}`
+          : `cache_${key}`;
+        const entry: CacheEntry<T> = {
+          data,
+          timestamp: Date.now(),
+          ttl: ttl || config?.ttl || DEFAULT_TTL.PROGRESS,
+        };
+        await storageSetItem(fullKey, JSON.stringify(entry));
+      } catch (retryError) {
+        console.error(`Failed to cache after cleanup:`, retryError);
+      }
+    }
+  }
+}
+
+/**
+ * Synchronous version for compatibility (web only)
+ */
+export function setCachedDataSync<T>(
   key: string,
   data: T,
   ttl?: number,
@@ -84,7 +166,7 @@ export function setCachedData<T>(
     console.error(`Error setting cache for key ${key}:`, error);
     // If storage is full, try to clear old cache entries
     if (error instanceof DOMException && error.name === "QuotaExceededError") {
-      clearExpiredCache();
+      clearExpiredCacheSync();
       // Retry once
       try {
         const fullKey = config?.keyPrefix
@@ -104,9 +186,26 @@ export function setCachedData<T>(
 }
 
 /**
- * Remove cached data
+ * Remove cached data (async)
  */
-export function removeCachedData(key: string, config?: CacheConfig): void {
+export async function removeCachedData(
+  key: string,
+  config?: CacheConfig
+): Promise<void> {
+  try {
+    const fullKey = config?.keyPrefix
+      ? `${config.keyPrefix}_${key}`
+      : `cache_${key}`;
+    await storageRemoveItem(fullKey);
+  } catch (error) {
+    console.error(`Error removing cache for key ${key}:`, error);
+  }
+}
+
+/**
+ * Synchronous version for compatibility (web only)
+ */
+export function removeCachedDataSync(key: string, config?: CacheConfig): void {
   try {
     const fullKey = config?.keyPrefix
       ? `${config.keyPrefix}_${key}`
@@ -118,9 +217,44 @@ export function removeCachedData(key: string, config?: CacheConfig): void {
 }
 
 /**
- * Clear all expired cache entries
+ * Clear all expired cache entries (async)
  */
-export function clearExpiredCache(): void {
+export async function clearExpiredCache(): Promise<void> {
+  try {
+    const keys = await storageGetAllKeys();
+    let clearedCount = 0;
+
+    for (const key of keys) {
+      if (key.startsWith("cache_") || key.includes("_cache_")) {
+        try {
+          const cached = await storageGetItem(key);
+          if (cached) {
+            const entry: CacheEntry<unknown> = JSON.parse(cached);
+            if (!isCacheValid(entry)) {
+              await storageRemoveItem(key);
+              clearedCount++;
+            }
+          }
+        } catch (error) {
+          // Invalid cache entry, remove it
+          await storageRemoveItem(key);
+          clearedCount++;
+        }
+      }
+    }
+
+    if (clearedCount > 0) {
+      console.log(`Cleared ${clearedCount} expired cache entries`);
+    }
+  } catch (error) {
+    console.error("Error clearing expired cache:", error);
+  }
+}
+
+/**
+ * Synchronous version for compatibility (web only)
+ */
+export function clearExpiredCacheSync(): void {
   try {
     const keys = Object.keys(localStorage);
     let clearedCount = 0;
@@ -153,9 +287,25 @@ export function clearExpiredCache(): void {
 }
 
 /**
- * Clear all cache entries (use with caution)
+ * Clear all cache entries (use with caution) - async
  */
-export function clearAllCache(): void {
+export async function clearAllCache(): Promise<void> {
+  try {
+    const keys = await storageGetAllKeys();
+    for (const key of keys) {
+      if (key.startsWith("cache_") || key.includes("_cache_")) {
+        await storageRemoveItem(key);
+      }
+    }
+  } catch (error) {
+    console.error("Error clearing all cache:", error);
+  }
+}
+
+/**
+ * Synchronous version for compatibility (web only)
+ */
+export function clearAllCacheSync(): void {
   try {
     const keys = Object.keys(localStorage);
     for (const key of keys) {
@@ -169,14 +319,17 @@ export function clearAllCache(): void {
 }
 
 /**
- * Get cache age in milliseconds
+ * Get cache age in milliseconds (async)
  */
-export function getCacheAge(key: string, config?: CacheConfig): number | null {
+export async function getCacheAge(
+  key: string,
+  config?: CacheConfig
+): Promise<number | null> {
   try {
     const fullKey = config?.keyPrefix
       ? `${config.keyPrefix}_${key}`
       : `cache_${key}`;
-    const cached = localStorage.getItem(fullKey);
+    const cached = await storageGetItem(fullKey);
     if (!cached) return null;
 
     const entry: CacheEntry<unknown> = JSON.parse(cached);

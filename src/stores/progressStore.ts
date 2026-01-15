@@ -5,9 +5,9 @@ import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
 import {
-  getCachedData,
-  setCachedData,
-  removeCachedData,
+  getCachedDataSync,
+  setCachedDataSync,
+  removeCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
 
@@ -58,7 +58,7 @@ const createProgressStorage = () => {
   return {
     getItem: (name: string): string | null => {
       try {
-        const cached = getCachedData<ProgressState>(
+        const cached = getCachedDataSync<ProgressState>(
           name,
           { ttl: DEFAULT_TTL.PROGRESS }
         );
@@ -80,7 +80,7 @@ const createProgressStorage = () => {
       try {
         const state: ProgressState = JSON.parse(value);
         const today = getTodayDateString();
-        setCachedData(
+        setCachedDataSync(
           name,
           {
             ...state,
@@ -94,7 +94,7 @@ const createProgressStorage = () => {
       }
     },
     removeItem: (name: string): void => {
-      removeCachedData(name);
+      removeCachedDataSync(name);
     },
   };
 };

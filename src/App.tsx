@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { clearExpiredCache } from "@/lib/cache";
+import { clearExpiredCacheSync } from "@/lib/cache";
 
 // Eagerly loaded pages (critical path)
 import Index from "./pages/Index";
@@ -31,7 +31,7 @@ const queryClient = new QueryClient();
 const App = () => {
   // Clear expired cache on app start for better performance
   useEffect(() => {
-    clearExpiredCache();
+    clearExpiredCacheSync();
   }, []);
 
   return (

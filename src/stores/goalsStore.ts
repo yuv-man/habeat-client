@@ -4,8 +4,8 @@ import { Goal } from "@/components/goals/Goals";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import {
-  getCachedData,
-  setCachedData,
+  getCachedDataSync,
+  setCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
 
@@ -44,7 +44,7 @@ const createGoalsStorage = () => {
   return {
     getItem: (name: string): string | null => {
       try {
-        const cached = getCachedData<GoalsState>(
+        const cached = getCachedDataSync<GoalsState>(
           name,
           { ttl: DEFAULT_TTL.GOALS }
         );
@@ -60,7 +60,7 @@ const createGoalsStorage = () => {
     setItem: (name: string, value: string): void => {
       try {
         const state: GoalsState = JSON.parse(value);
-        setCachedData(
+        setCachedDataSync(
           name,
           {
             ...state,
@@ -74,7 +74,7 @@ const createGoalsStorage = () => {
     },
     removeItem: (name: string): void => {
       try {
-        localStorage.removeItem(`cache_${name}`);
+        removeCachedDataSync(name);
       } catch (error) {
         console.error("Error removing goals cache:", error);
       }

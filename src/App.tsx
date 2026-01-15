@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { clearExpiredCacheSync } from "@/lib/cache";
+import BackNavigationHandler from "@/components/navigation/BackNavigationHandler";
 
 // Eagerly loaded pages (critical path)
 import Index from "./pages/Index";
@@ -41,6 +42,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <BackNavigationHandler />
             <Suspense fallback={<MealLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -51,7 +53,10 @@ const App = () => {
                 <Route path="/goals/create" element={<CreateGoalPage />} />
                 <Route path="/goals/:goalId" element={<GoalDetailPage />} />
                 <Route path="/recipes" element={<Recipes />} />
-                <Route path="/recipes/:recipeId" element={<RecipeDetailPage />} />
+                <Route
+                  path="/recipes/:recipeId"
+                  element={<RecipeDetailPage />}
+                />
                 <Route path="/shopping-list" element={<ShoppingList />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/analytics" element={<Analytics />} />

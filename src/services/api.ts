@@ -137,24 +137,64 @@ const oauthAuth = async (
   accessToken?: string
 ): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
   try {
-    // Use different endpoints for signin and signup
-    // Signup: /api/auth/google/signup
-    // Signin: /api/auth/google/signin
-    const payload: any = { provider, userId, accessToken };
+    // Determine if we're on mobile or web platform
+    const { isNativePlatform } = await import("@/lib/platform");
+    const useMobile = isNativePlatform();
+
+    // Use platform-specific endpoints
+    // Mobile: /auth/google/mobile/signup or /auth/google/mobile/signin
+    // Web: /auth/google/web/signup or /auth/google/web/signin
+    const endpoint = useMobile
+      ? `/auth/${provider}/mobile/${action}`
+      : `/auth/${provider}/web/${action}`;
+
+    // Prepare payload based on platform
+    let payload: any;
+    if (useMobile) {
+      // Mobile expects idToken
+      payload = { idToken: accessToken };
+      if (userId) {
+        payload.userId = userId;
+      }
+    } else {
+      // Web expects accessToken
+      payload = { accessToken, provider, userId };
+    }
+
+    console.log(
+      `[oauthAuth] Calling ${endpoint} (${useMobile ? "mobile" : "web"})`
+    );
 
     const response: AxiosResponse<{
-      data: { token: string; user: IUser; plan?: IPlan };
-    }> = await userClient.post(`/auth/${provider}/${action}`, payload);
+      data?: { token: string; user: IUser; plan?: IPlan };
+      token?: string;
+      user?: IUser;
+      plan?: IPlan;
+    }> = await userClient.post(endpoint, payload);
+
+    // Handle different response structures
+    const responseData = response.data.data || response.data;
+
+    if (!responseData.token || !responseData.user) {
+      console.error("[oauthAuth] Invalid response structure:", response.data);
+      throw new Error("Invalid response from server");
+    }
 
     return {
       data: {
-        token: response.data.data.token,
-        user: response.data.data.user,
-        plan: response.data.data.plan,
+        token: responseData.token,
+        user: responseData.user,
+        plan: responseData.plan,
       },
     };
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      console.error(`[oauthAuth] Error:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+      });
       throw new Error(
         error.response?.data?.message ||
           `OAuth ${action} failed. Please try again.`
@@ -176,7 +216,7 @@ const mobileGoogleAuth = async (
     const payload: { idToken: string; userId?: string; userData?: any } = {
       idToken: idToken,
     };
-    
+
     // Only include userId if provided (though mobile endpoints don't require it)
     if (userId) {
       payload.userId = userId;
@@ -220,15 +260,21 @@ const mobileGoogleAuth = async (
     if (axios.isAxiosError(error)) {
       console.error(`[mobileGoogleAuth] Axios Error Details:`);
       console.error(`  Message: ${error.message}`);
-      console.error(`  Code: ${error.code || 'none'}`);
-      console.error(`  Status: ${error.response?.status || 'none'}`);
-      console.error(`  StatusText: ${error.response?.statusText || 'none'}`);
-      console.error(`  URL: ${error.config?.url || 'none'}`);
-      console.error(`  BaseURL: ${error.config?.baseURL || 'none'}`);
-      console.error(`  FullURL: ${error.config?.baseURL ? `${error.config.baseURL}${error.config.url}` : error.config?.url || 'none'}`);
-      console.error(`  Method: ${error.config?.method || 'none'}`);
+      console.error(`  Code: ${error.code || "none"}`);
+      console.error(`  Status: ${error.response?.status || "none"}`);
+      console.error(`  StatusText: ${error.response?.statusText || "none"}`);
+      console.error(`  URL: ${error.config?.url || "none"}`);
+      console.error(`  BaseURL: ${error.config?.baseURL || "none"}`);
+      console.error(
+        `  FullURL: ${
+          error.config?.baseURL
+            ? `${error.config.baseURL}${error.config.url}`
+            : error.config?.url || "none"
+        }`
+      );
+      console.error(`  Method: ${error.config?.method || "none"}`);
       console.error(`  Response Data:`, error.response?.data);
-      
+
       const errorMessage =
         error.response?.data?.message ||
         error.message ||
@@ -236,7 +282,9 @@ const mobileGoogleAuth = async (
       throw new Error(errorMessage);
     }
     console.error(`[mobileGoogleAuth] Non-Axios error:`);
-    console.error(`  Message: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `  Message: ${error instanceof Error ? error.message : String(error)}`
+    );
     if (error instanceof Error && error.stack) {
       console.error(`  Stack: ${error.stack}`);
     }
@@ -256,7 +304,7 @@ const webGoogleAuth = async (
     const payload: { accessToken: string; userId?: string; userData?: any } = {
       accessToken: idToken,
     };
-    
+
     // Only include userId if provided and it's signin
     if (userId && action === "signin") {
       payload.userId = userId;

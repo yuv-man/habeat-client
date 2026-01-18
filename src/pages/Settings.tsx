@@ -26,6 +26,7 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
 import MealLoader from "@/components/helper/MealLoader";
+import { NotificationSettings } from "@/components/settings";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -520,6 +521,9 @@ const Settings = () => {
               </div>
             </div>
           </div>
+
+          {/* Notification Settings */}
+          <NotificationSettings />
 
           {/* Preferences Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">

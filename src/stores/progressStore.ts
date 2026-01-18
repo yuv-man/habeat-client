@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { IDailyProgress } from "@/types/interfaces";
+import { IDailyProgress, IEngagementResult } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
@@ -10,6 +10,9 @@ import {
   removeCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
+
+// Import engagement store for handling engagement results
+import { useEngagementStore } from "./engagementStore";
 
 interface ProgressState {
   todayProgress: IDailyProgress | null;
@@ -337,7 +340,15 @@ export const useProgressStore = create<ProgressStore>()(
 
     // Update backend in background
     try {
-      await userAPI.completeMeal(userId, date, mealType, mealId);
+      const response = await userAPI.completeMeal(userId, date, mealType, mealId);
+
+      // Handle engagement result if present (only when completing, not uncompleting)
+      const responseData = response.data as any;
+      if (responseData?.engagement) {
+        const engagementResult: IEngagementResult = responseData.engagement;
+        // Use the engagement store to handle the result and show celebration
+        useEngagementStore.getState().handleEngagementResult(engagementResult);
+      }
     } catch (error: any) {
       // Rollback on error
       set({ todayProgress: originalProgress });

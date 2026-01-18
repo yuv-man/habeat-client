@@ -1,32 +1,37 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import "@/styles/dailyScreen.css";
 import {
   GlassWater,
   Flame,
   Trash2,
   Check,
-  CalendarDays,
-  Sparkles,
-  X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { IDailyProgress, WorkoutData } from "@/types/interfaces";
+import { IDailyProgress, WorkoutData, IMeal } from "@/types/interfaces";
 import MealLoader from "../helper/MealLoader";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import MealCard from "./MealCard";
 import { useProgressStore } from "@/stores/progressStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useEngagementStore } from "@/stores/engagementStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
 import { formatTime12Hour, formatDisplayDate } from "@/lib/dateUtils";
 import FastingClock from "./FastingClock";
 import NutritionProgressBar from "@/components/helper/NutritionProgressBar";
-import { Button } from "@/components/ui/button";
+import { NutritionCircularProgressGrid } from "@/components/helper/NutritionCircularProgressGrid";
+import { LevelUpCelebration } from "@/components/engagement";
+import {
+  ChallengesBanner,
+  ChallengeClaimCelebration,
+} from "@/components/challenges";
+import { DeleteWorkoutModal } from "./DeleteWorkoutModal";
+import { ExpiredPlanCard } from "./ExpiredPlanCard";
 
 const DailyMealScreen = () => {
-  const navigate = useNavigate();
   const [currentDate] = useState(new Date());
 
   // Use selectors to prevent unnecessary re-renders
@@ -44,6 +49,11 @@ const DailyMealScreen = () => {
 
   // Favorites store
   const fetchFavorites = useFavoritesStore((state) => state.fetchFavorites);
+
+  // Engagement store
+  const fetchEngagementStats = useEngagementStore((state) => state.fetchStats);
+  const engagementStats = useEngagementStore((state) => state.stats);
+  const engagementLoading = useEngagementStore((state) => state.loading);
 
   // Check if plan is expired
   const isPlanExpired = useMemo(() => {
@@ -74,10 +84,13 @@ const DailyMealScreen = () => {
     null
   );
 
+  // Nutrition progress collapse state
+  const [isNutritionExpanded, setIsNutritionExpanded] = useState(false);
+
   // Track if we've already fetched to prevent duplicate calls
   const hasFetchedRef = useRef(false);
 
-  // Fetch progress and favorites only once when user is available
+  // Fetch progress, favorites, and engagement only once when user is available
   useEffect(() => {
     if (!userId || hasFetchedRef.current) {
       return;
@@ -86,7 +99,15 @@ const DailyMealScreen = () => {
     hasFetchedRef.current = true;
     fetchTodayProgress(userId);
     fetchFavorites(userId);
-  }, [userId, fetchTodayProgress, fetchFavorites]);
+    fetchEngagementStats();
+  }, [userId, fetchTodayProgress, fetchFavorites, fetchEngagementStats]);
+
+  // Fetch engagement stats on mount if not loaded
+  useEffect(() => {
+    if (!engagementStats && !engagementLoading) {
+      fetchEngagementStats();
+    }
+  }, [engagementStats, engagementLoading, fetchEngagementStats]);
 
   // Sync store progress to local state
   useEffect(() => {
@@ -104,6 +125,119 @@ const DailyMealScreen = () => {
   const getMealTime = (mealType: string) => {
     const time = mealTimes[mealType as keyof typeof mealTimes] || "12:00";
     return formatTime12Hour(time);
+  };
+
+  // Helper function to determine meal status
+  const getMealStatus = (
+    meal: IMeal,
+    mealType: string
+  ): "past" | "current" | "future" => {
+    // Snacks can NEVER be current - they're always past or future
+    if (mealType === "snacks") {
+      if (meal.done) {
+        return "past";
+      }
+      return "future";
+    }
+
+    // Use local time (getHours/getMinutes use local timezone)
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight (local time)
+
+    // Get meal time in minutes since midnight (local time)
+    const mealTimeStr =
+      mealTimes[mealType as keyof typeof mealTimes] || "12:00";
+    const [mealHour, mealMinute] = mealTimeStr.split(":").map(Number);
+    const mealTime = mealHour * 60 + mealMinute;
+    const mealTimeMinus30Min = mealTime - 30; // 30 minutes before meal time
+    const mealTimePlusOneHour = mealTime + 60; // meal time + 1 hour
+
+    // If meal is completed (eaten), it's past
+    if (meal.done) {
+      return "past";
+    }
+
+    // Get all meal times for comparison (breakfast, lunch, dinner only - snacks excluded)
+    const breakfastTime = mealTimes.breakfast
+      ? (() => {
+          const [h, m] = mealTimes.breakfast.split(":").map(Number);
+          return h * 60 + m;
+        })()
+      : 8 * 60; // 8:00 default
+    const lunchTime = mealTimes.lunch
+      ? (() => {
+          const [h, m] = mealTimes.lunch.split(":").map(Number);
+          return h * 60 + m;
+        })()
+      : 12 * 60 + 30; // 12:30 default
+    const dinnerTime = mealTimes.dinner
+      ? (() => {
+          const [h, m] = mealTimes.dinner.split(":").map(Number);
+          return h * 60 + m;
+        })()
+      : 19 * 60; // 19:00 default
+
+    // Calculate meal times + 1 hour to check if they're past
+    const breakfastTimePlusOneHour = breakfastTime + 60;
+    const lunchTimePlusOneHour = lunchTime + 60;
+    const dinnerTimePlusOneHour = dinnerTime + 60;
+
+    // Check if meal time + 1 hour has passed for this specific meal
+    if (currentTime >= mealTimePlusOneHour) {
+      return "past";
+    }
+
+    // Check completion status of other meals (if dailyProgress is available)
+    const breakfastDone = dailyProgress?.meals?.breakfast?.done || false;
+    const lunchDone = dailyProgress?.meals?.lunch?.done || false;
+    const dinnerDone = dailyProgress?.meals?.dinner?.done || false;
+
+    // Determine which meal should be "current" based on completion status and time:
+    // Priority: Check if previous meals are completed first, then check time
+    let currentMealType: string;
+
+    if (lunchDone) {
+      // Lunch is completed, dinner is current
+      currentMealType = "dinner";
+    } else if (breakfastDone) {
+      // Breakfast is completed, lunch is current
+      currentMealType = "lunch";
+    } else if (
+      dinnerDone ||
+      currentTime >= dinnerTimePlusOneHour ||
+      currentTime < breakfastTime
+    ) {
+      // Dinner is completed or past (or before breakfast), breakfast (next day) is current
+      currentMealType = "breakfast";
+    } else if (currentTime >= lunchTimePlusOneHour) {
+      // Lunch time + 1 hour has passed, dinner is current
+      currentMealType = "dinner";
+    } else if (currentTime >= breakfastTimePlusOneHour) {
+      // Breakfast time + 1 hour has passed, lunch is current
+      currentMealType = "lunch";
+    } else {
+      // No meal has passed yet, determine based on time windows
+      if (currentTime >= breakfastTime && currentTime < lunchTime) {
+        currentMealType = "breakfast";
+      } else if (currentTime >= lunchTime && currentTime < dinnerTime) {
+        currentMealType = "lunch";
+      } else {
+        currentMealType = "dinner";
+      }
+    }
+
+    // Mark as current if this is the current meal
+    if (mealType === currentMealType) {
+      return "current";
+    }
+
+    // Check if meal time hasn't arrived yet (more than 30 minutes before)
+    if (currentTime < mealTimeMinus30Min) {
+      return "future";
+    }
+
+    // Otherwise it's future
+    return "future";
   };
 
   const addWaterGlass = async () => {
@@ -215,77 +349,29 @@ const DailyMealScreen = () => {
 
   return (
     <>
+      {/* Level Up Celebration */}
+      <LevelUpCelebration />
+
+      {/* Challenge Claim Celebration */}
+      <ChallengeClaimCelebration />
+
       {/* Delete Workout Confirmation Modal */}
       {workoutToDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Delete Workout
-              </h3>
-              <button
-                onClick={() => setWorkoutToDelete(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-gray-900">
-                {workoutToDelete.name}
-              </span>
-              ? This action cannot be undone.
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setWorkoutToDelete(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleDeleteWorkout(workoutToDelete);
-                  setWorkoutToDelete(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 rounded-lg hover:bg-red-600 transition"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteWorkoutModal
+          workout={workoutToDelete}
+          onCancel={() => setWorkoutToDelete(null)}
+          onConfirm={(workout) => {
+            handleDeleteWorkout(workout);
+            setWorkoutToDelete(null);
+          }}
+        />
       )}
 
       <div className="min-h-screen bg-white">
         {loading ? (
           <MealLoader />
         ) : isPlanExpired ? (
-          <div className="min-h-screen flex items-center justify-center flex-col gap-6 p-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full">
-              <CalendarDays className="w-8 h-8 text-amber-600" />
-            </div>
-            <div className="text-center">
-              <p className="text-xl font-semibold text-gray-800">
-                Your meal plan has expired
-              </p>
-              <p className="text-gray-500 mt-2">
-                Your previous plan ended on {getExpiredDateInfo()}
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                Generate a new plan to continue tracking your meals
-              </p>
-            </div>
-            <Button
-              onClick={() => navigate("/weekly-overview")}
-              className="flex items-center gap-2 bg-green-500 text-white hover:bg-green-600"
-              size="lg"
-            >
-              <Sparkles className="h-5 w-5" />
-              <span>Generate New Plan</span>
-            </Button>
-          </div>
+          <ExpiredPlanCard expiredDate={getExpiredDateInfo()} />
         ) : !dailyProgress ? (
           <div className="min-h-screen flex items-center justify-center flex-col gap-4 p-6">
             <p className="text-xl font-semibold text-gray-700 text-center">
@@ -297,10 +383,23 @@ const DailyMealScreen = () => {
           </div>
         ) : (
           <div className="px-4 py-6">
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
-              Daily Tracker
-            </h1>
+            {/* Title with Streak */}
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Daily Tracker
+              </h1>
+              {engagementStats && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-gray-900">
+                    Day {engagementStats.streak || 0}
+                  </span>
+                  <Flame className="w-4 h-4 text-orange-500" />
+                </div>
+              )}
+            </div>
+
+            {/* Daily Challenges Banner */}
+            <ChallengesBanner className="mb-2" />
 
             {/* Fasting Clock */}
             {user?.fastingHours && user?.fastingStartTime && (
@@ -311,40 +410,86 @@ const DailyMealScreen = () => {
             )}
 
             {/* Daily Nutrition Progress */}
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-gray-900 mb-4">
-                Daily Nutrition Progress
-              </h2>
-              <div className="space-y-4">
-                <NutritionProgressBar
-                  label="Calories"
-                  consumed={dailyProgress.caloriesConsumed}
-                  goal={dailyProgress.caloriesGoal}
-                  unit="kcal"
-                  color="orange"
-                />
-                <NutritionProgressBar
-                  label="Proteins"
-                  consumed={dailyProgress.protein.consumed}
-                  goal={dailyProgress.protein.goal}
-                  unit="g"
-                  color="purple"
-                />
-                <NutritionProgressBar
-                  label="Fats"
-                  consumed={dailyProgress.fat.consumed}
-                  goal={dailyProgress.fat.goal}
-                  unit="g"
-                  color="blue"
-                />
-                <NutritionProgressBar
-                  label="Carbs"
-                  consumed={dailyProgress.carbs.consumed}
-                  goal={dailyProgress.carbs.goal}
-                  unit="g"
-                  color="red"
-                />
-              </div>
+            <div className="mb-2 bg-white rounded-lg shadow-sm border border-gray-100">
+              <button
+                onClick={() => setIsNutritionExpanded(!isNutritionExpanded)}
+                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 transition-colors"
+              >
+                <h2 className="text-base font-semibold text-gray-900">
+                  Daily Nutrition Progress
+                </h2>
+                {isNutritionExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-gray-500" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-500" />
+                )}
+              </button>
+              {isNutritionExpanded ? (
+                <div className="px-3 pb-3 space-y-2">
+                  <NutritionProgressBar
+                    label="Calories"
+                    consumed={dailyProgress.caloriesConsumed}
+                    goal={dailyProgress.caloriesGoal}
+                    unit="kcal"
+                    color="orange"
+                  />
+                  <NutritionProgressBar
+                    label="Proteins"
+                    consumed={dailyProgress.protein.consumed}
+                    goal={dailyProgress.protein.goal}
+                    unit="g"
+                    color="purple"
+                  />
+                  <NutritionProgressBar
+                    label="Fats"
+                    consumed={dailyProgress.fat.consumed}
+                    goal={dailyProgress.fat.goal}
+                    unit="g"
+                    color="blue"
+                  />
+                  <NutritionProgressBar
+                    label="Carbs"
+                    consumed={dailyProgress.carbs.consumed}
+                    goal={dailyProgress.carbs.goal}
+                    unit="g"
+                    color="red"
+                  />
+                </div>
+              ) : (
+                <div className="px-3 pb-3">
+                  <NutritionCircularProgressGrid
+                    items={[
+                      {
+                        label: "Calories",
+                        consumed: dailyProgress.caloriesConsumed,
+                        goal: dailyProgress.caloriesGoal,
+                        color: "#f97316",
+                      },
+                      {
+                        label: "Protein",
+                        consumed: dailyProgress.protein.consumed,
+                        goal: dailyProgress.protein.goal,
+                        unit: "g",
+                        color: "#a855f7",
+                      },
+                      {
+                        label: "Fats",
+                        consumed: dailyProgress.fat.consumed,
+                        goal: dailyProgress.fat.goal,
+                        unit: "g",
+                        color: "#3b82f6",
+                      },
+                      {
+                        label: "Carbs",
+                        consumed: dailyProgress.carbs.consumed,
+                        goal: dailyProgress.carbs.goal,
+                        unit: "g",
+                        color: "#ef4444",
+                      },
+                    ]}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Today's Meals */}
@@ -360,6 +505,10 @@ const DailyMealScreen = () => {
                     mealType="breakfast"
                     mealTime={getMealTime("breakfast")}
                     date={dailyProgress.date}
+                    mealStatus={getMealStatus(
+                      dailyProgress.meals.breakfast,
+                      "breakfast"
+                    )}
                     onMealChange={(newMeal) => {
                       // Update breakfast in progress
                       const updatedProgress = {
@@ -378,6 +527,10 @@ const DailyMealScreen = () => {
                     mealType="lunch"
                     mealTime={getMealTime("lunch")}
                     date={dailyProgress.date}
+                    mealStatus={getMealStatus(
+                      dailyProgress.meals.lunch,
+                      "lunch"
+                    )}
                     onMealChange={(newMeal) => {
                       // Update lunch in progress
                       const updatedProgress = {
@@ -396,6 +549,10 @@ const DailyMealScreen = () => {
                     mealType="dinner"
                     mealTime={getMealTime("dinner")}
                     date={dailyProgress.date}
+                    mealStatus={getMealStatus(
+                      dailyProgress.meals.dinner,
+                      "dinner"
+                    )}
                     onMealChange={(newMeal) => {
                       // Update dinner in progress
                       const updatedProgress = {

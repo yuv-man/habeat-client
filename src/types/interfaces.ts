@@ -377,6 +377,40 @@ export interface IGoal {
   progressHistory?: any[];
 }
 
+// Engagement/Gamification interfaces
+export interface IBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+  category: "streak" | "meals" | "nutrition" | "milestone" | "special";
+}
+
+export interface IEngagementStats {
+  xp: number;
+  level: number;
+  xpProgress: {
+    current: number;
+    required: number;
+  };
+  streak: number;
+  longestStreak: number;
+  totalMealsLogged: number;
+  totalDaysTracked: number;
+  badges: IBadge[];
+  streakFreezeAvailable: boolean;
+}
+
+export interface IEngagementResult {
+  xpAwarded: number;
+  totalXp: number;
+  level: number;
+  leveledUp: boolean;
+  streak: number;
+  newBadges: IBadge[];
+}
+
 export interface IAnalyticsData {
   period: "week" | "month";
   startDate: string;
@@ -426,4 +460,139 @@ export interface IAnalyticsData {
     workoutsCompleted: number;
     workoutsTotal: number;
   }>;
+}
+
+// Challenge types
+export type ChallengeType =
+  | "meals_logged"
+  | "water_intake"
+  | "streak_days"
+  | "veggie_meals"
+  | "protein_goal"
+  | "workout_complete"
+  | "balanced_meals"
+  | "home_cooking";
+
+export type ChallengeDifficulty = "easy" | "medium" | "hard";
+export type ChallengeStatus = "active" | "completed" | "claimed" | "expired";
+
+export interface IChallenge {
+  _id: string;
+  userId: string;
+  type: ChallengeType;
+  title: string;
+  description: string;
+  icon: string;
+  target: number;
+  progress: number;
+  xpReward: number;
+  difficulty: ChallengeDifficulty;
+  status: ChallengeStatus;
+  startDate: string;
+  endDate: string;
+  completedAt?: string;
+  claimedAt?: string;
+}
+
+export interface IChallengeClaimResult {
+  success: boolean;
+  xpAwarded: number;
+  challenge: IChallenge;
+}
+
+// Reflection types
+export interface IDailySummary {
+  date: string;
+  healthScore: number;
+  healthScoreChange: number;
+  xpEarned: number;
+  insight: string;
+  emoji: string;
+  stats: {
+    caloriesPercent: number;
+    proteinPercent: number;
+    waterPercent: number;
+    mealsCompleted: number;
+    mealsTotal: number;
+    workoutsCompleted: number;
+  };
+}
+
+export interface IWeeklyStory {
+  period: { start: string; end: string };
+  message: string;
+  emoji: string;
+  suggestion: string;
+  highlights: string[];
+  stats: {
+    avgHealthScore: number;
+    healthScoreChange: number;
+    totalXpEarned: number;
+    daysTracked: number;
+    bestDay: string | null;
+    streakDays: number;
+  };
+}
+
+// Notification types
+export type NotificationType =
+  | "meal_reminder"
+  | "streak_warning"
+  | "streak_broken"
+  | "challenge_complete"
+  | "challenge_expiring"
+  | "level_up"
+  | "badge_earned"
+  | "weekly_summary"
+  | "daily_summary"
+  | "motivational";
+
+export interface INotificationPreferences {
+  enabled: boolean;
+  mealReminders: {
+    enabled: boolean;
+    breakfast: { enabled: boolean; time: string };
+    lunch: { enabled: boolean; time: string };
+    dinner: { enabled: boolean; time: string };
+    snacks: { enabled: boolean; time: string };
+  };
+  streakAlerts: {
+    enabled: boolean;
+    warningTime: string;
+  };
+  challengeUpdates: {
+    enabled: boolean;
+    onComplete: boolean;
+    onExpiring: boolean;
+  };
+  achievements: {
+    enabled: boolean;
+    levelUp: boolean;
+    badgeEarned: boolean;
+  };
+  weeklySummary: {
+    enabled: boolean;
+    dayOfWeek: number;
+    time: string;
+  };
+  dailySummary: {
+    enabled: boolean;
+    time: string;
+  };
+  motivationalNudges: {
+    enabled: boolean;
+    frequency: "daily" | "weekly" | "occasional";
+  };
+  quietHours: {
+    enabled: boolean;
+    start: string;
+    end: string;
+  };
+}
+
+export interface INotificationPayload {
+  type: NotificationType;
+  title: string;
+  body: string;
+  data?: Record<string, any>;
 }

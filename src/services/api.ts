@@ -8,6 +8,13 @@ import {
   IRecipe,
   IGoal,
   IAnalyticsData,
+  IEngagementStats,
+  IChallenge,
+  IChallengeClaimResult,
+  IDailySummary,
+  IWeeklyStory,
+  INotificationPreferences,
+  INotificationPayload,
 } from "../types/interfaces";
 import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
@@ -1188,6 +1195,251 @@ const clearChatHistory = async (
   }, "Failed to clear chat history. Please try again.");
 };
 
+// ============================================================================
+// ENGAGEMENT API
+// ============================================================================
+
+const getEngagementStats = async (): Promise<ApiResponse<IEngagementStats>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{ success: boolean; data: IEngagementStats }>(
+      `/engagement/stats`,
+      { headers: getAuthHeaders() }
+    );
+    return { data: response.data.data };
+  }, "Failed to get engagement stats. Please try again.");
+};
+
+const getStreak = async (): Promise<ApiResponse<{
+  currentStreak: number;
+  longestStreak: number;
+  lastActiveDate: string | null;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: { currentStreak: number; longestStreak: number; lastActiveDate: string | null };
+    }>(`/engagement/streak`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get streak. Please try again.");
+};
+
+const useStreakFreeze = async (): Promise<{ success: boolean; message: string }> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{ success: boolean; message: string }>(
+      `/engagement/streak-freeze`,
+      {},
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to use streak freeze. Please try again.");
+};
+
+const getEngagementRewards = async (): Promise<ApiResponse<{
+  xpRewards: Record<string, number>;
+  levelFormula: string;
+  badges: Array<{ id: string; name: string; description: string; icon: string; category: string }>;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: {
+        xpRewards: Record<string, number>;
+        levelFormula: string;
+        badges: Array<{ id: string; name: string; description: string; icon: string; category: string }>;
+      };
+    }>(`/engagement/rewards`);
+    return { data: response.data.data };
+  }, "Failed to get rewards info. Please try again.");
+};
+
+const getLevelInfo = async (): Promise<ApiResponse<{
+  currentLevel: number;
+  currentXp: number;
+  xpProgress: { current: number; required: number };
+  xpToNextLevel: number;
+  progressPercentage: number;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: {
+        currentLevel: number;
+        currentXp: number;
+        xpProgress: { current: number; required: number };
+        xpToNextLevel: number;
+        progressPercentage: number;
+      };
+    }>(`/engagement/level-info`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get level info. Please try again.");
+};
+
+// ============================================================================
+// CHALLENGES API
+// ============================================================================
+
+const getChallenges = async (): Promise<ApiResponse<{
+  challenges: IChallenge[];
+  count: number;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: { challenges: IChallenge[]; count: number };
+    }>(`/challenges`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get challenges. Please try again.");
+};
+
+const getChallengeHistory = async (): Promise<ApiResponse<{
+  challenges: IChallenge[];
+  count: number;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: { challenges: IChallenge[]; count: number };
+    }>(`/challenges/history`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get challenge history. Please try again.");
+};
+
+const getClaimableChallenges = async (): Promise<ApiResponse<{
+  challenges: IChallenge[];
+  count: number;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: { challenges: IChallenge[]; count: number };
+    }>(`/challenges/claimable`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get claimable challenges. Please try again.");
+};
+
+const claimChallengeReward = async (challengeId: string): Promise<ApiResponse<IChallengeClaimResult>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: IChallengeClaimResult;
+    }>(`/challenges/${challengeId}/claim`, {}, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to claim challenge reward. Please try again.");
+};
+
+const refreshChallenges = async (): Promise<ApiResponse<{
+  challenges: IChallenge[];
+  count: number;
+}>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: { challenges: IChallenge[]; count: number };
+    }>(`/challenges/refresh`, {}, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to refresh challenges. Please try again.");
+};
+
+// ============================================================================
+// REFLECTION API
+// ============================================================================
+
+const getDailySummary = async (date?: string): Promise<ApiResponse<IDailySummary>> => {
+  return withErrorHandling(async () => {
+    const params = date ? `?date=${date}` : "";
+    const response = await userClient.get<{
+      success: boolean;
+      data: IDailySummary;
+    }>(`/reflection/daily${params}`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get daily summary. Please try again.");
+};
+
+const getWeeklyStory = async (): Promise<ApiResponse<IWeeklyStory>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IWeeklyStory;
+    }>(`/reflection/weekly`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get weekly story. Please try again.");
+};
+
+// ============================================================================
+// NOTIFICATIONS API
+// ============================================================================
+
+const getNotificationPreferences = async (): Promise<ApiResponse<INotificationPreferences>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: INotificationPreferences;
+    }>(`/notifications/preferences`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get notification preferences. Please try again.");
+};
+
+const updateNotificationPreferences = async (
+  preferences: Partial<INotificationPreferences>
+): Promise<ApiResponse<INotificationPreferences>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<{
+      success: boolean;
+      data: INotificationPreferences;
+    }>(`/notifications/preferences`, preferences, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to update notification preferences. Please try again.");
+};
+
+const registerDeviceToken = async (token: string): Promise<void> => {
+  return withErrorHandling(async () => {
+    await userClient.post(
+      `/notifications/device-token`,
+      { token },
+      { headers: getAuthHeaders() }
+    );
+  }, "Failed to register device token. Please try again.");
+};
+
+const removeDeviceToken = async (token: string): Promise<void> => {
+  return withErrorHandling(async () => {
+    await userClient.delete(`/notifications/device-token`, {
+      headers: getAuthHeaders(),
+      data: { token },
+    });
+  }, "Failed to remove device token. Please try again.");
+};
+
+const getScheduledNotifications = async (): Promise<ApiResponse<INotificationPayload[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: INotificationPayload[];
+    }>(`/notifications/scheduled`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get scheduled notifications. Please try again.");
+};
+
+const checkStreakWarning = async (): Promise<ApiResponse<INotificationPayload | null>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: INotificationPayload | null;
+    }>(`/notifications/streak-warning`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to check streak warning. Please try again.");
+};
+
+const getDefaultNotificationPreferences = async (): Promise<ApiResponse<INotificationPreferences>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: INotificationPreferences;
+    }>(`/notifications/defaults`);
+    return { data: response.data.data };
+  }, "Failed to get default notification preferences. Please try again.");
+};
+
 export const userAPI = {
   getAllUsers,
   getUserById,
@@ -1250,4 +1502,27 @@ export const userAPI = {
   acceptChatAction,
   rejectChatAction,
   clearChatHistory,
+  // Engagement
+  getEngagementStats,
+  getStreak,
+  useStreakFreeze,
+  getEngagementRewards,
+  getLevelInfo,
+  // Challenges
+  getChallenges,
+  getChallengeHistory,
+  getClaimableChallenges,
+  claimChallengeReward,
+  refreshChallenges,
+  // Reflection
+  getDailySummary,
+  getWeeklyStory,
+  // Notifications
+  getNotificationPreferences,
+  updateNotificationPreferences,
+  registerDeviceToken,
+  removeDeviceToken,
+  getScheduledNotifications,
+  checkStreakWarning,
+  getDefaultNotificationPreferences,
 };

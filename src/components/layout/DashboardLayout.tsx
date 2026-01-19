@@ -108,8 +108,7 @@ const DashboardLayout = ({
       {children}
       <BottomNav />
 
-      {/* Nutrition Chat */}
-      <ChatButton />
+      {/* Nutrition Chat Panel */}
       <ChatPanel />
     </div>
   );

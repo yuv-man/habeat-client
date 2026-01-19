@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   GlassWater,
   Sparkles,
@@ -12,6 +13,7 @@ import {
   Beef,
   Wheat,
   CircleDot,
+  ShoppingCart,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
@@ -330,6 +332,7 @@ const DayContent = ({
 
 // Main Component
 export default function WeeklyMealPlan() {
+  const navigate = useNavigate();
   const { user, plan, loading, generateMealPlan } = useAuthStore();
   const weeklyPlan = plan?.weeklyPlan || {};
 
@@ -722,14 +725,33 @@ export default function WeeklyMealPlan() {
           }}
         />
 
-        {/* Generate AI Button */}
-        <button
-          onClick={generatePlan}
-          disabled={isGenerating}
-          className="w-full bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg mb-4 transition disabled:opacity-50"
-        >
-          {isGenerating ? "Generating..." : "Generate AI Meal Plan"}
-        </button>
+        {/* Generate AI Button and Shopping Bag */}
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={generatePlan}
+            disabled={isGenerating}
+            className={`bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 ${
+              plan && plan.weeklyPlan && dates.length > 0 ? "flex-1" : "w-full"
+            }`}
+          >
+            {isGenerating ? (
+              "Generating..."
+            ) : (
+              <span className="sm:inline flex items-center">
+                <Sparkles className="w-5 h-5 mr-2" /> Generate Plan
+              </span>
+            )}
+          </button>
+          {plan && plan.weeklyPlan && dates.length > 0 && (
+            <button
+              onClick={() => navigate("/shopping-list")}
+              className="flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span className=" sm:inline">Shopping List</span>
+            </button>
+          )}
+        </div>
 
         {/* Desktop Table View */}
         <WeeklyPlanTable

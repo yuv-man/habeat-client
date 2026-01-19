@@ -147,4 +147,5 @@ export const dietaryRestrictions: DietaryPreference[] = [
   { id: "gluten-free", name: "Gluten-Free", icon: "gluten-free" },
   { id: "paleo", name: "Paleo", icon: "paleo" },
   { id: "low-carb", name: "Low-Carb", icon: "low-carb" },
+  { id: "other", name: "Other", icon: "other" },
 ];

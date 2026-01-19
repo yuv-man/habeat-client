@@ -15,9 +15,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import MealLoader from "@/components/helper/MealLoader";
-import { EngagementCard } from "@/components/engagement";
-import { ChallengeList } from "@/components/challenges";
-import { DailySummaryCard } from "@/components/reflection";
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -198,15 +195,6 @@ const Analytics = () => {
         {/* Analytics Content */}
         {!isLoading && !error && analytics && (
           <>
-            {/* Engagement Card */}
-            <EngagementCard className="mb-6" />
-
-            {/* Challenges */}
-            <ChallengeList className="mb-6" />
-
-            {/* Daily Summary Card */}
-            <DailySummaryCard className="mb-6" showDismiss={false} />
-
             {/* Summary Cards */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="col-span-2 bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-4 text-white">

@@ -118,10 +118,10 @@ const MealCard = ({
 
   // Card classes based on status - make cards bigger
   const cardClasses = isPast
-    ? "bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 shadow-sm opacity-75"
+    ? "bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm opacity-75"
     : isCurrent
-    ? "bg-white border-2 border-green-200 rounded-lg p-5 mb-3 shadow-md"
-    : "bg-white border border-gray-200 rounded-lg p-4 mb-3 shadow-sm opacity-90";
+    ? "bg-white border-2 border-green-200 rounded-lg p-5 shadow-md"
+    : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
 
   if (isSnack) {
     // Simple snack card - no fold, no recipe, compact vertical size

@@ -10,6 +10,7 @@ import {
 import logo from "@/assets/habeatIcon.png";
 import "@/styles/navbar.css";
 import { useAuthStore } from "@/stores/authStore";
+import { ChatButton } from "@/components/chat";
 
 interface NavBarProps {
   currentView?: "daily" | "weekly";
@@ -69,27 +70,35 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               <div className="nav-link-text">Shopping List</div>
             </Link>
           </div>
-          <Link
-            to="/settings"
-            className={`nav-link flex items-center gap-2 ${
-              isActive("/settings") ? "active" : ""
-            }`}
-          >
-            <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0">
-              {user?.profilePicture ? (
-                <img
-                  src={user.profilePicture}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <User className="w-4 h-4 text-gray-400" />
-                </div>
-              )}
+          <div className="flex items-center gap-2">
+            {/* Chat Button */}
+            <div className="relative">
+              <ChatButton variant="inline" />
             </div>
-            <div className="nav-link-text">Settings</div>
-          </Link>
+
+            {/* Profile Picture */}
+            <Link
+              to="/profile"
+              className={`nav-link flex items-center gap-2 ${
+                isActive("/profile") || isActive("/settings") ? "active" : ""
+              }`}
+            >
+              <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0">
+                {user?.profilePicture ? (
+                  <img
+                    src={user.profilePicture}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <User className="w-4 h-4 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="nav-link-text">Settings</div>
+            </Link>
+          </div>
           <div className="mobile-view-toggle">
             <Link
               to="/daily-tracker"

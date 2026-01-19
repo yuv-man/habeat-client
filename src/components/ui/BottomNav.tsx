@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, Heart, ShoppingBag, Target } from "lucide-react";
+import { Home, Calendar, BarChart3, User } from "lucide-react";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -12,19 +12,14 @@ const BottomNav = () => {
     if (path === "/weekly-overview") {
       return location.pathname === "/weekly-overview";
     }
-    if (path === "/recipes") {
+    if (path === "/progress") {
       return (
-        location.pathname === "/recipes" ||
-        location.pathname.startsWith("/recipes/")
+        location.pathname === "/progress" || location.pathname === "/analytics"
       );
     }
-    if (path === "/shopping-list") {
-      return location.pathname === "/shopping-list";
-    }
-    if (path === "/goals") {
+    if (path === "/profile") {
       return (
-        location.pathname === "/goals" ||
-        location.pathname.startsWith("/goals/")
+        location.pathname === "/profile" || location.pathname === "/settings"
       );
     }
     return location.pathname === path;
@@ -90,16 +85,15 @@ const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 md:hidden z-50 shadow-lg">
       <div className="flex items-center justify-around max-w-md mx-auto">
-        <NavButton path="/weekly-overview" icon={Calendar} label="Plan" />
-        <NavButton path="/recipes" icon={Heart} label="Favorites" />
         <NavButton
           path="/daily-tracker"
           icon={Home}
           label="Today"
           isMain={true}
         />
-        <NavButton path="/shopping-list" icon={ShoppingBag} label="Shop" />
-        <NavButton path="/goals" icon={Target} label="Goals" />
+        <NavButton path="/weekly-overview" icon={Calendar} label="Plan" />
+        <NavButton path="/progress" icon={BarChart3} label="Progress" />
+        <NavButton path="/profile" icon={User} label="Profile" />
       </div>
     </nav>
   );

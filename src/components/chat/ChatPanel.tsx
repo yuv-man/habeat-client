@@ -74,13 +74,11 @@ export function ChatPanel() {
       <SheetContent
         side="right"
         className="flex w-full flex-col p-0 sm:max-w-md"
-        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
         closeButtonTop="calc(env(safe-area-inset-top, 0px) + 1rem)"
       >
         {/* Header */}
-        <SheetHeader 
-          className="border-b px-4 py-3"
-        >
+        <SheetHeader className="border-b px-4 py-3">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <span className="text-xl">Nutrition Assistant</span>
@@ -90,7 +88,7 @@ export function ChatPanel() {
                 variant="ghost"
                 size="icon"
                 onClick={() => clearChat()}
-                className="h-8 w-8 text-gray-500 hover:text-red-500"
+                className="h-8 w-8 mr-5 text-gray-500 hover:text-red-500"
                 title="Clear chat"
               >
                 <Trash2 className="h-4 w-4" />

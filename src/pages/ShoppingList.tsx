@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { IngredientInput } from "@/lib/shoppingHelpers";
@@ -13,7 +13,7 @@ import MealLoader from "@/components/helper/MealLoader";
 
 const ShoppingList = () => {
   const navigate = useNavigate();
-  const { user, plan, loading, token } = useAuthStore();
+  const { plan, loading, token } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -21,10 +21,10 @@ const ShoppingList = () => {
   const hasFetched = useRef(false);
 
   useEffect(() => {
-    if (!loading && !user && !token) {
+    if (!loading && !token) {
       navigate("/");
     }
-  }, [user, loading, token, navigate]);
+  }, [loading, token, navigate]);
 
   useEffect(() => {
     // Prevent duplicate API calls
@@ -35,10 +35,10 @@ const ShoppingList = () => {
         setIngredients(mockShoppingIngredients as IngredientInput[]);
         setIsLoading(false);
         hasFetched.current = true;
-      } else if (plan && user?._id && plan._id) {
+      } else if (plan && plan._id) {
         try {
           hasFetched.current = true;
-          const ingredients = await getShoppingList(user._id, plan._id);
+          const ingredients = await getShoppingList(plan._id);
           setIngredients(ingredients as IngredientInput[]);
         } catch (error) {
           console.error("Failed to fetch shopping list:", error);
@@ -49,10 +49,9 @@ const ShoppingList = () => {
       }
     };
     fetchShoppingList();
-  }, [plan, user?._id]);
+  }, [plan]);
 
   const getShoppingList = async (
-    userId: string,
     planId: string
   ): Promise<IngredientInput[]> => {
     const response = await userAPI.getShoppingList(planId);
@@ -100,10 +99,6 @@ const ShoppingList = () => {
     ing.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (!user) {
-    return <div>Redirecting...</div>;
-  }
-
   if (isLoading || loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -116,10 +111,18 @@ const ShoppingList = () => {
   }
 
   return (
-    <DashboardLayout bgColor="bg-white" showNavBar={true}>
+    <DashboardLayout currentView="weekly" bgColor="bg-white" showNavBar={true}>
       <div className="px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Shopping List</h1>
-
+        <div className="flex items-center gap-3 mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-gray-100 rounded-full transition"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">Shopping List</h1>
+        </div>
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />

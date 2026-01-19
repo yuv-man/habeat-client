@@ -25,6 +25,9 @@ const RecipeDetailPage = lazy(() => import("./pages/RecipeDetailPage"));
 const ShoppingList = lazy(() => import("./pages/ShoppingList"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const Progress = lazy(() => import("./pages/Progress"));
+const ChallengesAndSummary = lazy(() => import("./pages/ChallengesAndSummary"));
+const Profile = lazy(() => import("./pages/Profile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -59,7 +62,13 @@ const App = () => {
                 />
                 <Route path="/shopping-list" element={<ShoppingList />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/analytics" element={<Analytics />} />
+                <Route path="/progress" element={<Progress />} />
+                <Route
+                  path="/challenges-summary"
+                  element={<ChallengesAndSummary />}
+                />
                 <Route path="/auth/callback" element={<OAuthCallback />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, BarChart3, User } from "lucide-react";
 import logo from "@/assets/habeatIcon.png";
 import { useAuthStore } from "@/stores/authStore";
+import { ChatButton } from "@/components/chat";
 
 const MobileHeader = () => {
   const location = useLocation();
@@ -37,7 +38,7 @@ const MobileHeader = () => {
     {
       icon: User,
       label: "Profile & Settings",
-      path: "/settings",
+      path: "/profile",
     },
     {
       icon: BarChart3,
@@ -57,11 +58,16 @@ const MobileHeader = () => {
           <div className="text-lg font-semibold text-gray-900">Habeats</div>
         </Link>
 
-        {/* Profile Picture and Burger Menu */}
+        {/* Chat Button, Profile Picture and Burger Menu */}
         <div className="flex items-center gap-2">
+          {/* Chat Button */}
+          <div className="relative">
+            <ChatButton variant="inline" />
+          </div>
+
           {/* Profile Picture */}
           <button
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/profile")}
             className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0"
             aria-label="Profile"
           >

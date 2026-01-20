@@ -190,6 +190,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-pad-see-ew",
     "chicken-teriyaki-bowl-with-brown-rice",
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
+    "grilled-salmon-quinoa-salad-with-avocado"
   ],
   wings: ["barbeque-chicken-wings"],
   curry: [
@@ -212,6 +213,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-with-broccoli",
     "teriyaki-salmon-on-a-plate",
     "baked-salmon-with-roasted-sweet-potatoes",
+    "grilled-salmon-quinoa-salad-with-avocado"
   ],
   fish: [
     "grilled-fish-fillet",
@@ -219,6 +221,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "baked-cod-with-quinoa",
     "baked-salmon-with-roasted-sweet-potatoes",
     "baked-cod-with-sweet-potato-wedges-and-green-beans",
+    "grilled-salmon-quinoa-salad-with-avocado"
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",

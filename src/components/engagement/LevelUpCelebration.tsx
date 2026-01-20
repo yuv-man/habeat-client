@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Zap, Trophy, Flame, Star, X } from "lucide-react";
+import { Trophy, Flame, Star, X, Target, Award } from "lucide-react";
 import { useEngagementStore } from "../../stores/engagementStore";
 import { cn } from "../../lib/utils";
 
@@ -41,7 +41,7 @@ export function LevelUpCelebration() {
       previousShowRef.current = show;
       if (show && type && data) {
         // If already showing on mount, create the key but don't trigger animation
-        const celebrationKey = `${type}-${data.xpAwarded || 0}-${data.newLevel || 0}-${data.streak || 0}-${data.badge?.id || ''}`;
+        const celebrationKey = `${type}-${data.habitScore || 0}-${data.milestone?.type || ''}-${data.streak || 0}-${data.badge?.id || ''}`;
         lastCelebrationKeyRef.current = celebrationKey;
       }
       return;
@@ -73,7 +73,7 @@ export function LevelUpCelebration() {
       }
 
       // Create a unique key for this celebration
-      const celebrationKey = `${type}-${currentData.xpAwarded || 0}-${currentData.newLevel || 0}-${currentData.streak || 0}-${currentData.badge?.id || ''}`;
+      const celebrationKey = `${type}-${currentData.habitScore || 0}-${currentData.milestone?.type || ''}-${currentData.streak || 0}-${currentData.badge?.id || ''}`;
       
       // Only show if this is a different celebration than the last one
       if (celebrationKey !== lastCelebrationKeyRef.current) {
@@ -99,11 +99,10 @@ export function LevelUpCelebration() {
           }))
         );
 
-        // Auto-dismiss
-        const timeout = type === "xp" ? 3000 : 5000;
+        // Auto-dismiss - all celebrations get 5 seconds
         timerRef.current = setTimeout(() => {
           handleDismiss();
-        }, timeout);
+        }, 5000);
       } else {
         // Same celebration key, just update the ref
         previousShowRef.current = true;
@@ -125,24 +124,22 @@ export function LevelUpCelebration() {
 
   const renderContent = () => {
     switch (type) {
-      case "levelUp":
+      case "milestone":
         return (
           <div className="text-center space-y-3">
             <div className="relative inline-block">
-              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center animate-bounce">
-                <span className="text-3xl font-bold text-white">{data?.newLevel}</span>
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center animate-bounce">
+                <Award className="w-10 h-10 text-white" />
               </div>
               <div className="absolute -top-2 -right-2">
                 <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 animate-spin" style={{ animationDuration: "3s" }} />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Level Up!</h2>
-            <p className="text-gray-600">
-              You reached <span className="font-semibold text-amber-600">Level {data?.newLevel}</span>
-            </p>
-            <div className="flex items-center justify-center gap-1 text-amber-500">
-              <Zap className="w-5 h-5 fill-current" />
-              <span className="font-semibold">+{data?.xpAwarded} XP</span>
+            <h2 className="text-2xl font-bold text-gray-800">Milestone Reached!</h2>
+            <p className="text-gray-600">{data?.milestone?.message}</p>
+            <div className="flex items-center justify-center gap-1 text-green-500">
+              <Target className="w-5 h-5" />
+              <span className="font-semibold">Habit Score: {data?.habitScore}</span>
             </div>
           </div>
         );
@@ -153,12 +150,12 @@ export function LevelUpCelebration() {
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center mx-auto">
               <Trophy className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Badge Earned!</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Achievement Unlocked!</h2>
             <p className="text-lg font-semibold text-purple-600">{data?.badge?.name}</p>
             <p className="text-sm text-gray-500">{data?.badge?.description}</p>
-            <div className="flex items-center justify-center gap-1 text-amber-500">
-              <Zap className="w-5 h-5 fill-current" />
-              <span className="font-semibold">+{data?.xpAwarded} XP</span>
+            <div className="flex items-center justify-center gap-1 text-green-500">
+              <Target className="w-5 h-5" />
+              <span className="font-semibold">Habit Score: {data?.habitScore}</span>
             </div>
           </div>
         );
@@ -172,43 +169,30 @@ export function LevelUpCelebration() {
                 {data?.streak} days
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-800">Streak Milestone!</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Consistency Win!</h2>
             <p className="text-gray-600">
-              You're on a <span className="font-semibold text-orange-600">{data?.streak}-day</span> streak
+              You're on a <span className="font-semibold text-orange-600">{data?.streak}-day</span> streak!
             </p>
-            <div className="flex items-center justify-center gap-1 text-amber-500">
-              <Zap className="w-5 h-5 fill-current" />
-              <span className="font-semibold">+{data?.xpAwarded} XP</span>
-            </div>
+            <p className="text-sm text-gray-500">Keep building your healthy habits</p>
           </div>
         );
 
-      case "xp":
+      case "habitScore":
       default:
         return (
-          <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl text-white">
-            <Zap className="w-6 h-6 fill-current" />
-            <span className="font-bold">+{data?.xpAwarded} XP</span>
+          <div className="text-center space-y-3">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto">
+              <Target className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800">Great Progress!</h2>
+            <p className="text-gray-600">Your habit score is now</p>
+            <div className="text-3xl font-bold text-blue-600">{data?.habitScore}</div>
           </div>
         );
     }
   };
 
-  // For XP notifications, show a smaller toast-like notification
-  if (type === "xp") {
-    return (
-      <div
-        className={cn(
-          "fixed bottom-24 left-1/2 -translate-x-1/2 z-50 transition-all duration-300",
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-        )}
-      >
-        {renderContent()}
-      </div>
-    );
-  }
-
-  // For bigger celebrations (level up, badge, streak), show a modal
+  // All celebrations show as modals for habit-focused experience
   return (
     <div
       className={cn(
@@ -231,11 +215,13 @@ export function LevelUpCelebration() {
             style={{
               left: `${particle.x}%`,
               bottom: "-10px",
-              background: type === "levelUp"
-                ? "linear-gradient(to right, #fbbf24, #f97316)"
+              background: type === "milestone"
+                ? "linear-gradient(to right, #4ade80, #10b981)"
                 : type === "badge"
                 ? "linear-gradient(to right, #a855f7, #7c3aed)"
-                : "linear-gradient(to right, #fb923c, #ea580c)",
+                : type === "streak"
+                ? "linear-gradient(to right, #fb923c, #ea580c)"
+                : "linear-gradient(to right, #60a5fa, #6366f1)",
               animation: `float-up 2s ease-out ${particle.delay}s forwards`,
             }}
           />

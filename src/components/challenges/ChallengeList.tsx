@@ -117,7 +117,6 @@ export function ChallengeList({
       {showTitle && (
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Target className="w-5 h-5 text-blue-500" />
             Daily Challenges
             {claimableChallenges.length > 0 && (
               <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">

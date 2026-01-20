@@ -1440,6 +1440,66 @@ const getDefaultNotificationPreferences = async (): Promise<ApiResponse<INotific
   }, "Failed to get default notification preferences. Please try again.");
 };
 
+// Photo Recognition API
+export interface RecognizedMeal {
+  mealName: string;
+  confidence: "high" | "medium" | "low" | "none";
+  description: string;
+  aiEstimates?: {
+    calories: number;
+    macros: {
+      protein: number;
+      carbs: number;
+      fat: number;
+    };
+  };
+}
+
+export interface USDANutrition {
+  calories: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  servingSize: string;
+  source: string;
+  fdcId?: string;
+}
+
+const recognizeMealFromPhoto = async (
+  imageBase64: string
+): Promise<ApiResponse<RecognizedMeal>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: RecognizedMeal;
+    }>(
+      "/photo/recognize",
+      { imageBase64 },
+      { headers: getAuthHeaders(), timeout: 30000 }
+    );
+    return { data: response.data.data };
+  }, "Failed to recognize meal. Please try again.");
+};
+
+const getNutritionFromUSDA = async (
+  mealName: string
+): Promise<ApiResponse<USDANutrition | null>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: USDANutrition | null;
+      message?: string;
+    }>(
+      "/photo/nutrition",
+      { mealName },
+      { headers: getAuthHeaders() }
+    );
+    return { data: response.data.data, message: response.data.message };
+  }, "Failed to get nutrition data. Please try again.");
+};
+
 export const userAPI = {
   getAllUsers,
   getUserById,
@@ -1525,4 +1585,7 @@ export const userAPI = {
   getScheduledNotifications,
   checkStreakWarning,
   getDefaultNotificationPreferences,
+  // Photo Recognition
+  recognizeMealFromPhoto,
+  getNutritionFromUSDA,
 };

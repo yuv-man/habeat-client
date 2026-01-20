@@ -286,7 +286,7 @@ const Goals = ({
       {/* Floating Action Button */}
       <button
         onClick={onAddGoal}
-        className="fixed bottom-24 right-20 w-14 h-14 bg-green-500 text-white hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
+        className="fixed bottom-24 right-4 w-14 h-14 bg-green-500 text-white hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
       >
         <Plus className="w-6 h-6" />
       </button>

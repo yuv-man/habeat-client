@@ -52,6 +52,8 @@ const MealCard = ({
   const [isExpanded, setIsExpanded] = useState(
     !isSnack && mealStatus === "current"
   );
+  // State to track if title is expanded (to show full text)
+  const [isTitleExpanded, setIsTitleExpanded] = useState(false);
 
   // Get meal ID with fallback for compatibility
   const mealId = meal._id || (meal as any).id || "";
@@ -130,13 +132,17 @@ const MealCard = ({
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3
-              className={`font-medium break-words line-clamp-2 ${
+              onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+              className={`font-medium break-words cursor-pointer transition-colors hover:text-gray-900 ${
+                isTitleExpanded ? "" : "line-clamp-2"
+              } ${
                 isPast
                   ? "text-gray-500 text-xs"
                   : isCurrent
                   ? "text-gray-900 text-sm"
                   : "text-gray-700 text-xs"
               }`}
+              title={isTitleExpanded ? "Click to collapse" : "Click to see full title"}
             >
               {displayName}
             </h3>
@@ -235,13 +241,17 @@ const MealCard = ({
         {/* Meal Details */}
         <div className="flex-1 min-w-0">
           <h3
-            className={`font-bold break-words line-clamp-2 mb-1 ${
+            onClick={() => setIsTitleExpanded(!isTitleExpanded)}
+            className={`font-bold break-words cursor-pointer transition-colors hover:text-gray-900 mb-1 ${
+              isTitleExpanded ? "" : "line-clamp-2"
+            } ${
               isPast
                 ? "text-gray-500 text-sm"
                 : isCurrent
                 ? "text-gray-900 text-base"
                 : "text-gray-700 text-sm"
             }`}
+            title={isTitleExpanded ? "Click to collapse" : "Click to see full title"}
           >
             {displayName}
           </h3>

@@ -11,12 +11,15 @@ interface EngagementState {
   error: string | null;
   lastFetchTime: number | null;
 
-  // Celebration state
+  // Celebration state - habit-focused
   showCelebration: boolean;
-  celebrationType: "xp" | "levelUp" | "badge" | "streak" | null;
+  celebrationType: "milestone" | "badge" | "streak" | "habitScore" | null;
   celebrationData: {
-    xpAwarded?: number;
-    newLevel?: number;
+    habitScore?: number;
+    milestone?: {
+      type: string;
+      message: string;
+    };
     badge?: IBadge;
     streak?: number;
   } | null;
@@ -72,14 +75,16 @@ export const useEngagementStore = create<EngagementState>()(
       handleEngagementResult: (result: IEngagementResult) => {
         const { stats } = get();
 
-        // Update stats with new values
+        // Update stats with new values (habit-focused)
         if (stats) {
           const updatedStats: IEngagementStats = {
             ...stats,
-            xp: result.totalXp,
-            level: result.level,
+            habitScore: result.habitScore,
             streak: result.streak,
             badges: [...stats.badges, ...result.newBadges],
+            // Legacy fields for backward compatibility
+            xp: result.totalXp,
+            level: result.level,
             xpProgress: {
               current: result.totalXp - Math.pow(result.level - 1, 2) * 100,
               required: Math.pow(result.level, 2) * 100 - Math.pow(result.level - 1, 2) * 100,
@@ -88,14 +93,15 @@ export const useEngagementStore = create<EngagementState>()(
           set({ stats: updatedStats });
         }
 
-        // Determine celebration type (priority: levelUp > badge > streak milestone > xp)
-        if (result.leveledUp) {
+        // Determine celebration type (priority: milestone > badge > streak milestone)
+        // Habit-focused celebrations - no XP celebrations
+        if (result.milestoneReached) {
           set({
             showCelebration: true,
-            celebrationType: "levelUp",
+            celebrationType: "milestone",
             celebrationData: {
-              xpAwarded: result.xpAwarded,
-              newLevel: result.level,
+              habitScore: result.habitScore,
+              milestone: result.milestoneReached,
             },
           });
         } else if (result.newBadges.length > 0) {
@@ -103,7 +109,7 @@ export const useEngagementStore = create<EngagementState>()(
             showCelebration: true,
             celebrationType: "badge",
             celebrationData: {
-              xpAwarded: result.xpAwarded,
+              habitScore: result.habitScore,
               badge: result.newBadges[0],
             },
           });
@@ -113,19 +119,12 @@ export const useEngagementStore = create<EngagementState>()(
             showCelebration: true,
             celebrationType: "streak",
             celebrationData: {
-              xpAwarded: result.xpAwarded,
+              habitScore: result.habitScore,
               streak: result.streak,
             },
           });
-        } else if (result.xpAwarded > 0) {
-          set({
-            showCelebration: true,
-            celebrationType: "xp",
-            celebrationData: {
-              xpAwarded: result.xpAwarded,
-            },
-          });
         }
+        // No celebration for regular activity - focus on meaningful milestones
       },
 
       useStreakFreeze: async () => {
@@ -174,6 +173,11 @@ export const useEngagementStore = create<EngagementState>()(
 // Selectors for optimized re-renders
 export const useEngagementStats = () => useEngagementStore((state) => state.stats);
 export const useEngagementLoading = () => useEngagementStore((state) => state.loading);
+
+// Habit-focused selectors
+export const useHabitScore = () => useEngagementStore((state) => state.stats?.habitScore ?? 0);
+export const useStreak = () => useEngagementStore((state) => state.stats?.streak ?? 0);
+export const useWeeklyConsistency = () => useEngagementStore((state) => state.stats?.weeklyConsistency ?? 0);
 
 // Use shallow comparison to prevent infinite loops when returning objects
 export const useEngagementCelebration = () =>

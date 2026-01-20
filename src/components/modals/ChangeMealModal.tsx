@@ -1,5 +1,5 @@
 import { useState, useEffect, ReactNode } from "react";
-import { X, Sparkles, Heart, AlertCircle } from "lucide-react";
+import { X, Sparkles, Heart, AlertCircle, Camera, ArrowLeft, Edit } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI, MealCriteria } from "@/services/api";
@@ -8,6 +8,7 @@ import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
 import { toast } from "sonner";
 import MealLoader from "@/components/helper/MealLoader";
+import PhotoMealTab from "@/components/meal/PhotoMealTab";
 
 interface ChangeMealModalProps {
   children: ReactNode;
@@ -18,7 +19,7 @@ interface ChangeMealModalProps {
   onMealChange: (meal: IMeal) => void;
 }
 
-type TabType = "manual" | "ai" | "favorites";
+type TabType = "manual" | "ai" | "favorites" | "photo" | null;
 
 const ChangeMealModal = ({
   children,
@@ -29,7 +30,7 @@ const ChangeMealModal = ({
   onMealChange,
 }: ChangeMealModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>("manual");
+  const [activeTab, setActiveTab] = useState<TabType>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -70,6 +71,7 @@ const ChangeMealModal = ({
     setIsOpen(true);
     setError(null);
     setAiError(null);
+    setActiveTab(null as any); // Reset to show option selection
     if (currentMeal) {
       setManualMeal({
         name: currentMeal.name,
@@ -84,7 +86,7 @@ const ChangeMealModal = ({
 
   const handleClose = () => {
     setIsOpen(false);
-    setActiveTab("manual");
+    setActiveTab(null as any);
     setAiRules("");
     setAiSuggestions([]);
     setError(null);
@@ -225,10 +227,52 @@ const ChangeMealModal = ({
     }
   };
 
-  const tabs = [
-    { id: "manual" as TabType, label: "Manual" },
-    { id: "ai" as TabType, label: "AI Suggestion" },
-    { id: "favorites" as TabType, label: "Favorites" },
+  const handleSelectPhotoMeal = async (meal: IMeal) => {
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      await changeMealAPI(meal);
+      onMealChange(meal);
+      toast.success("Meal changed successfully!");
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to change meal. Please try again.");
+      toast.error("Failed to change meal");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const swapOptions = [
+    { 
+      id: "ai" as TabType, 
+      label: "AI Suggestion", 
+      icon: Sparkles, 
+      description: "Get smart meal recommendations",
+      color: "purple"
+    },
+    { 
+      id: "favorites" as TabType, 
+      label: "From Favorites", 
+      icon: Heart, 
+      description: "Choose from your saved meals",
+      color: "red"
+    },
+    { 
+      id: "photo" as TabType, 
+      label: "Take Photo", 
+      icon: Camera, 
+      description: "Recognize meal from photo",
+      color: "blue"
+    },
+    { 
+      id: "manual" as TabType, 
+      label: "Manual Entry", 
+      icon: Edit, 
+      description: "Enter meal details manually",
+      color: "gray"
+    },
   ];
 
   return (
@@ -239,8 +283,13 @@ const ChangeMealModal = ({
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl">
             {/* Header */}
-            <div className="flex justify-between items-center p-6 pb-4">
-              <h2 className="text-xl font-bold text-gray-900">Change Meal</h2>
+            <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Swap Meal</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Choose how you want to swap this meal
+                </p>
+              </div>
               <button
                 onClick={handleClose}
                 disabled={isSaving}
@@ -252,35 +301,72 @@ const ChangeMealModal = ({
 
             {/* Error Message */}
             {error && (
-              <div className="mx-6 mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 {error}
               </div>
             )}
 
-            {/* Tabs */}
-            <div className="px-6">
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    disabled={isSaving}
-                    className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition ${
-                      activeTab === tab.id
-                        ? "bg-white text-gray-900 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700"
-                    } disabled:opacity-50`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+            {/* Option Selection - Show when no tab is selected or when activeTab is null */}
+            {!activeTab && (
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-3">
+                  {swapOptions.map((option) => {
+                    const Icon = option.icon;
+                    const colorClasses = {
+                      purple: "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
+                      red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
+                      blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
+                      gray: "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100",
+                    };
+                    
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => setActiveTab(option.id)}
+                        disabled={isSaving}
+                        className={`p-4 border-2 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed ${colorClasses[option.color as keyof typeof colorClasses]}`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon className="w-5 h-5" />
+                          <span className="font-semibold text-sm">{option.label}</span>
+                        </div>
+                        <p className="text-xs opacity-75">{option.description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[60vh]">
-              {/* Manual Tab */}
+            {/* Back Button - Show when a tab is selected */}
+            {activeTab && (
+              <div className="px-6 pt-4 pb-2">
+                <button
+                  onClick={() => {
+                    setActiveTab(null);
+                    setAiSuggestions([]);
+                    setAiError(null);
+                  }}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition disabled:opacity-50"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+              </div>
+            )}
+
+            {/* Content - Only show when a tab is selected */}
+            {activeTab && (
+              <div className="px-6 pb-6 overflow-y-auto max-h-[60vh]">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {swapOptions.find(opt => opt.id === activeTab)?.label}
+                  </h3>
+                </div>
+                
+                {/* Manual Tab */}
               {activeTab === "manual" && (
                 <div className="space-y-4">
                   <div>
@@ -542,7 +628,17 @@ const ChangeMealModal = ({
                   )}
                 </div>
               )}
-            </div>
+
+                {/* Photo Tab */}
+                {activeTab === "photo" && (
+                  <PhotoMealTab
+                    mealType={mealType}
+                    onMealSelected={handleSelectPhotoMeal}
+                    isSaving={isSaving}
+                  />
+                )}
+              </div>
+            )}
 
             {/* Saving Overlay */}
             {isSaving && (

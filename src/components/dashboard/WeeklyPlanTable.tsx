@@ -16,6 +16,7 @@ interface WeeklyPlanTableProps {
   onAddWorkout?: (date: string, workout: WorkoutData) => void;
   getDayName: (dateStr: string) => string;
   formatDate: (dateStr: string) => string;
+  getDayStatus: (dateStr: string) => "past" | "current" | "future";
 }
 
 interface DeleteConfirmation {
@@ -36,6 +37,7 @@ const WeeklyPlanTable = ({
   onAddWorkout,
   getDayName,
   formatDate,
+  getDayStatus,
 }: WeeklyPlanTableProps) => {
   const [deleteConfirmation, setDeleteConfirmation] =
     useState<DeleteConfirmation | null>(null);
@@ -104,16 +106,33 @@ const WeeklyPlanTable = ({
               </th>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                const getHeaderStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50 text-green-800 border-l-2 border-r-2 border-green-300";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-100 text-gray-500 opacity-75";
+                  }
+                  return "bg-gray-50 text-gray-700";
+                };
                 return (
                   <th
                     key={date}
-                    className="p-3 text-center text-sm font-semibold text-gray-700 bg-gray-50 min-w-[140px]"
+                    className={`p-3 text-center text-sm font-semibold min-w-[140px] ${getHeaderStyles()}`}
                   >
                     <div>
-                      <div className="font-bold text-gray-900 text-xs">
+                      <div className={`font-bold text-xs ${
+                        dayStatus === "current" ? "text-green-900" : dayStatus === "past" ? "text-gray-500" : "text-gray-900"
+                      }`}>
                         {getDayName(date).slice(0, 3)}
+                        {dayStatus === "current" && (
+                          <span className="block text-[10px] font-bold text-green-600 mt-0.5">TODAY</span>
+                        )}
                       </div>
-                      <div className="text-xs text-gray-600">
+                      <div className={`text-xs ${
+                        dayStatus === "current" ? "text-green-700" : dayStatus === "past" ? "text-gray-400" : "text-gray-600"
+                      }`}>
                         {formatDate(date)}
                       </div>
                     </div>
@@ -130,8 +149,18 @@ const WeeklyPlanTable = ({
               </td>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     <TableMealItem
                       meal={dayData.meals.breakfast}
                       mealType="breakfast"
@@ -139,6 +168,7 @@ const WeeklyPlanTable = ({
                       onMealChange={(newMeal) =>
                         onMealChange(date, "breakfast", newMeal)
                       }
+                      dayStatus={dayStatus}
                     />
                   </td>
                 );
@@ -152,8 +182,18 @@ const WeeklyPlanTable = ({
               </td>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     <TableMealItem
                       meal={dayData.meals.lunch}
                       mealType="lunch"
@@ -161,6 +201,7 @@ const WeeklyPlanTable = ({
                       onMealChange={(newMeal) =>
                         onMealChange(date, "lunch", newMeal)
                       }
+                      dayStatus={dayStatus}
                     />
                   </td>
                 );
@@ -174,8 +215,18 @@ const WeeklyPlanTable = ({
               </td>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     <TableMealItem
                       meal={dayData.meals.dinner}
                       mealType="dinner"
@@ -183,6 +234,7 @@ const WeeklyPlanTable = ({
                       onMealChange={(newMeal) =>
                         onMealChange(date, "dinner", newMeal)
                       }
+                      dayStatus={dayStatus}
                     />
                   </td>
                 );
@@ -196,9 +248,19 @@ const WeeklyPlanTable = ({
               </td>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
                 const firstSnack = dayData.meals.snacks?.[0];
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     {firstSnack ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -211,6 +273,7 @@ const WeeklyPlanTable = ({
                               onMealChange={(newMeal) =>
                                 onMealChange(date, "snacks", newMeal)
                               }
+                              dayStatus={dayStatus}
                             />
                           </div>
                           {onDeleteSnack && (
@@ -272,8 +335,18 @@ const WeeklyPlanTable = ({
               </td>
               {dates.slice(0, 5).map((date) => {
                 const dayData = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     <div className="space-y-2">
                       {(() => {
                         const actualWorkouts = dayData.workouts.filter(
@@ -348,8 +421,18 @@ const WeeklyPlanTable = ({
                 </div>
               </td>
               {dates.slice(0, 5).map((date) => {
+                const dayStatus = getDayStatus(date);
+                const getCellStyles = () => {
+                  if (dayStatus === "current") {
+                    return "bg-green-50/50 border-l-2 border-r-2 border-green-200";
+                  }
+                  if (dayStatus === "past") {
+                    return "bg-gray-50/50 opacity-75";
+                  }
+                  return "";
+                };
                 return (
-                  <td key={date} className="p-3">
+                  <td key={date} className={`p-3 ${getCellStyles()}`}>
                     <div className="flex flex-wrap gap-1">
                       {Array.from({ length: 8 }).map((_, index) => (
                         <div

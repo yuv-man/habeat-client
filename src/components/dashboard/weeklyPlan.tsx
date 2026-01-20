@@ -113,6 +113,7 @@ const MealItem = ({
   onMealChange,
   onDelete,
   isSnack = false,
+  dayStatus,
 }: {
   meal: IMeal;
   mealType: string;
@@ -121,50 +122,70 @@ const MealItem = ({
   onMealChange: (newMeal: IMeal) => void;
   onDelete?: () => void;
   isSnack?: boolean;
-}) => (
-  <div className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
-    <div className="flex-1 min-w-0">
-      <div className="text-gray-600 text-sm capitalize">{mealType}</div>
-      <div className="font-medium text-gray-900 break-words line-clamp-2">
-        {formatMealName(meal.name)}
+  dayStatus?: "past" | "current" | "future";
+}) => {
+  const getTextColor = () => {
+    if (dayStatus === "past") return "text-gray-500";
+    if (dayStatus === "current") return "text-gray-900";
+    return "text-gray-700";
+  };
+
+  return (
+    <div
+      className={`flex items-center justify-between py-3 border-b border-gray-200 last:border-0 ${
+        dayStatus === "past" ? "opacity-75" : ""
+      }`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className={`text-sm capitalize ${dayStatus === "past" ? "text-gray-400" : "text-gray-600"}`}>
+          {mealType}
+        </div>
+        <div className={`font-medium break-words line-clamp-2 ${getTextColor()}`}>
+          {formatMealName(meal.name)}
+        </div>
+        <div className={`flex items-center gap-3 text-xs mt-0.5 ${dayStatus === "past" ? "text-gray-400" : "text-gray-500"}`}>
+          <span>{meal.calories} kcal</span>
+          {!isSnack && meal.prepTime > 0 && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {meal.prepTime} min
+            </span>
+          )}
+        </div>
       </div>
-      <div className="flex items-center gap-3 text-gray-500 text-xs mt-0.5">
-        <span>{meal.calories} kcal</span>
-        {!isSnack && meal.prepTime > 0 && (
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            {meal.prepTime} min
-          </span>
+      <div className="flex items-center gap-1">
+        {/* Show swap icon for all days (including past days) */}
+        <ChangeMealModal
+          currentMeal={meal}
+          mealType={mealType}
+          date={date}
+          snackIndex={isSnack ? snackIndex : undefined}
+          onMealChange={onMealChange}
+        >
+          <button
+            className={`hover:bg-green-50 p-2 rounded transition flex-shrink-0 ${
+              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-green-500"
+            }`}
+            aria-label="Swap meal"
+          >
+            <RefreshCw className="w-5 h-5" />
+          </button>
+        </ChangeMealModal>
+        {isSnack && onDelete && (
+          <button
+            onClick={onDelete}
+            className={`hover:bg-red-50 p-2 rounded transition flex-shrink-0 ${
+              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-red-500"
+            }`}
+            aria-label="Delete snack"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         )}
       </div>
     </div>
-    <div className="flex items-center gap-1">
-      <ChangeMealModal
-        currentMeal={meal}
-        mealType={mealType}
-        date={date}
-        snackIndex={isSnack ? snackIndex : undefined}
-        onMealChange={onMealChange}
-      >
-        <button
-          className="text-green-500 hover:bg-green-50 p-2 rounded transition flex-shrink-0"
-          aria-label="Swap meal"
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
-      </ChangeMealModal>
-      {isSnack && onDelete && (
-        <button
-          onClick={onDelete}
-          className="text-red-500 hover:bg-red-50 p-2 rounded transition flex-shrink-0"
-          aria-label="Delete snack"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
-      )}
-    </div>
-  </div>
-);
+  );
+};
 
 const ExerciseItem = ({
   workout,
@@ -218,24 +239,43 @@ const DayCard = ({
   dayName,
   isActive,
   onClick,
+  dayStatus,
 }: {
   date: string;
   dayName: string;
   isActive: boolean;
   onClick: () => void;
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex flex-col items-center gap-1 p-3 rounded-lg transition ${
-      isActive
-        ? "bg-green-500 text-white"
-        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-    }`}
-  >
-    <span className="font-semibold">{dayName}</span>
-    <span className="text-xs">{date}</span>
-  </button>
-);
+  dayStatus: "past" | "current" | "future";
+}) => {
+  const getStatusStyles = () => {
+    if (dayStatus === "current") {
+      return isActive
+        ? "bg-green-500 text-white border-2 border-green-600"
+        : "bg-green-100 text-green-800 border-2 border-green-300";
+    }
+    if (dayStatus === "past") {
+      return isActive
+        ? "bg-gray-400 text-white"
+        : "bg-gray-100 text-gray-500 opacity-75";
+    }
+    return isActive
+      ? "bg-blue-500 text-white"
+      : "bg-gray-100 text-gray-700 hover:bg-gray-200";
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center gap-1 p-3 rounded-lg transition ${getStatusStyles()}`}
+    >
+      <span className="font-semibold">{dayName}</span>
+      <span className="text-xs">{date}</span>
+      {dayStatus === "current" && (
+        <span className="text-[10px] font-bold">TODAY</span>
+      )}
+    </button>
+  );
+};
 
 const DayContent = ({
   dayData,
@@ -245,6 +285,7 @@ const DayContent = ({
   onDeleteWorkout,
   onAddWorkout,
   date,
+  dayStatus,
 }: {
   dayData: IDailyPlan;
   onMealChange: (mealType: string, newMeal: IMeal) => void;
@@ -253,6 +294,7 @@ const DayContent = ({
   onDeleteWorkout: (workout: WorkoutData) => void;
   onAddWorkout: (workout: WorkoutData) => void;
   date: Date;
+  dayStatus: "past" | "current" | "future";
 }) => {
   // Format date to YYYY-MM-DD for API calls
   const dateStr = date.toISOString().split("T")[0];
@@ -264,18 +306,21 @@ const DayContent = ({
         mealType="breakfast"
         date={dateStr}
         onMealChange={(newMeal) => onMealChange("breakfast", newMeal)}
+        dayStatus={dayStatus}
       />
       <MealItem
         meal={dayData.meals.lunch}
         mealType="lunch"
         date={dateStr}
         onMealChange={(newMeal) => onMealChange("lunch", newMeal)}
+        dayStatus={dayStatus}
       />
       <MealItem
         meal={dayData.meals.dinner}
         mealType="dinner"
         date={dateStr}
         onMealChange={(newMeal) => onMealChange("dinner", newMeal)}
+        dayStatus={dayStatus}
       />
       {dayData.meals.snacks.map((snack, idx) => (
         <MealItem
@@ -287,6 +332,7 @@ const DayContent = ({
           isSnack={true}
           onMealChange={(newMeal) => onMealChange("snacks", newMeal)}
           onDelete={() => onDeleteSnack(snack._id || idx.toString())}
+          dayStatus={dayStatus}
         />
       ))}
       <button
@@ -356,23 +402,24 @@ export default function WeeklyMealPlan() {
   const isPlanExpired = React.useMemo(() => {
     if (dates.length === 0) return false;
 
+    // Get today's date in local timezone
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
     // Get the last (most recent) date in the plan
     const lastDateStr = dates[dates.length - 1];
-    const lastDate = new Date(lastDateStr);
-    lastDate.setHours(0, 0, 0, 0);
+    const [year, month, day] = lastDateStr.split('-').map(Number);
+    const lastDate = new Date(year, month - 1, day);
 
     // Plan is expired if the last date is before today
-    return lastDate < today;
+    return lastDate < todayDate;
   }, [dates]);
 
   React.useEffect(() => {
     if (dates.length > 0 && (!selectedDate || !weeklyPlan[selectedDate])) {
-      // Try to find today's date in the plan
+      // Try to find today's date in the plan (using local timezone)
       const today = new Date();
-      const todayStr = today.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
       // Check if today exists in the plan dates
       const todayInPlan = dates.find((d) => d === todayStr);
@@ -402,15 +449,28 @@ export default function WeeklyMealPlan() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  // Helper function to determine day status
+  const getDayStatus = (dateStr: string): "past" | "current" | "future" => {
+    // Get today's date in local timezone (YYYY-MM-DD format)
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    // Compare date strings directly (both should be in YYYY-MM-DD format)
+    if (dateStr === todayStr) return "current";
+    
+    // For past/future comparison, parse dates in local timezone
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const dayDate = new Date(year, month - 1, day);
+    
+    if (dayDate < todayDate) return "past";
+    return "future";
+  };
+
   const handleMealChange = (date: string, mealType: string, newMeal: IMeal) => {
     if (!weeklyPlan || !user || !plan) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const mealDate = new Date(date);
-    mealDate.setHours(0, 0, 0, 0);
-
-    if (mealDate < today) return; // Prevent editing past days
+    // Allow meal changes for all days (including past days)
 
     // Update weeklyPlan
     const updatedWeeklyPlan = { ...weeklyPlan };
@@ -778,6 +838,7 @@ export default function WeeklyMealPlan() {
           }}
           getDayName={getDayName}
           formatDate={formatDate}
+          getDayStatus={getDayStatus}
         />
 
         {/* Mobile View */}
@@ -786,6 +847,7 @@ export default function WeeklyMealPlan() {
           <div className="grid grid-cols-7 gap-2 mb-6">
             {dates.map((date) => {
               const day = weeklyPlan[date];
+              const dayStatus = getDayStatus(date);
               return (
                 <DayCard
                   key={date}
@@ -795,15 +857,31 @@ export default function WeeklyMealPlan() {
                   date={day.date}
                   isActive={selectedDate === date}
                   onClick={() => setSelectedDate(date)}
+                  dayStatus={dayStatus}
                 />
               );
             })}
           </div>
 
           {/* Selected Day Content */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <div className={`p-4 rounded-lg ${
+            getDayStatus(selectedDate) === "current" 
+              ? "bg-green-50 border-2 border-green-200" 
+              : getDayStatus(selectedDate) === "past"
+              ? "bg-gray-50 border border-gray-200"
+              : "bg-gray-50 border border-gray-200"
+          }`}>
+            <h2 className={`text-xl font-bold mb-4 ${
+              getDayStatus(selectedDate) === "current"
+                ? "text-green-800"
+                : getDayStatus(selectedDate) === "past"
+                ? "text-gray-500"
+                : "text-gray-900"
+            }`}>
               {getDayName(selectedDate)}
+              {getDayStatus(selectedDate) === "current" && (
+                <span className="ml-2 text-sm font-normal text-green-600">(Today)</span>
+              )}
             </h2>
             {currentDay && (
               <DayContent
@@ -816,6 +894,7 @@ export default function WeeklyMealPlan() {
                 onDeleteWorkout={handleDeleteWorkout}
                 onAddWorkout={handleAddWorkout}
                 date={new Date(selectedDate)}
+                dayStatus={getDayStatus(selectedDate)}
               />
             )}
           </div>

@@ -145,7 +145,7 @@ const ShoppingList = () => {
         {/* Add Item Button */}
         <button
           onClick={() => setShowAddModal(true)}
-          className="fixed bottom-24 right-20 md:bottom-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-40"
+          className="fixed bottom-24 right-4 md:bottom-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-40"
         >
           <Plus className="w-6 h-6" />
         </button>

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Flame } from "lucide-react";
+import { Flame, Target } from "lucide-react";
 import { useEngagementStore } from "../../stores/engagementStore";
 import { cn } from "../../lib/utils";
 
@@ -47,6 +47,14 @@ export function EngagementBanner({
   }
 
   const streak = stats?.streak || 0;
+  const habitScore = stats?.habitScore || 0;
+
+  // Get habit score color
+  const getHabitScoreColor = (score: number) => {
+    if (score >= 70) return "text-green-500";
+    if (score >= 40) return "text-amber-500";
+    return "text-red-500";
+  };
 
   return (
     <div className={cn("flex items-center justify-between py-2 px-4 bg-white rounded-lg shadow-sm", className)}>
@@ -54,6 +62,13 @@ export function EngagementBanner({
       <div className="flex items-center gap-1.5">
         <span className="text-sm font-semibold text-gray-900">Day {streak}</span>
         <Flame className="w-4 h-4 text-orange-500" />
+      </div>
+
+      {/* Habit Score */}
+      <div className="flex items-center gap-1.5">
+        <Target className={cn("w-4 h-4", getHabitScoreColor(habitScore))} />
+        <span className={cn("text-sm font-semibold", getHabitScoreColor(habitScore))}>{habitScore}</span>
+        <span className="text-xs text-gray-400">score</span>
       </div>
 
       {/* Calories Ring */}

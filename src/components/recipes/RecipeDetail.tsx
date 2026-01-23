@@ -38,6 +38,10 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
   const ingredients = recipe.ingredients || [];
   const notes = getRecipeNote(recipe.mealName);
 
+  // Determine default tab: prefer ingredients if available, otherwise instructions
+  const defaultTab = ingredients.length > 0 ? "ingredients" : "instructions";
+  const [activeTab, setActiveTab] = useState<"ingredients" | "instructions">(defaultTab);
+
   // Get calories from macros
   const calories = recipe.macros?.calories || 0;
 
@@ -209,12 +213,41 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
           </div>
         </div>
 
-        {/* Ingredients Section */}
-        {ingredients.length > 0 && (
+        {/* Radio Buttons Toggle */}
+        {(ingredients.length > 0 || instructions.length > 0) && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Ingredients
-            </h2>
+            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
+              {ingredients.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("ingredients")}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition ${
+                    activeTab === "ingredients"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Ingredients
+                </button>
+              )}
+              {instructions.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("instructions")}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition ${
+                    activeTab === "instructions"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Instructions
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Ingredients Section */}
+        {activeTab === "ingredients" && ingredients.length > 0 && (
+          <div className="mb-6">
             <div className="space-y-2">
               {ingredients.map((ingredient, index) => {
                 const isChecked = checkedIngredients.has(index);
@@ -270,11 +303,8 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
         )}
 
         {/* Instructions Section */}
-        {instructions.length > 0 && (
+        {activeTab === "instructions" && instructions.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Instructions
-            </h2>
             <div className="space-y-4">
               {instructions.map((item) => (
                 <div key={item._id || item.step} className="flex gap-4">

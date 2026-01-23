@@ -14,6 +14,7 @@ import {
   Wheat,
   CircleDot,
   ShoppingCart,
+  BookOpen,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
@@ -124,10 +125,18 @@ const MealItem = ({
   isSnack?: boolean;
   dayStatus?: "past" | "current" | "future";
 }) => {
+  const navigate = useNavigate();
+  
   const getTextColor = () => {
     if (dayStatus === "past") return "text-gray-500";
     if (dayStatus === "current") return "text-gray-900";
     return "text-gray-700";
+  };
+
+  const handleViewRecipe = () => {
+    if (meal._id) {
+      navigate(`/recipes/${meal._id}`);
+    }
   };
 
   return (
@@ -154,8 +163,20 @@ const MealItem = ({
         </div>
       </div>
       <div className="flex items-center gap-1">
-        {/* Show swap icon for all days (including past days) */}
-        <ChangeMealModal
+        {/* Recipe button */}
+        {meal._id && mealType !== "snack" && (
+          <button
+            onClick={handleViewRecipe}
+            className={`hover:bg-blue-50 p-2 rounded transition flex-shrink-0 ${
+              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-blue-500"
+            }`}
+            aria-label="View recipe"
+          >
+            <BookOpen className="w-5 h-5" />
+          </button>
+        )}
+        { /* Show swap icon for all days (including past days) */}
+        {dayStatus !== "past" && <ChangeMealModal
           currentMeal={meal}
           mealType={mealType}
           date={date}
@@ -164,18 +185,18 @@ const MealItem = ({
         >
           <button
             className={`hover:bg-green-50 p-2 rounded transition flex-shrink-0 ${
-              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-green-500"
+              "text-green-500"
             }`}
             aria-label="Swap meal"
           >
             <RefreshCw className="w-5 h-5" />
           </button>
-        </ChangeMealModal>
-        {isSnack && onDelete && (
+        </ChangeMealModal>}
+        {isSnack && onDelete && dayStatus !== "past" && (
           <button
             onClick={onDelete}
             className={`hover:bg-red-50 p-2 rounded transition flex-shrink-0 ${
-              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-red-500"
+              "text-red-500"
             }`}
             aria-label="Delete snack"
           >
@@ -540,7 +561,11 @@ export default function WeeklyMealPlan() {
     setShowAddSnackModal(true);
   };
 
-  const handleConfirmAddSnack = async (snackName: string) => {
+  const handleConfirmAddSnack = async (
+    snackName: string,
+    time?: string,
+    photoBase64?: string
+  ) => {
     if (!snackName.trim() || !addSnackDate || !plan) return;
 
     setIsAddingSnack(true);
@@ -549,7 +574,9 @@ export default function WeeklyMealPlan() {
       const response = await userAPI.addSnack(
         plan._id,
         addSnackDate,
-        snackName.trim()
+        snackName.trim(),
+        time,
+        photoBase64
       );
 
       // Update local state with the returned plan

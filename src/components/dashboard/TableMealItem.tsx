@@ -1,7 +1,8 @@
-import { Clock } from "lucide-react";
+import { Clock, BookOpen } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import { formatMealName } from "@/lib/formatters";
+import { useNavigate } from "react-router-dom";
 
 interface TableMealItemProps {
   meal: IMeal;
@@ -20,10 +21,18 @@ const TableMealItem = ({
   onMealChange,
   dayStatus,
 }: TableMealItemProps) => {
+  const navigate = useNavigate();
+  
   const getTextColor = () => {
     if (dayStatus === "past") return "text-gray-500";
     if (dayStatus === "current") return "text-gray-900";
     return "text-gray-700";
+  };
+
+  const handleViewRecipe = () => {
+    if (meal._id) {
+      navigate(`/recipes/${meal._id}`);
+    }
   };
 
   return (
@@ -51,20 +60,35 @@ const TableMealItem = ({
             )}
           </div>
         </div>
-        {/* Show change button for all days (including past days) */}
-        <ChangeMealModal
-          currentMeal={meal}
-          mealType={mealType}
-          date={date}
-          snackIndex={mealType === "snacks" ? snackIndex : undefined}
-          onMealChange={onMealChange}
-        >
-          <button className={`hover:bg-green-50 px-2 py-1 rounded text-xs font-medium transition flex-shrink-0 ${
-            dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-green-500"
-          }`}>
-            Change
-          </button>
-        </ChangeMealModal>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Recipe button */}
+          {meal._id && mealType !== "snacks" && (
+            <button
+              onClick={handleViewRecipe}
+              className={`hover:bg-blue-50 p-1.5 rounded transition ${
+                dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-blue-500"
+              }`}
+              aria-label="View recipe"
+              title="View recipe"
+            >
+              <BookOpen className="w-4 h-4" />
+            </button>
+          )}
+          {/* Show change button for all days (including past days) */}
+          <ChangeMealModal
+            currentMeal={meal}
+            mealType={mealType}
+            date={date}
+            snackIndex={mealType === "snacks" ? snackIndex : undefined}
+            onMealChange={onMealChange}
+          >
+            <button className={`hover:bg-green-50 px-2 py-1 rounded text-xs font-medium transition flex-shrink-0 ${
+              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-green-500"
+            }`}>
+              Change
+            </button>
+          </ChangeMealModal>
+        </div>
       </div>
     </div>
   );

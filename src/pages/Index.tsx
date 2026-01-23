@@ -8,8 +8,9 @@ import {
 } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Target } from "lucide-react";
-import bgImage from "@/assets/bg-image.png";
-import logo from "@/assets/habeatIcon.png";
+import happyFruits from "@/assets/happy-fruits.webp";
+//import logo from "@/assets/habeatIcon.png";
+import logo from "@/assets/logos/app10.webp";
 import { features } from "@/lib/paths";
 import AuthModal from "@/components/auth/AuthModal";
 
@@ -22,11 +23,11 @@ const Index = () => {
       <div className="md:hidden min-h-screen bg-white flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
           {/* Logo */}
-          <div className="mb-10">
+          <div className="mb-3">
             <img
               src={logo}
               alt="Habeat"
-              className="w-20 h-20 rounded-2xl shadow-lg"
+              className="w-20 h-auto"
             />
           </div>
 
@@ -50,6 +51,11 @@ const Index = () => {
               </span>
             </div>
           </div>
+          <img
+            src={happyFruits}
+            alt="Healthy food and nutrition"
+            className="h-60 w-auto mx-auto"
+          />
 
           {/* Buttons */}
           <div className="w-full space-y-4 mt-auto">
@@ -79,7 +85,7 @@ const Index = () => {
         <section className="relative text-white overflow-hidden">
           <div className="absolute inset-0 opacity-50">
             <img
-              src={bgImage}
+              src={happyFruits}
               alt="Healthy food and nutrition"
               className="w-full h-full object-cover"
             />

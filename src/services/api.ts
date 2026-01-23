@@ -1055,12 +1055,21 @@ const getRescueMeal = async (
 const addSnack = async (
   planId: string,
   date: string,
-  name: string
+  name: string,
+  time?: string,
+  photoBase64?: string
 ): Promise<ApiResponse<{ plan: IPlan }>> => {
   return withErrorHandling(async () => {
+    const payload: { date: string; name: string; time?: string; photoBase64?: string } = {
+      date,
+      name,
+    };
+    if (time) payload.time = time;
+    if (photoBase64) payload.photoBase64 = photoBase64;
+
     const response = await userClient.post<ApiResponse<{ plan: IPlan }>>(
       `/plan/${planId}/add-snack`,
-      { date, name },
+      payload,
       { headers: getAuthHeaders() }
     );
     return response.data;

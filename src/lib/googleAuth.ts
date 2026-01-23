@@ -31,9 +31,19 @@ export const initializeSocialLogin = async (): Promise<void> => {
 export const signInWithGoogle = async (
   _action: "signin" | "signup" = "signin"
 ): Promise<string> => {
-  const useMobile = shouldUseMobileAuth();
+  // Import Capacitor to check platform directly
+  const { Capacitor } = await import("@capacitor/core");
+  const platform = Capacitor.getPlatform();
+  const isNative = Capacitor.isNativePlatform();
+  
+  console.log("[signInWithGoogle] Platform detection:", {
+    platform,
+    isNative,
+    shouldUseMobile: shouldUseMobileAuth(),
+  });
 
-  if (useMobile) {
+  // On native platforms, ALWAYS use native flow - never fall back to web
+  if (isNative || platform === "ios" || platform === "android") {
     // Native mobile authentication using Capacitor Social Login
     try {
       console.log("[signInWithGoogle] Mobile flow - Starting Google Sign-In");
@@ -85,34 +95,40 @@ export const signInWithGoogle = async (
     }
   } else {
     // Web authentication using Google Identity Services with popup
-    try {
-      console.log("[signInWithGoogle] Starting web Google OAuth");
+    // Only use this on actual web platforms, never on native
+    if (!isNative && platform === "web") {
+      try {
+        console.log("[signInWithGoogle] Starting web Google OAuth");
 
-      // Load Google script first
-      const { loadGoogleScript, triggerGoogleSignIn } = await import(
-        "./googleOAuth"
-      );
-      await loadGoogleScript();
+        // Load Google script first
+        const { loadGoogleScript, triggerGoogleSignIn } = await import(
+          "./googleOAuth"
+        );
+        await loadGoogleScript();
 
-      // Trigger popup-based sign-in
-      const idToken = await triggerGoogleSignIn();
+        // Trigger popup-based sign-in
+        const idToken = await triggerGoogleSignIn();
 
-      if (!idToken) {
-        throw new Error("Failed to get ID token from Google");
+        if (!idToken) {
+          throw new Error("Failed to get ID token from Google");
+        }
+
+        console.log("[signInWithGoogle] Successfully got idToken");
+        return idToken;
+      } catch (error) {
+        console.error("[signInWithGoogle] Error:", error);
+        // Handle user cancellation
+        if (
+          error instanceof Error &&
+          (error.message.includes("cancel") || error.message.includes("blocked"))
+        ) {
+          throw new Error("Google sign-in was cancelled");
+        }
+        throw error;
       }
-
-      console.log("[signInWithGoogle] Successfully got idToken");
-      return idToken;
-    } catch (error) {
-      console.error("[signInWithGoogle] Error:", error);
-      // Handle user cancellation
-      if (
-        error instanceof Error &&
-        (error.message.includes("cancel") || error.message.includes("blocked"))
-      ) {
-        throw new Error("Google sign-in was cancelled");
-      }
-      throw error;
+    } else {
+      // Should never reach here on native platforms
+      throw new Error(`Google Sign-In is not available on platform: ${platform}. Please ensure the native Google Sign-In plugin is properly configured.`);
     }
   }
 };

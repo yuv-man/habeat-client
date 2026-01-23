@@ -60,5 +60,9 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Habeat needs camera access to take photos of your meals for nutrition tracking.</string>
+	<key>GIDClientID</key>
+	<string>841911005748-ml037ut5apt36r01gciqm1b208a9dh7v.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>841911005748-spbrlll6ubcc54gjg8govgs6e7o7p533.apps.googleusercontent.com</string>
 </dict>
 </plist>

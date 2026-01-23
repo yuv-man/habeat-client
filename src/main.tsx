@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { isNativePlatform } from "./lib/platform";
+import { Capacitor } from "@capacitor/core";
 
 // Suppress harmless browser extension errors
 window.addEventListener("error", (event) => {
@@ -35,8 +36,17 @@ window.addEventListener("unhandledrejection", (event) => {
 // Initialize Social Login plugin for native platforms
 if (isNativePlatform()) {
   console.log("[main] Native platform detected, initializing Social Login");
-  import("@capgo/capacitor-social-login")
-    .then(({ SocialLogin }) => {
+  
+  // Wait for Capacitor to be ready before initializing
+  const initializeSocialLogin = async () => {
+    try {
+      // Ensure Capacitor is available
+      if (!Capacitor.isNativePlatform()) {
+        console.warn("[main] Capacitor not ready, skipping initialization");
+        return;
+      }
+      
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
       console.log("[main] Social Login plugin loaded successfully");
       
       // Get client IDs from environment
@@ -54,42 +64,32 @@ if (isNativePlatform()) {
 
       const initConfig: any = {};
 
-      // Configure iOS if client ID is available
+      // Configure iOS - need both iOSClientId and webClientId
       if (iosClientId && webClientId) {
         console.log("[main] Configuring iOS client");
         initConfig.google = {
+          webClientId: webClientId, // Required for iOS as well
           iOSClientId: iosClientId,
-          iOSServerClientId: webClientId, // Same as webClientId for backend verification
+          iOSServerClientId: webClientId, // Server client ID for backend verification
           mode: "online", // 'online' for user data, 'offline' for server auth code only
         };
       }
 
       // Configure Android - only needs webClientId
-      if (webClientId) {
+      if (webClientId && !iosClientId) {
         console.log("[main] Configuring Android client");
-        if (!initConfig.google) {
-          initConfig.google = {};
-        }
-        initConfig.google.webClientId = webClientId;
+        initConfig.google = {
+          webClientId: webClientId,
+        };
       }
 
       console.log("[main] Init config:", JSON.stringify(initConfig, null, 2));
 
       // Initialize if we have at least one platform configured
-      // For Android, webClientId is sufficient; for iOS, need both iosClientId and webClientId
       if (initConfig.google && webClientId) {
         console.log("[main] Initializing Social Login plugin");
-        SocialLogin.initialize(initConfig)
-          .then(() => {
-            console.log("[main] Social Login plugin initialized successfully");
-          })
-          .catch((error) => {
-            console.error("[main] Failed to initialize Social Login plugin:", {
-              error,
-              message: error instanceof Error ? error.message : String(error),
-              stack: error instanceof Error ? error.stack : undefined,
-            });
-          });
+        await SocialLogin.initialize(initConfig);
+        console.log("[main] Social Login plugin initialized successfully");
       } else {
         console.warn("[main] Skipping initialization - no valid config", {
           hasGoogleConfig: !!initConfig.google,
@@ -98,14 +98,23 @@ if (isNativePlatform()) {
           hasWebClientId: !!webClientId,
         });
       }
-    })
-    .catch((error) => {
-      console.error("[main] Failed to load Social Login plugin:", {
+    } catch (error) {
+      console.error("[main] Failed to initialize Social Login plugin:", {
         error,
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
       });
+    }
+  };
+
+  // Initialize after DOM is ready and Capacitor bridge is established
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(initializeSocialLogin, 500);
+  } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(initializeSocialLogin, 500);
     });
+  }
 } else {
   console.log("[main] Web platform detected, skipping Social Login initialization");
 }

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Target } from "lucide-react";
-import happyFruits from "@/assets/happy-fruits.webp";
+import foodBg from "@/assets/food-bg.webp";
 //import logo from "@/assets/habeatIcon.png";
 import logo from "@/assets/logos/app10.webp";
 import { features } from "@/lib/paths";
@@ -52,7 +52,7 @@ const Index = () => {
             </div>
           </div>
           <img
-            src={happyFruits}
+            src={foodBg}
             alt="Healthy food and nutrition"
             className="h-60 w-auto mx-auto"
           />
@@ -85,7 +85,7 @@ const Index = () => {
         <section className="relative text-white overflow-hidden">
           <div className="absolute inset-0 opacity-50">
             <img
-              src={happyFruits}
+              src={foodBg}
               alt="Healthy food and nutrition"
               className="w-full h-full object-cover"
             />

@@ -1,25 +1,13 @@
-import { useState } from "react";
 import {
-  Leaf,
-  Fish,
-  MilkOff,
-  WheatOff,
   Nut,
   Apple,
-  Beef,
-  Salad,
   Heart,
   Dumbbell,
   Timer,
   Scale,
-  Vegan,
-  Plus,
-  X,
 } from "lucide-react";
-import { KYCData, dietGoals, dietaryRestrictions } from "./types";
+import { KYCData, dietGoals } from "./types";
 import KycLayout from "./KycLayout";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 interface DietStepProps {
   kycData: KYCData;
@@ -28,9 +16,11 @@ interface DietStepProps {
   error: string;
   onSubmit: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
-// Icon component for dietary preferences
+// Icon component for diet goals
 const DietIcon = ({
   type,
   className,
@@ -41,7 +31,6 @@ const DietIcon = ({
   const iconProps = { className: className || "w-8 h-8", strokeWidth: 1.5 };
 
   switch (type) {
-    // Diet goals
     case "keto":
       return <Nut {...iconProps} />;
     case "healthy-balance":
@@ -70,23 +59,6 @@ const DietIcon = ({
       return <Scale {...iconProps} />;
     case "fasting":
       return <Timer {...iconProps} />;
-    // Dietary restrictions
-    case "vegan":
-      return <Vegan {...iconProps} />;
-    case "vegetarian":
-      return <Leaf {...iconProps} />;
-    case "pescatarian":
-      return <Fish {...iconProps} />;
-    case "dairy-free":
-      return <MilkOff {...iconProps} />;
-    case "gluten-free":
-      return <WheatOff {...iconProps} />;
-    case "paleo":
-      return <Beef {...iconProps} />;
-    case "low-carb":
-      return <Salad {...iconProps} />;
-    case "other":
-      return <Plus {...iconProps} />;
     default:
       return <Apple {...iconProps} />;
   }
@@ -99,9 +71,9 @@ export default function DietStep({
   error,
   onSubmit,
   onBack,
+  currentStep,
+  totalSteps,
 }: DietStepProps) {
-  const [otherRestriction, setOtherRestriction] = useState("");
-
   // Single selection for diet goal
   const selectDietGoal = (goalId: string) => {
     setKycData((prev) => ({
@@ -110,91 +82,24 @@ export default function DietStep({
     }));
   };
 
-  // Multi-selection for dietary restrictions
-  const toggleRestriction = (restrictionId: string) => {
-    setKycData((prev) => {
-      const current = prev.dietaryRestrictions || [];
-      const hasRestriction = current.includes(restrictionId);
-      
-      if (restrictionId === "other") {
-        // Toggle "other" option
-        if (hasRestriction) {
-          // Remove "other" and any custom restrictions
-          const customRestrictions = current.filter((r) => !r.startsWith("other:"));
-          return {
-            ...prev,
-            dietaryRestrictions: customRestrictions.filter((r) => r !== "other"),
-          };
-        } else {
-          // Add "other"
-          return {
-            ...prev,
-            dietaryRestrictions: [...current, "other"],
-          };
-        }
-      }
-      
-      return {
-        ...prev,
-        dietaryRestrictions: hasRestriction
-          ? current.filter((r) => r !== restrictionId)
-          : [...current, restrictionId],
-      };
-    });
-  };
-
-  const addOtherRestriction = () => {
-    if (otherRestriction.trim()) {
-      setKycData((prev) => {
-        const current = prev.dietaryRestrictions || [];
-        const customValue = `other:${otherRestriction.trim()}`;
-        if (!current.includes(customValue)) {
-          return {
-            ...prev,
-            dietaryRestrictions: [...current, customValue],
-          };
-        }
-        return prev;
-      });
-      setOtherRestriction("");
-    }
-  };
-
-  const removeOtherRestriction = (value: string) => {
-    setKycData((prev) => {
-      const current = prev.dietaryRestrictions || [];
-      return {
-        ...prev,
-        dietaryRestrictions: current.filter((r) => r !== value),
-      };
-    });
-  };
-
   const isGoalSelected = (goalId: string) => kycData.dietType === goalId;
-  const isRestrictionSelected = (restrictionId: string) =>
-    (kycData.dietaryRestrictions || []).includes(restrictionId);
-
   const hasGoalSelection = kycData.dietType && kycData.dietType.length > 0;
-  
-  // Get custom restrictions (those starting with "other:")
-  const customRestrictions = (kycData.dietaryRestrictions || []).filter((r) =>
-    r.startsWith("other:")
-  );
-  const hasOtherSelected = isRestrictionSelected("other");
 
   return (
     <KycLayout
-      title="Diet & Goals"
-      description="Select your health goal and any dietary restrictions."
+      title="Diet Goal"
+      description="Select your health and fitness goal."
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
       submitText="Continue"
       submitDisabled={!hasGoalSelection}
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       {/* Diet Goals Section - Single Select */}
-      <div className="mb-8">
+      <div>
         <h3 className="text-lg font-bold text-gray-900 mb-3">
           What's your goal?
         </h3>
@@ -234,94 +139,6 @@ export default function DietStep({
             );
           })}
         </div>
-      </div>
-
-      {/* Dietary Restrictions Section - Multi Select */}
-      <div>
-        <h3 className="text-lg font-bold text-gray-900 mb-3">
-          Any dietary restrictions?
-        </h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Select all that apply (optional)
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          {dietaryRestrictions.map((restriction) => {
-            const selected = isRestrictionSelected(restriction.id);
-            return (
-              <button
-                key={restriction.id}
-                onClick={() => toggleRestriction(restriction.id)}
-                className={`
-                  flex flex-col items-center justify-center
-                  p-4 rounded-xl border-2 transition-all duration-200
-                  ${
-                    selected
-                      ? "border-blue-500 bg-blue-50 shadow-sm"
-                      : "border-gray-200 bg-white hover:border-gray-300"
-                  }
-                `}
-              >
-                <div
-                  className={`mb-2 ${
-                    selected ? "text-blue-600" : "text-gray-700"
-                  }`}
-                >
-                  <DietIcon type={restriction.icon} className="w-8 h-8" />
-                </div>
-                <span
-                  className={`text-xs font-medium text-center ${
-                    selected ? "text-blue-600" : "text-gray-800"
-                  }`}
-                >
-                  {restriction.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Custom Dietary Restrictions Input */}
-        {hasOtherSelected && (
-          <div className="mt-4">
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {customRestrictions.map((restriction) => {
-                const value = restriction.replace("other:", "");
-                return (
-                  <div
-                    key={restriction}
-                    className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
-                  >
-                    <span>{value}</span>
-                    <button
-                      onClick={() => removeOtherRestriction(restriction)}
-                      className="hover:text-blue-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <Input
-                value={otherRestriction}
-                onChange={(e) => setOtherRestriction(e.target.value)}
-                placeholder="Add custom dietary restriction"
-                className="h-9 text-sm"
-                onKeyPress={(e) => e.key === "Enter" && addOtherRestriction()}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addOtherRestriction}
-                size="sm"
-                className="h-9 px-2"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     </KycLayout>
   );

@@ -8,6 +8,8 @@ interface ProfileStepProps {
   error: string;
   onSubmit: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function ProfileStep({
@@ -17,6 +19,8 @@ export default function ProfileStep({
   error,
   onSubmit,
   onBack,
+  currentStep,
+  totalSteps,
 }: ProfileStepProps) {
   const isValid =
     kycData.weight && kycData.height && kycData.age && kycData.gender;
@@ -31,6 +35,8 @@ export default function ProfileStep({
       error={error}
       submitText="Continue"
       submitDisabled={!isValid}
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       <div className="space-y-6">
         <div>

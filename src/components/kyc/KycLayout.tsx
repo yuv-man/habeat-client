@@ -13,6 +13,8 @@ interface KycLayoutProps {
   submitText?: string;
   submitDisabled?: boolean;
   showBackButton?: boolean;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function KycLayout({
@@ -26,11 +28,35 @@ export default function KycLayout({
   submitText = "Next",
   submitDisabled = false,
   showBackButton = true,
+  currentStep,
+  totalSteps,
 }: KycLayoutProps) {
+  const progressPercentage =
+    currentStep && totalSteps ? (currentStep / totalSteps) * 100 : 0;
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-white z-10">
+        {/* Progress Bar */}
+        {currentStep && totalSteps && (
+          <div className="px-4 pt-4 pb-2">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-gray-600">
+                Step {currentStep} of {totalSteps}
+              </span>
+              <span className="text-xs font-medium text-gray-600">
+                {Math.round(progressPercentage)}%
+              </span>
+            </div>
+            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-400 to-green-500 rounded-full transition-all duration-300 ease-out"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between px-4 py-4">
           {showBackButton ? (
             <button

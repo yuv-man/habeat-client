@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,9 +14,63 @@ import foodBg from "@/assets/food-bg.webp";
 import logo from "@/assets/logos/app10.webp";
 import { features } from "@/lib/paths";
 import AuthModal from "@/components/auth/AuthModal";
+import { useAuthStore } from "@/stores/authStore";
+import { isNativePlatform } from "@/lib/platform";
+import MealLoader from "@/components/helper/MealLoader";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, token, loading } = useAuthStore();
+  const isMobile = isNativePlatform();
+
+  // Check authentication status on mount (mobile only)
+  useEffect(() => {
+    if (!isMobile) {
+      // On web, show landing page immediately
+      return;
+    }
+
+    // On mobile, check auth and redirect if authenticated
+    const checkAuth = () => {
+      const { user: currentUser, token: currentToken, loading: currentLoading } = useAuthStore.getState();
+      
+      // If still loading, wait a bit more
+      if (currentLoading) {
+        setTimeout(checkAuth, 100);
+        return;
+      }
+
+      // Auth check is complete - redirect if authenticated
+      if (currentUser && currentToken) {
+        navigate("/daily-tracker");
+      }
+      // If not authenticated, show login page (component will render normally)
+    };
+
+    checkAuth();
+  }, [isMobile, navigate]);
+
+  // Show loading screen on mobile while checking auth
+  if (isMobile && (loading || (token && !user))) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <MealLoader customMessages={["Loading..."]} />
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated on mobile, don't show login page (will redirect)
+  if (isMobile && user && token) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <MealLoader customMessages={["Loading..."]} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -93,7 +148,7 @@ const Index = () => {
           <div className="relative z-10 container mx-auto px-6 py-20">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                Welcome to <span className="text-yellow-300">Habeat</span>
+                Welcome to <span className="text-yellow-300">Habeats</span>
               </h1>
               <p
                 className="text-xl md:text-2xl mb-8 text-white font-bold"

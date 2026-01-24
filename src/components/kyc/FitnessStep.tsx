@@ -8,6 +8,8 @@ interface FitnessStepProps {
   error: string;
   onSubmit: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function FitnessStep({
@@ -17,6 +19,8 @@ export default function FitnessStep({
   error,
   onSubmit,
   onBack,
+  currentStep,
+  totalSteps,
 }: FitnessStepProps) {
   return (
     <KycLayout
@@ -27,6 +31,8 @@ export default function FitnessStep({
       loading={loading}
       error={error}
       submitText="Continue"
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       <div className="mb-8">
         <div className="flex items-center justify-center mb-8">

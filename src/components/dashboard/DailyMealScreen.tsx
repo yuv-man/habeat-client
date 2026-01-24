@@ -140,22 +140,14 @@ const DailyMealScreen = () => {
       return "future";
     }
 
-    // Use local time (getHours/getMinutes use local timezone)
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight (local time)
-
-    // Get meal time in minutes since midnight (local time)
-    const mealTimeStr =
-      mealTimes[mealType as keyof typeof mealTimes] || "12:00";
-    const [mealHour, mealMinute] = mealTimeStr.split(":").map(Number);
-    const mealTime = mealHour * 60 + mealMinute;
-    const mealTimeMinus30Min = mealTime - 30; // 30 minutes before meal time
-    const mealTimePlusOneHour = mealTime + 60; // meal time + 1 hour
-
     // If meal is completed (eaten), it's past
     if (meal.done) {
       return "past";
     }
+
+    // Use local time (getHours/getMinutes use local timezone)
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // minutes since midnight (local time)
 
     // Get all meal times for comparison (breakfast, lunch, dinner only - snacks excluded)
     const breakfastTime = mealTimes.breakfast
@@ -177,66 +169,77 @@ const DailyMealScreen = () => {
         })()
       : 19 * 60; // 19:00 default
 
-    // Calculate meal times + 1 hour to check if they're past
-    const breakfastTimePlusOneHour = breakfastTime + 60;
-    const lunchTimePlusOneHour = lunchTime + 60;
-    const dinnerTimePlusOneHour = dinnerTime + 60;
+    const midnight = 24 * 60; // 1440 minutes (midnight)
 
-    // Check if meal time + 1 hour has passed for this specific meal
-    if (currentTime >= mealTimePlusOneHour) {
+    // Check if previous meals are done (to determine if next meal should be current)
+    const breakfastDone = dailyProgress?.meals?.breakfast?.done || false;
+    const lunchDone = dailyProgress?.meals?.lunch?.done || false;
+
+    // Helper to check if breakfast is past (done or past its window)
+    const breakfastPast = breakfastDone || currentTime >= (lunchTime - 60);
+    // Helper to check if lunch is past (done or past its window)
+    const lunchPast = lunchDone || currentTime >= (dinnerTime - 60);
+
+    // Determine if meal is current based on new rules:
+    // Breakfast: current from breakfast time until done OR until 1 hour before lunch
+    // Lunch: current from lunch time until done OR until 1 hour before dinner (or if breakfast is past)
+    // Dinner: current from dinner time until done OR until midnight (or if lunch is past)
+    if (mealType === "breakfast") {
+      // Breakfast is not current before breakfast time
+      if (currentTime < breakfastTime) {
+        return "future";
+      }
+      // Breakfast is current until 1 hour before lunch
+      const lunchTimeMinusOneHour = lunchTime - 60;
+      if (currentTime < lunchTimeMinusOneHour) {
+        return "current";
+      }
       return "past";
     }
 
-    // Check completion status of other meals (if dailyProgress is available)
-    const breakfastDone = dailyProgress?.meals?.breakfast?.done || false;
-    const lunchDone = dailyProgress?.meals?.lunch?.done || false;
-    const dinnerDone = dailyProgress?.meals?.dinner?.done || false;
-
-    // Determine which meal should be "current" based on completion status and time:
-    // Priority: Check if previous meals are completed first, then check time
-    let currentMealType: string;
-
-    if (lunchDone) {
-      // Lunch is completed, dinner is current
-      currentMealType = "dinner";
-    } else if (breakfastDone) {
-      // Breakfast is completed, lunch is current
-      currentMealType = "lunch";
-    } else if (
-      dinnerDone ||
-      currentTime >= dinnerTimePlusOneHour ||
-      currentTime < breakfastTime
-    ) {
-      // Dinner is completed or past (or before breakfast), breakfast (next day) is current
-      currentMealType = "breakfast";
-    } else if (currentTime >= lunchTimePlusOneHour) {
-      // Lunch time + 1 hour has passed, dinner is current
-      currentMealType = "dinner";
-    } else if (currentTime >= breakfastTimePlusOneHour) {
-      // Breakfast time + 1 hour has passed, lunch is current
-      currentMealType = "lunch";
-    } else {
-      // No meal has passed yet, determine based on time windows
-      if (currentTime >= breakfastTime && currentTime < lunchTime) {
-        currentMealType = "breakfast";
-      } else if (currentTime >= lunchTime && currentTime < dinnerTime) {
-        currentMealType = "lunch";
-      } else {
-        currentMealType = "dinner";
+    if (mealType === "lunch") {
+      // If breakfast is past, lunch becomes current immediately
+      if (breakfastPast) {
+        // Lunch is current until 1 hour before dinner
+        const dinnerTimeMinusOneHour = dinnerTime - 60;
+        if (currentTime < dinnerTimeMinusOneHour) {
+          return "current";
+        }
+        return "past";
       }
+      // Normal time-based logic
+      if (currentTime < lunchTime) {
+        return "future";
+      }
+      // Lunch is current until 1 hour before dinner
+      const dinnerTimeMinusOneHour = dinnerTime - 60;
+      if (currentTime < dinnerTimeMinusOneHour) {
+        return "current";
+      }
+      return "past";
     }
 
-    // Mark as current if this is the current meal
-    if (mealType === currentMealType) {
-      return "current";
+    if (mealType === "dinner") {
+      // If lunch is past, dinner becomes current immediately
+      if (lunchPast) {
+        // Dinner is current until midnight
+        if (currentTime < midnight) {
+          return "current";
+        }
+        return "past";
+      }
+      // Normal time-based logic
+      if (currentTime < dinnerTime) {
+        return "future";
+      }
+      // Dinner is current until midnight
+      if (currentTime < midnight) {
+        return "current";
+      }
+      return "past";
     }
 
-    // Check if meal time hasn't arrived yet (more than 30 minutes before)
-    if (currentTime < mealTimeMinus30Min) {
-      return "future";
-    }
-
-    // Otherwise it's future
+    // Default to future for unknown meal types
     return "future";
   };
 

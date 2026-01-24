@@ -124,6 +124,7 @@ const availableImages = [
   "turkey-and-hummus-wrap-with-side-salad",
   "lean-steak-with-quinoa-and-asparagus",
   "baked-cod-with-sweet-potato-wedges-and-green-beans",
+  "herb-crusted-beef-steak-with-potato-wedges"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -369,6 +370,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "steak-and-roasted-vegetables",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "lean-steak-with-quinoa-and-asparagus",
+    "herb-crusted-beef-steak-with-potato-wedges"
   ],
   meatballs: ["meat-balls"],
   meat: [
@@ -380,6 +382,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
     "lean-steak-with-quinoa-and-asparagus",
+    "herb-crusted-beef-steak-with-potato-wedges"
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],

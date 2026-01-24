@@ -9,6 +9,8 @@ interface FastingHoursStepProps {
   error: string;
   onSubmit: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function FastingHoursStep({
@@ -18,6 +20,8 @@ export default function FastingHoursStep({
   error,
   onSubmit,
   onBack,
+  currentStep,
+  totalSteps,
 }: FastingHoursStepProps) {
   const [fastingHours, setFastingHours] = useState(
     kycData.fastingHours?.toString() || "16"
@@ -51,6 +55,8 @@ export default function FastingHoursStep({
       error={error}
       submitText="Continue"
       submitDisabled={!isValid}
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       <div className="space-y-6">
         {/* Fasting Hours */}

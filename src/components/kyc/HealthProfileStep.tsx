@@ -13,6 +13,8 @@ interface HealthProfileStepProps {
   error: string;
   onSubmit: () => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function HealthProfileStep({
@@ -21,6 +23,8 @@ export default function HealthProfileStep({
   error,
   onSubmit,
   onBack,
+  currentStep,
+  totalSteps,
 }: HealthProfileStepProps) {
   const userDataForCalc = {
     weight: parseFloat(kycData.weight) || 0,
@@ -42,6 +46,8 @@ export default function HealthProfileStep({
       loading={loading}
       error={error}
       submitText="Complete Registration"
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       <div className="space-y-4">
         {/* BMR Card - Green */}

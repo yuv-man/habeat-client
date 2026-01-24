@@ -345,8 +345,8 @@ const MealCard = ({
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {meal.ingredients.slice(0, 5).map((ingredient, idx) => {
-                    const parts = ingredient.split("|");
-                    const name = parts[0]?.replace(/_/g, " ") || ingredient;
+                    const parts = ingredient?.split("|");
+                    const name = parts?.[0]?.replace(/_/g, " ") || ingredient;
                     return (
                       <span
                         key={idx}

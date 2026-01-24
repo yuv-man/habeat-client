@@ -18,6 +18,8 @@ interface PreferencesStepProps {
   onToggleOption: (list: string, value: string) => void;
   onAddCustomItem: (category: string, inputKey: string) => void;
   onBack: () => void;
+  currentStep?: number;
+  totalSteps?: number;
 }
 
 export default function PreferencesStep({
@@ -30,6 +32,8 @@ export default function PreferencesStep({
   onToggleOption,
   onAddCustomItem,
   onBack,
+  currentStep,
+  totalSteps,
 }: PreferencesStepProps) {
   return (
     <KycLayout
@@ -40,6 +44,8 @@ export default function PreferencesStep({
       loading={loading}
       error={error}
       submitText="Continue"
+      currentStep={currentStep}
+      totalSteps={totalSteps}
     >
       <div className="space-y-8">
         {/* Allergies */}

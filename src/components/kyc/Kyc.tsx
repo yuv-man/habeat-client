@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SignupStep from "./SignupStep";
 import DietStep from "./DietStep";
+import DietaryRestrictionsStep from "./DietaryRestrictionsStep";
 import FastingHoursStep from "./FastingHoursStep";
 import ProfileStep from "./ProfileStep";
 import HealthProfileStep from "./HealthProfileStep";
@@ -179,6 +180,12 @@ export default function KYCFlow() {
       setError("Please select a diet type");
       return;
     }
+    // Always go to dietary restrictions step after selecting diet type
+    setStep("dietaryRestrictions");
+  };
+
+  const submitDietaryRestrictions = async () => {
+    // Dietary restrictions are optional, so we can proceed
     // If fasting is selected, go to fasting hours step
     if (kycData.dietType === "fasting") {
       setStep("fastingHours");
@@ -338,20 +345,58 @@ export default function KYCFlow() {
     navigate("/daily-tracker");
   };
 
+  // Helper function to calculate step number and total steps
+  const getStepInfo = (currentStep: string) => {
+    const hasFasting = kycData.dietType === "fasting";
+    const totalSteps = hasFasting ? 7 : 6; // 7 if fasting, 6 otherwise (added dietaryRestrictions step)
+    
+    let stepNumber = 0;
+    switch (currentStep) {
+      case "diet":
+        stepNumber = 1;
+        break;
+      case "dietaryRestrictions":
+        stepNumber = 2;
+        break;
+      case "fastingHours":
+        stepNumber = 3;
+        break;
+      case "profile":
+        stepNumber = hasFasting ? 4 : 3;
+        break;
+      case "fitness":
+        stepNumber = hasFasting ? 5 : 4;
+        break;
+      case "preferences":
+        stepNumber = hasFasting ? 6 : 5;
+        break;
+      case "healthProfile":
+        stepNumber = hasFasting ? 7 : 6;
+        break;
+      default:
+        stepNumber = 0;
+    }
+    
+    return { stepNumber, totalSteps };
+  };
+
   const handleBack = () => {
     switch (step) {
       case "diet":
         setStep("signup");
         break;
-      case "fastingHours":
+      case "dietaryRestrictions":
         setStep("diet");
         break;
+      case "fastingHours":
+        setStep("dietaryRestrictions");
+        break;
       case "profile":
-        // Go back to diet or fasting hours depending on selected diet
+        // Go back to dietary restrictions or fasting hours depending on selected diet
         if (kycData.dietType === "fasting") {
           setStep("fastingHours");
         } else {
-          setStep("diet");
+          setStep("dietaryRestrictions");
         }
         break;
       case "fitness":
@@ -381,7 +426,8 @@ export default function KYCFlow() {
         />
       );
 
-    case "diet":
+    case "diet": {
+      const { stepNumber, totalSteps } = getStepInfo("diet");
       return (
         <DietStep
           kycData={kycData}
@@ -390,10 +436,30 @@ export default function KYCFlow() {
           error={error}
           onSubmit={submitDietType}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
-    case "fastingHours":
+    case "dietaryRestrictions": {
+      const { stepNumber, totalSteps } = getStepInfo("dietaryRestrictions");
+      return (
+        <DietaryRestrictionsStep
+          kycData={kycData}
+          setKycData={setKycData}
+          loading={loading}
+          error={error}
+          onSubmit={submitDietaryRestrictions}
+          onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
+        />
+      );
+    }
+
+    case "fastingHours": {
+      const { stepNumber, totalSteps } = getStepInfo("fastingHours");
       return (
         <FastingHoursStep
           kycData={kycData}
@@ -402,10 +468,14 @@ export default function KYCFlow() {
           error={error}
           onSubmit={submitFastingHours}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
-    case "profile":
+    case "profile": {
+      const { stepNumber, totalSteps } = getStepInfo("profile");
       return (
         <ProfileStep
           kycData={kycData}
@@ -414,10 +484,14 @@ export default function KYCFlow() {
           error={error}
           onSubmit={submitProfile}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
-    case "healthProfile":
+    case "healthProfile": {
+      const { stepNumber, totalSteps } = getStepInfo("healthProfile");
       return (
         <HealthProfileStep
           kycData={kycData}
@@ -425,10 +499,14 @@ export default function KYCFlow() {
           error={error}
           onSubmit={submitHealthProfile}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
-    case "fitness":
+    case "fitness": {
+      const { stepNumber, totalSteps } = getStepInfo("fitness");
       return (
         <FitnessStep
           kycData={kycData}
@@ -437,10 +515,14 @@ export default function KYCFlow() {
           error={error}
           onSubmit={submitFitness}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
-    case "preferences":
+    case "preferences": {
+      const { stepNumber, totalSteps } = getStepInfo("preferences");
       return (
         <PreferencesStep
           kycData={kycData}
@@ -453,8 +535,11 @@ export default function KYCFlow() {
           onToggleOption={toggleOption}
           onAddCustomItem={addCustomItem}
           onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
         />
       );
+    }
 
     case "complete":
       console.log("Rendering CompleteStep");

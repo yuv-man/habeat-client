@@ -50,7 +50,7 @@ const MobileHeader = () => {
 
   return (
     <div 
-      className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50"
+      className="md:hidden fixed top-0 left-0 right-0 bg-green-50 border-b border-gray-200 z-50"
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex items-center justify-between h-14 px-4">
@@ -85,7 +85,7 @@ const MobileHeader = () => {
             )}
           </button>
 
-          {/* Burger Menu Button */}
+          {/* Burger Menu Button
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -98,8 +98,6 @@ const MobileHeader = () => {
                 <Menu className="w-5 h-5" />
               )}
             </button>
-
-            {/* Dropdown Menu */}
             {isMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 {menuItems.map((item) => (
@@ -121,8 +119,8 @@ const MobileHeader = () => {
                 ))}
               </div>
             )}
-          </div>
-        </div>
+          </div>*/}
+        </div> 
       </div>
     </div>
   );

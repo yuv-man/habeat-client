@@ -1349,6 +1349,26 @@ const refreshChallenges = async (): Promise<ApiResponse<{
   }, "Failed to refresh challenges. Please try again.");
 };
 
+const archiveChallenge = async (challengeId: string): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: { success: boolean };
+    }>(`/challenges/${challengeId}/archive`, {}, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to archive challenge. Please try again.");
+};
+
+const deleteChallenge = async (challengeId: string): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data: { success: boolean };
+    }>(`/challenges/${challengeId}`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to delete challenge. Please try again.");
+};
+
 // ============================================================================
 // REFLECTION API
 // ============================================================================
@@ -1583,6 +1603,8 @@ export const userAPI = {
   getClaimableChallenges,
   claimChallengeReward,
   refreshChallenges,
+  archiveChallenge,
+  deleteChallenge,
   // Reflection
   getDailySummary,
   getWeeklyStory,

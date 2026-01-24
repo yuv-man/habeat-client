@@ -8,6 +8,7 @@ interface ChallengeState {
   // Data
   challenges: IChallenge[];
   claimableChallenges: IChallenge[];
+  completedChallenges: IChallenge[]; // Stored completed challenges
   loading: boolean;
   error: string | null;
   lastFetchTime: number | null;
@@ -19,8 +20,11 @@ interface ChallengeState {
   // Actions
   fetchChallenges: () => Promise<void>;
   fetchClaimableChallenges: () => Promise<void>;
+  fetchCompletedChallenges: () => Promise<void>;
   claimReward: (challengeId: string) => Promise<IChallengeClaimResult | null>;
   refreshChallenges: () => Promise<void>;
+  archiveChallenge: (challengeId: string) => Promise<void>;
+  deleteChallenge: (challengeId: string) => Promise<void>;
   dismissClaimCelebration: () => void;
   clearError: () => void;
 }
@@ -33,6 +37,7 @@ export const useChallengeStore = create<ChallengeState>()(
     (set, get) => ({
       challenges: [],
       claimableChallenges: [],
+      completedChallenges: [],
       loading: false,
       error: null,
       lastFetchTime: null,
@@ -82,7 +87,7 @@ export const useChallengeStore = create<ChallengeState>()(
           const result = response.data;
 
           // Remove from claimable list
-          const { claimableChallenges, challenges } = get();
+          const { claimableChallenges, challenges, completedChallenges } = get();
           const updatedClaimable = claimableChallenges.filter(
             (c) => c._id !== challengeId
           );
@@ -92,9 +97,17 @@ export const useChallengeStore = create<ChallengeState>()(
             c._id === challengeId ? { ...c, status: "claimed" as const } : c
           );
 
+          // Add to completed challenges if not already there
+          const claimedChallenge = updatedChallenges.find((c) => c._id === challengeId);
+          const updatedCompleted = claimedChallenge && 
+            !completedChallenges.find((c) => c._id === challengeId)
+            ? [...completedChallenges, claimedChallenge]
+            : completedChallenges;
+
           set({
             claimableChallenges: updatedClaimable,
             challenges: updatedChallenges,
+            completedChallenges: updatedCompleted,
             loading: false,
             showClaimCelebration: true,
             claimedChallenge: result,
@@ -133,6 +146,82 @@ export const useChallengeStore = create<ChallengeState>()(
         }
       },
 
+      fetchCompletedChallenges: async () => {
+        try {
+          const response = await userAPI.getChallengeHistory();
+          // Filter only completed challenges
+          const completed = response.data.challenges.filter(
+            (c) => c.status === "completed" || c.status === "claimed"
+          );
+          set({ completedChallenges: completed });
+        } catch (error: any) {
+          console.error("Failed to fetch completed challenges:", error);
+        }
+      },
+
+      archiveChallenge: async (challengeId: string) => {
+        set({ loading: true, error: null });
+
+        try {
+          await userAPI.archiveChallenge(challengeId);
+          
+          // Remove from challenges list
+          const { challenges } = get();
+          const updatedChallenges = challenges.filter((c) => c._id !== challengeId);
+          
+          // Also remove from claimable if present
+          const { claimableChallenges } = get();
+          const updatedClaimable = claimableChallenges.filter((c) => c._id !== challengeId);
+
+          set({
+            challenges: updatedChallenges,
+            claimableChallenges: updatedClaimable,
+            loading: false,
+            lastFetchTime: null, // Force refresh on next fetch
+          });
+        } catch (error: any) {
+          set({
+            error: error.message || "Failed to archive challenge",
+            loading: false,
+          });
+          throw error;
+        }
+      },
+
+      deleteChallenge: async (challengeId: string) => {
+        set({ loading: true, error: null });
+
+        try {
+          await userAPI.deleteChallenge(challengeId);
+          
+          // Remove from challenges list
+          const { challenges } = get();
+          const updatedChallenges = challenges.filter((c) => c._id !== challengeId);
+          
+          // Also remove from claimable if present
+          const { claimableChallenges } = get();
+          const updatedClaimable = claimableChallenges.filter((c) => c._id !== challengeId);
+
+          // Also remove from completed if present
+          const { completedChallenges } = get();
+          const updatedCompleted = completedChallenges.filter((c) => c._id !== challengeId);
+
+          set({
+            challenges: updatedChallenges,
+            claimableChallenges: updatedClaimable,
+            completedChallenges: updatedCompleted,
+            loading: false,
+            lastFetchTime: null, // Force refresh on next fetch
+          });
+        } catch (error: any) {
+          set({
+            error: error.message || "Failed to delete challenge",
+            loading: false,
+          });
+          throw error;
+        }
+      },
+
       dismissClaimCelebration: () => {
         set({
           showClaimCelebration: false,
@@ -148,6 +237,7 @@ export const useChallengeStore = create<ChallengeState>()(
       name: "habeat-challenges",
       partialize: (state) => ({
         challenges: state.challenges,
+        completedChallenges: state.completedChallenges,
         lastFetchTime: state.lastFetchTime,
       }),
     }

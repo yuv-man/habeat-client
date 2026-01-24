@@ -388,7 +388,7 @@ const DailyMealScreen = () => {
           <div className="px-4 py-6">
             {/* Title with Streak */}
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-xl font-bold text-gray-900">
                 Daily Tracker
               </h1>
               {engagementStats && (

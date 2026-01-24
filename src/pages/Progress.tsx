@@ -175,9 +175,6 @@ const Progress = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <BarChart3 className="w-6 h-6 text-green-600" />
-            </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Progress</h1>
               <p className="text-sm text-gray-500">

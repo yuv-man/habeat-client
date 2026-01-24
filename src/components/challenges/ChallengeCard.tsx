@@ -1,6 +1,6 @@
-import { Trophy, Clock, Check, Gift, Sparkles, Target } from "lucide-react";
+import { Trophy, Clock, Check, Gift, Sparkles, Target, Archive, Trash2 } from "lucide-react";
 import { IChallenge } from "../../types/interfaces";
-import { getChallengeProgress, getChallengeTimeRemaining, getDifficultyColor } from "../../stores/challengeStore";
+import { getChallengeProgress, getChallengeTimeRemaining } from "../../stores/challengeStore";
 import { cn } from "../../lib/utils";
 
 // Icon mapping for challenge types
@@ -23,11 +23,20 @@ const CHALLENGE_ICONS: Record<string, React.ReactNode> = {
 interface ChallengeCardProps {
   challenge: IChallenge;
   onClaim?: () => void;
+  onArchive?: (challengeId: string) => void;
+  onDelete?: (challengeId: string) => void;
   compact?: boolean;
   className?: string;
 }
 
-export function ChallengeCard({ challenge, onClaim, compact = false, className }: ChallengeCardProps) {
+export function ChallengeCard({ 
+  challenge, 
+  onClaim, 
+  onArchive,
+  onDelete,
+  compact = false, 
+  className 
+}: ChallengeCardProps) {
   const progress = getChallengeProgress(challenge);
   const timeRemaining = getChallengeTimeRemaining(challenge);
   const isCompleted = challenge.status === "completed";
@@ -188,7 +197,28 @@ export function ChallengeCard({ challenge, onClaim, compact = false, className }
           </span>
         )}
         {isExpired && (
-          <span className="text-xs text-gray-400">Try Again</span>
+          <div className="flex items-center gap-2">
+            {onArchive && (
+              <button
+                onClick={() => onArchive(challenge._id)}
+                className="px-3 py-1.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg hover:bg-gray-200 transition-all flex items-center gap-1"
+                title="Archive challenge"
+              >
+                <Archive className="w-3.5 h-3.5" />
+                Archive
+              </button>
+            )}
+            {onDelete && (
+              <button
+                onClick={() => onDelete(challenge._id)}
+                className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100 transition-all flex items-center gap-1"
+                title="Delete challenge"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

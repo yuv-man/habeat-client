@@ -13,7 +13,6 @@ import {
   Calendar,
   Target,
   Award,
-  BarChart3,
 } from "lucide-react";
 import MealLoader from "@/components/helper/MealLoader";
 import { EngagementCard } from "@/components/engagement";
@@ -146,7 +145,7 @@ const Progress = () => {
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
                 className={`h-1.5 rounded-full transition-all ${getProgressBgColor(
-                  percentage
+                  percentage,
                 )}`}
                 style={{ width: `${Math.min(percentage, 100)}%` }}
               ></div>
@@ -424,7 +423,7 @@ const Progress = () => {
                         const caloriePercentage =
                           day.caloriesGoal > 0
                             ? Math.round(
-                                (day.calories / day.caloriesGoal) * 100
+                                (day.calories / day.caloriesGoal) * 100,
                               )
                             : 0;
 
@@ -445,7 +444,7 @@ const Progress = () => {
                                 <span className="text-gray-600">Calories</span>
                                 <span
                                   className={`font-medium ${getProgressColor(
-                                    caloriePercentage
+                                    caloriePercentage,
                                   )}`}
                                 >
                                   {day.calories} / {day.caloriesGoal}
@@ -454,12 +453,12 @@ const Progress = () => {
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full ${getProgressBgColor(
-                                    caloriePercentage
+                                    caloriePercentage,
                                   )}`}
                                   style={{
                                     width: `${Math.min(
                                       caloriePercentage,
-                                      100
+                                      100,
                                     )}%`,
                                   }}
                                 ></div>

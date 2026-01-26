@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "@/styles/dailyScreen.css";
 import {
   GlassWater,
@@ -19,9 +20,12 @@ import { useProgressStore } from "@/stores/progressStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useEngagementStore } from "@/stores/engagementStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
-import { formatTime12Hour, formatDisplayDate } from "@/lib/dateUtils";
+import {
+  formatTime12Hour,
+  toLocalDateString,
+  formatDisplayDate,
+} from "@/lib/dateUtils";
 import FastingClock from "./FastingClock";
-import NutritionProgressBar from "@/components/helper/NutritionProgressBar";
 import { NutritionCircularProgressGrid } from "@/components/helper/NutritionCircularProgressGrid";
 import { LevelUpCelebration } from "@/components/engagement";
 import {
@@ -32,6 +36,7 @@ import { DeleteWorkoutModal } from "./DeleteWorkoutModal";
 import { ExpiredPlanCard } from "./ExpiredPlanCard";
 
 const DailyMealScreen = () => {
+  const navigate = useNavigate();
   const [currentDate] = useState(new Date());
 
   // Use selectors to prevent unnecessary re-renders
@@ -42,7 +47,7 @@ const DailyMealScreen = () => {
   const todayProgress = useProgressStore((state) => state.todayProgress);
   const progressLoading = useProgressStore((state) => state.loading);
   const fetchTodayProgress = useProgressStore(
-    (state) => state.fetchTodayProgress
+    (state) => state.fetchTodayProgress,
   );
   const setTodayProgress = useProgressStore((state) => state.setTodayProgress);
   const addWaterGlassToStore = useProgressStore((state) => state.addWaterGlass);
@@ -76,12 +81,12 @@ const DailyMealScreen = () => {
 
   // Local state for UI updates (synced from store)
   const [dailyProgress, setDailyProgress] = useState<IDailyProgress | null>(
-    null
+    null,
   );
 
   // Delete confirmation state
   const [workoutToDelete, setWorkoutToDelete] = useState<WorkoutData | null>(
-    null
+    null,
   );
 
   // Nutrition progress collapse state
@@ -130,7 +135,7 @@ const DailyMealScreen = () => {
   // Helper function to determine meal status
   const getMealStatus = (
     meal: IMeal,
-    mealType: string
+    mealType: string,
   ): "past" | "current" | "future" => {
     // Snacks can NEVER be current - they're always past or future
     if (mealType === "snacks") {
@@ -176,9 +181,9 @@ const DailyMealScreen = () => {
     const lunchDone = dailyProgress?.meals?.lunch?.done || false;
 
     // Helper to check if breakfast is past (done or past its window)
-    const breakfastPast = breakfastDone || currentTime >= (lunchTime - 60);
+    const breakfastPast = breakfastDone || currentTime >= lunchTime - 60;
     // Helper to check if lunch is past (done or past its window)
-    const lunchPast = lunchDone || currentTime >= (dinnerTime - 60);
+    const lunchPast = lunchDone || currentTime >= dinnerTime - 60;
 
     // Determine if meal is current based on new rules:
     // Breakfast: current from breakfast time until done OR until 1 hour before lunch
@@ -261,7 +266,7 @@ const DailyMealScreen = () => {
       };
 
       const updatedWorkouts = dailyProgress.workouts.filter(
-        (w) => w.name !== workout.name
+        (w) => w.name !== workout.name,
       );
       const updatedProgress = {
         ...dailyProgress,
@@ -277,7 +282,7 @@ const DailyMealScreen = () => {
       await userAPI.deleteWorkout(
         user._id,
         currentDate.toISOString().split("T")[0],
-        workoutData
+        workoutData,
       );
 
       // Update store (which syncs to local state)
@@ -331,7 +336,7 @@ const DailyMealScreen = () => {
       await userAPI.completeWorkout(
         user._id,
         currentDate.toISOString(),
-        workoutData
+        workoutData,
       );
     } catch (error) {
       console.error("Failed to complete workout:", error);
@@ -389,7 +394,7 @@ const DailyMealScreen = () => {
             {/* Title with Streak */}
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-xl font-bold text-gray-900">
-                Daily Tracker
+                {formatDisplayDate(dailyProgress.date)}
               </h1>
               {engagementStats && (
                 <div className="flex items-center gap-1.5">
@@ -412,7 +417,7 @@ const DailyMealScreen = () => {
               />
             )}
 
-            {/* Daily Nutrition Progress */}
+            {/* Daily Nutrition Progress - Link to Stats Page */}
             <div className="mb-2 bg-white rounded-lg shadow-sm border border-gray-100">
               <button
                 onClick={() => setIsNutritionExpanded(!isNutritionExpanded)}
@@ -428,35 +433,47 @@ const DailyMealScreen = () => {
                 )}
               </button>
               {isNutritionExpanded ? (
-                <div className="px-3 pb-3 space-y-2">
-                  <NutritionProgressBar
-                    label="Calories"
-                    consumed={dailyProgress.caloriesConsumed}
-                    goal={dailyProgress.caloriesGoal}
-                    unit="kcal"
-                    color="orange"
+                <div className="px-3 pb-3">
+                  <NutritionCircularProgressGrid
+                    items={[
+                      {
+                        label: "Calories",
+                        consumed: dailyProgress.caloriesConsumed,
+                        goal: dailyProgress.caloriesGoal,
+                        color: "#f97316",
+                      },
+                      {
+                        label: "Protein",
+                        consumed: dailyProgress.protein.consumed,
+                        goal: dailyProgress.protein.goal,
+                        unit: "g",
+                        color: "#a855f7",
+                      },
+                      {
+                        label: "Fats",
+                        consumed: dailyProgress.fat.consumed,
+                        goal: dailyProgress.fat.goal,
+                        unit: "g",
+                        color: "#3b82f6",
+                      },
+                      {
+                        label: "Carbs",
+                        consumed: dailyProgress.carbs.consumed,
+                        goal: dailyProgress.carbs.goal,
+                        unit: "g",
+                        color: "#ef4444",
+                      },
+                    ]}
                   />
-                  <NutritionProgressBar
-                    label="Proteins"
-                    consumed={dailyProgress.protein.consumed}
-                    goal={dailyProgress.protein.goal}
-                    unit="g"
-                    color="purple"
-                  />
-                  <NutritionProgressBar
-                    label="Fats"
-                    consumed={dailyProgress.fat.consumed}
-                    goal={dailyProgress.fat.goal}
-                    unit="g"
-                    color="blue"
-                  />
-                  <NutritionProgressBar
-                    label="Carbs"
-                    consumed={dailyProgress.carbs.consumed}
-                    goal={dailyProgress.carbs.goal}
-                    unit="g"
-                    color="red"
-                  />
+                  <button
+                    onClick={() => {
+                      setIsNutritionExpanded(false);
+                      navigate(`/daily-stats?date=${dailyProgress.date}`);
+                    }}
+                    className="w-full mt-3 py-2 px-4 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    View Detailed Stats
+                  </button>
                 </div>
               ) : (
                 <div className="px-3 pb-3">
@@ -510,7 +527,7 @@ const DailyMealScreen = () => {
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(
                       dailyProgress.meals.breakfast,
-                      "breakfast"
+                      "breakfast",
                     )}
                     onMealChange={(newMeal) => {
                       // Update breakfast in progress
@@ -532,7 +549,7 @@ const DailyMealScreen = () => {
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(
                       dailyProgress.meals.lunch,
-                      "lunch"
+                      "lunch",
                     )}
                     onMealChange={(newMeal) => {
                       // Update lunch in progress
@@ -554,7 +571,7 @@ const DailyMealScreen = () => {
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(
                       dailyProgress.meals.dinner,
-                      "dinner"
+                      "dinner",
                     )}
                     onMealChange={(newMeal) => {
                       // Update dinner in progress
@@ -606,7 +623,7 @@ const DailyMealScreen = () => {
                 {(() => {
                   // Filter out rest day entries and check if there are actual workouts
                   const actualWorkouts = dailyProgress.workouts.filter(
-                    (w) => !w.name?.toLowerCase().includes("rest")
+                    (w) => !w.name?.toLowerCase().includes("rest"),
                   );
                   const hasOnlyRestDay =
                     dailyProgress.workouts.length > 0 &&
@@ -686,7 +703,7 @@ const DailyMealScreen = () => {
                         <button
                           onClick={() => handleCompleteWorkout(index)}
                           className={`p-0.5 rounded-full transition-all duration-200 ${
-                            workout.done ?? false
+                            (workout.done ?? false)
                               ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
                               : "bg-gray-100 hover:bg-gray-200"
                           }`}
@@ -698,7 +715,7 @@ const DailyMealScreen = () => {
                         >
                           <Check
                             className={`w-3.5 h-3.5 transition-all duration-200 ${
-                              workout.done ?? false
+                              (workout.done ?? false)
                                 ? "text-white stroke-[3]"
                                 : "text-gray-400 stroke-2"
                             }`}
@@ -740,7 +757,7 @@ const DailyMealScreen = () => {
                         }`}
                       />
                     </button>
-                  )
+                  ),
                 )}
               </div>
               <p className="text-sm text-gray-600">

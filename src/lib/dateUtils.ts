@@ -13,7 +13,8 @@ export const toLocalDateString = (dateInput: Date | string): string => {
     return dateInput;
   }
 
-  const dateObj = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  const dateObj =
+    typeof dateInput === "string" ? new Date(dateInput) : dateInput;
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, "0");
   const day = String(dateObj.getDate()).padStart(2, "0");
@@ -26,7 +27,8 @@ export const toLocalDateString = (dateInput: Date | string): string => {
  * @returns Date object at start of day
  */
 export const startOfDay = (dateInput: Date | string): Date => {
-  const date = typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput);
+  const date =
+    typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput);
   date.setHours(0, 0, 0, 0);
   return date;
 };
@@ -37,27 +39,24 @@ export const startOfDay = (dateInput: Date | string): Date => {
  * @returns Date object at end of day
  */
 export const endOfDay = (dateInput: Date | string): Date => {
-  const date = typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput);
+  const date =
+    typeof dateInput === "string" ? new Date(dateInput) : new Date(dateInput);
   date.setHours(23, 59, 59, 999);
   return date;
 };
 
 /**
- * Formats a date for display (e.g., "Monday, Dec 25")
+ * Formats a date for display (e.g., "mon, jun 25")
  * @param dateInput - Date object or date string
- * @param options - Intl.DateTimeFormatOptions for customization
- * @returns Formatted date string
+ * @returns Formatted date string in lowercase format
  */
-export const formatDisplayDate = (
-  dateInput: Date | string,
-  options: Intl.DateTimeFormatOptions = {
-    weekday: "long",
+export const formatDisplayDate = (dateInput: Date | string): string => {
+  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
     month: "short",
     day: "numeric",
-  }
-): string => {
-  const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput;
-  return date.toLocaleDateString("en-US", options);
+  });
 };
 
 /**
@@ -66,7 +65,10 @@ export const formatDisplayDate = (
  * @param date2 - Second date
  * @returns true if both dates are the same day
  */
-export const isSameDay = (date1: Date | string, date2: Date | string): boolean => {
+export const isSameDay = (
+  date1: Date | string,
+  date2: Date | string,
+): boolean => {
   return toLocalDateString(date1) === toLocalDateString(date2);
 };
 

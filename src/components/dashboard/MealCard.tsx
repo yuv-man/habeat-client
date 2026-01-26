@@ -338,32 +338,6 @@ const MealCard = ({
               </div>
             )}
 
-            {meal.ingredients && meal.ingredients.length > 0 && (
-              <div className="p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700 block mb-2">
-                  Ingredients:
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {meal.ingredients.slice(0, 5).map((ingredient, idx) => {
-                    const parts = ingredient?.split("|");
-                    const name = parts?.[0]?.replace(/_/g, " ") || ingredient;
-                    return (
-                      <span
-                        key={idx}
-                        className="text-xs px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200"
-                      >
-                        {name}
-                      </span>
-                    );
-                  })}
-                  {meal.ingredients.length > 5 && (
-                    <span className="text-xs px-2 py-1 bg-white rounded-full text-gray-500 border border-gray-200">
-                      +{meal.ingredients.length - 5} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Action Buttons - Inside Expand */}

@@ -124,7 +124,8 @@ const availableImages = [
   "turkey-and-hummus-wrap-with-side-salad",
   "lean-steak-with-quinoa-and-asparagus",
   "baked-cod-with-sweet-potato-wedges-and-green-beans",
-  "herb-crusted-beef-steak-with-potato-wedges"
+  "herb-crusted-beef-steak-with-potato-wedges",
+  "yogurt-with-muesli",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -191,7 +192,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-pad-see-ew",
     "chicken-teriyaki-bowl-with-brown-rice",
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
-    "grilled-salmon-quinoa-salad-with-avocado"
+    "grilled-salmon-quinoa-salad-with-avocado",
   ],
   wings: ["barbeque-chicken-wings"],
   curry: [
@@ -214,7 +215,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-with-broccoli",
     "teriyaki-salmon-on-a-plate",
     "baked-salmon-with-roasted-sweet-potatoes",
-    "grilled-salmon-quinoa-salad-with-avocado"
+    "grilled-salmon-quinoa-salad-with-avocado",
   ],
   fish: [
     "grilled-fish-fillet",
@@ -222,7 +223,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "baked-cod-with-quinoa",
     "baked-salmon-with-roasted-sweet-potatoes",
     "baked-cod-with-sweet-potato-wedges-and-green-beans",
-    "grilled-salmon-quinoa-salad-with-avocado"
+    "grilled-salmon-quinoa-salad-with-avocado",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -370,7 +371,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "steak-and-roasted-vegetables",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "lean-steak-with-quinoa-and-asparagus",
-    "herb-crusted-beef-steak-with-potato-wedges"
+    "herb-crusted-beef-steak-with-potato-wedges",
   ],
   meatballs: ["meat-balls"],
   meat: [
@@ -382,7 +383,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
     "lean-steak-with-quinoa-and-asparagus",
-    "herb-crusted-beef-steak-with-potato-wedges"
+    "herb-crusted-beef-steak-with-potato-wedges",
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],
@@ -435,12 +436,14 @@ const keywordMappings: { [key: string]: string[] } = {
     "greek-yogurt-topped-with-granola",
     "yogurt-parfait-with-granola",
     "power-berry-nut-muesli-bowl",
+    "yogurt-with-muesli",
   ],
   granola: [
     "greek-yogurt-topped-with-granola",
     "yogurt-parfait-with-granola",
     "berry-greek-yogurt-parfait",
     "power-berry-nut-muesli-bowl",
+    "yogurt-with-muesli",
   ],
   chia: ["chia-pudding"],
   pudding: ["chia-pudding"],
@@ -590,7 +593,7 @@ const getExactMatchScore = (mealName: string, imageName: string): number => {
  */
 const findBestMatch = (
   keywords: string[],
-  originalMealName: string
+  originalMealName: string,
 ): string | null => {
   const imageScores: { [key: string]: number } = {};
 
@@ -604,7 +607,7 @@ const findBestMatch = (
 
   // If we have a very high exact match, return it immediately
   const topExactMatch = Object.entries(imageScores).find(
-    ([, score]) => score >= 70
+    ([, score]) => score >= 70,
   );
   if (topExactMatch) {
     return topExactMatch[0];
@@ -686,7 +689,7 @@ const findBestMatch = (
  */
 export const getMealImage = (
   mealName: string,
-  fallbackIcon?: string
+  fallbackIcon?: string,
 ): string => {
   if (!mealName) {
     return fallbackIcon || "https://via.placeholder.com/80";
@@ -719,7 +722,7 @@ const mealImageModules = import.meta.glob(
   {
     eager: true,
     import: "default",
-  }
+  },
 ) as Record<string, string>;
 
 /**
@@ -731,7 +734,7 @@ const mealImageModules = import.meta.glob(
  */
 export const getMealImageVite = (
   mealName: string,
-  fallbackIcon?: string
+  fallbackIcon?: string,
 ): string => {
   if (!mealName) {
     return fallbackIcon || "https://via.placeholder.com/80";

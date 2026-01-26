@@ -6,7 +6,7 @@ const config = {
   baseURL:
     import.meta.env.VITE_MODE === "production"
       ? import.meta.env.VITE_BASE_URL_PROD
-      : import.meta.env.VITE_BASE_URL_DEV || "http://localhost:5000/api",
+      : import.meta.env.VITE_BASE_URL_DEV || "http://localhost:5080/api",
   // Test mode - bypasses authentication for frontend testing
   testFrontend: import.meta.env.VITE_TEST_FRONTEND === "true",
 };

@@ -26,6 +26,8 @@ import MealLoader from "../helper/MealLoader";
 interface WorkoutModalProps {
   children: React.ReactNode;
   onWorkoutAdd: (workout: WorkoutData) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const INITIAL_WORKOUT_DATA: WorkoutData = {
@@ -36,9 +38,16 @@ const INITIAL_WORKOUT_DATA: WorkoutData = {
   time: "12:00",
 };
 
-const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
+const WorkoutModal = ({
+  children,
+  onWorkoutAdd,
+  open: controlledOpen,
+  onOpenChange,
+}: WorkoutModalProps) => {
   const { user } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = onOpenChange || setInternalOpen;
   const [workoutData, setWorkoutData] =
     useState<WorkoutData>(INITIAL_WORKOUT_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,6 +101,7 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
       setIsOpen(false);
     } catch (error) {
       console.error("Failed to add workout:", error);
+      // Don't close modal on error so user can retry
     } finally {
       setIsSubmitting(false);
     }
@@ -104,6 +114,13 @@ const WorkoutModal = ({ children, onWorkoutAdd }: WorkoutModalProps) => {
       setIsSubmitting(false);
     }
   };
+
+  // Sync external open state
+  useEffect(() => {
+    if (controlledOpen !== undefined) {
+      setIsOpen(controlledOpen);
+    }
+  }, [controlledOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>

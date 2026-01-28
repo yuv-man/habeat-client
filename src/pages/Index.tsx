@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Target } from "lucide-react";
 import foodBg from "@/assets/food-bg.webp";
 //import logo from "@/assets/habeatIcon.png";
-import logo from "@/assets/logos/app10.webp";
+import logo from "@/assets/logos/app1.webp";
 import { features } from "@/lib/paths";
 import AuthModal from "@/components/auth/AuthModal";
 import { useAuthStore } from "@/stores/authStore";
@@ -32,8 +32,12 @@ const Index = () => {
 
     // On mobile, check auth and redirect if authenticated
     const checkAuth = () => {
-      const { user: currentUser, token: currentToken, loading: currentLoading } = useAuthStore.getState();
-      
+      const {
+        user: currentUser,
+        token: currentToken,
+        loading: currentLoading,
+      } = useAuthStore.getState();
+
       // If still loading, wait a bit more
       if (currentLoading) {
         setTimeout(checkAuth, 100);
@@ -79,11 +83,7 @@ const Index = () => {
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-12">
           {/* Logo */}
           <div className="mb-3">
-            <img
-              src={logo}
-              alt="Habeat"
-              className="w-20 h-auto"
-            />
+            <img src={logo} alt="Habeat" className="w-20 h-auto" />
           </div>
 
           {/* Heading */}

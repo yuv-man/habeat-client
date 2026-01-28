@@ -6,8 +6,8 @@ import {
   RefreshCw,
   Clock,
   Flame,
-  ChevronDown,
   ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
@@ -18,6 +18,11 @@ import { getMealImageVite } from "@/lib/mealImageHelper";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import TiredButton from "@/components/dashboard/TiredButton";
 import { formatMealName } from "@/lib/formatters";
+import HealthIcon from "@/assets/icons/healthy.svg";
+import {
+  calculateMealHealthScore,
+  getHealthScoreColor,
+} from "@/lib/nutritionHelpers";
 
 type MealStatus = "past" | "current" | "future";
 
@@ -50,7 +55,7 @@ const MealCard = ({
   const { completeMeal, todayProgress } = useProgressStore();
   // Auto-expand if current meal (but never for snacks), otherwise start collapsed
   const [isExpanded, setIsExpanded] = useState(
-    !isSnack && mealStatus === "current"
+    !isSnack && mealStatus === "current",
   );
   // State to track if title is expanded (to show full text)
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
@@ -61,6 +66,10 @@ const MealCard = ({
   // Check if meal is in user.favoriteMeals array
   const isFavorite = user?.favoriteMeals?.includes(mealId) || false;
   const isCompleted = meal.done || false;
+
+  // Calculate health score
+  const healthScore = calculateMealHealthScore(meal);
+  const healthScoreStyle = getHealthScoreColor(healthScore);
 
   const handleFavorite = async () => {
     if (user?._id && mealId) {
@@ -122,8 +131,8 @@ const MealCard = ({
   const cardClasses = isPast
     ? "bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm opacity-75"
     : isCurrent
-    ? "bg-white border-2 border-green-200 rounded-lg p-5 shadow-md"
-    : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
+      ? "bg-white border-2 border-green-200 rounded-lg pl-2 p-5 shadow-md"
+      : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
 
   if (isSnack) {
     // Simple snack card - no fold, no recipe, compact vertical size
@@ -139,10 +148,14 @@ const MealCard = ({
                 isPast
                   ? "text-gray-500 text-xs"
                   : isCurrent
-                  ? "text-gray-900 text-sm"
-                  : "text-gray-700 text-xs"
+                    ? "text-gray-900 text-sm"
+                    : "text-gray-700 text-xs"
               }`}
-              title={isTitleExpanded ? "Click to collapse" : "Click to see full title"}
+              title={
+                isTitleExpanded
+                  ? "Click to collapse"
+                  : "Click to see full title"
+              }
             >
               {displayName}
             </h3>
@@ -151,8 +164,8 @@ const MealCard = ({
                 isPast
                   ? "text-xs text-gray-400"
                   : isCurrent
-                  ? "text-xs text-gray-600"
-                  : "text-xs text-gray-500"
+                    ? "text-xs text-gray-600"
+                    : "text-xs text-gray-500"
               }`}
             >
               <div className="flex items-center gap-1">
@@ -226,9 +239,9 @@ const MealCard = ({
   }
 
   return (
-    <div className={cardClasses}>
+    <div className={`${cardClasses} relative`}>
       {/* Meal Info Section */}
-      <div className={`flex items-start gap-3 ${isCurrent ? "mb-3" : "mb-2"}`}>
+      <div className={`flex items-start gap-3`}>
         {/* Meal Image - Make bigger */}
         <img
           src={getMealImageVite(meal.name, meal.icon)}
@@ -248,10 +261,12 @@ const MealCard = ({
               isPast
                 ? "text-gray-500 text-sm"
                 : isCurrent
-                ? "text-gray-900 text-base"
-                : "text-gray-700 text-sm"
+                  ? "text-gray-900 text-base"
+                  : "text-gray-700 text-sm"
             }`}
-            title={isTitleExpanded ? "Click to collapse" : "Click to see full title"}
+            title={
+              isTitleExpanded ? "Click to collapse" : "Click to see full title"
+            }
           >
             {displayName}
           </h3>
@@ -260,8 +275,8 @@ const MealCard = ({
               isPast
                 ? "text-xs text-gray-400"
                 : isCurrent
-                ? "text-sm text-gray-600"
-                : "text-xs text-gray-500"
+                  ? "text-sm text-gray-600"
+                  : "text-xs text-gray-500"
             }`}
           >
             <div className="flex items-center gap-1">
@@ -312,20 +327,51 @@ const MealCard = ({
             />
           </button>
         </div>
+
+        {/* Chevron Button - Right side of card, fixed position */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="absolute top-14 right-4 p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600 z-10"
+          aria-label={isExpanded ? "Collapse" : "Expand"}
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-6 h-6" />
+          ) : (
+            <ChevronDown className="w-6 h-6" />
+          )}
+        </button>
       </div>
 
       {/* Expandable Section */}
       {isExpanded && (
-        <div className="border-t border-gray-200 pt-4 mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
-          {!isSnack && meal.prepTime > 0 && (
-            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-700">
-                Preparation time:{" "}
-                <span className="font-medium">{meal.prepTime} minutes</span>
+        <div className="border-t border-gray-200 pt-4 mt-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
+          {/* Prep Time and Health Score - Compact Row */}
+          <div className="flex items-center gap-2">
+            {/* Prep Time */}
+            {!isSnack && meal.prepTime > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
+                  Prep {meal.prepTime}m
+                </span>
+              </div>
+            )}
+            {/* Health Score */}
+            <div
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${healthScoreStyle.bg} ${healthScoreStyle.border}`}
+            >
+              <img
+                src={HealthIcon}
+                alt="Health score"
+                className="w-4 h-4 flex-shrink-0"
+              />
+              <span
+                className={`text-xs font-semibold ${healthScoreStyle.text} whitespace-nowrap`}
+              >
+                Health Score: {healthScore}
               </span>
             </div>
-          )}
+          </div>
           {/* Nutrition Details */}
           <div className="space-y-3">
             {meal.macros && (
@@ -337,74 +383,80 @@ const MealCard = ({
                 <span>Fat: {meal.macros.fat}g</span>
               </div>
             )}
-
           </div>
 
           {/* Action Buttons - Inside Expand */}
-          <div className="flex items-center justify-center gap-3 pt-3 border-t border-gray-100">
-            {/* I'm Tired Button - Quick meal swap */}
-            {!isSnack && !isPast && (
-              <TiredButton
-                meal={meal}
-                mealType={mealType as "breakfast" | "lunch" | "dinner"}
-                date={date}
-                onMealChange={handleMealChange}
-              />
-            )}
-            <button
-              onClick={handleViewRecipe}
-              className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
-              aria-label="View recipe"
-            >
-              <BookOpen className="w-4 h-4 text-gray-600 stroke-2" />
-              <span className="text-sm text-gray-700 font-medium">Recipe</span>
-            </button>
-
+          <div className="flex flex-col gap-3 pt-3 border-t border-gray-100">
+            {/* Done Button and Swap Button - Same Line */}
             {!isPast && (
-              <ChangeMealModal
-                currentMeal={meal}
-                mealType={mealType}
-                date={date}
-                snackIndex={isSnack ? snackIndex : undefined}
-                onMealChange={handleMealChange}
-              >
+              <div className="flex items-center gap-3">
+                {/* Bold Done Button */}
                 <button
-                  className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
-                  aria-label="Swap meal"
+                  onClick={handleComplete}
+                  className={`flex-1 px-4 py-3 rounded-lg transition-all duration-200 font-bold text-base flex items-center justify-center gap-2 ${
+                    isCompleted
+                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  }`}
+                  aria-label={
+                    isCompleted ? "Mark as incomplete" : "Mark as complete"
+                  }
                 >
-                  <RefreshCw className="w-4 h-4 text-gray-600 stroke-2" />
-                  <span className="text-sm text-gray-700 font-medium">
-                    Swap
-                  </span>
+                  <Check
+                    className={`w-5 h-5 transition-all duration-200 ${
+                      isCompleted ? "stroke-[3]" : "stroke-2"
+                    }`}
+                  />
+                  <span>{isCompleted ? "Completed" : "Mark as Done"}</span>
                 </button>
-              </ChangeMealModal>
+                {/* I'm Tired Button - Quick meal swap */}
+                {!isSnack && (
+                  <TiredButton
+                    meal={meal}
+                    mealType={mealType as "breakfast" | "lunch" | "dinner"}
+                    date={date}
+                    onMealChange={handleMealChange}
+                  />
+                )}
+              </div>
             )}
+
+            {/* Other Action Buttons */}
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={handleViewRecipe}
+                className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
+                aria-label="View recipe"
+              >
+                <BookOpen className="w-4 h-4 text-gray-600 stroke-2" />
+                <span className="text-sm text-gray-700 font-medium">
+                  Recipe
+                </span>
+              </button>
+
+              {!isPast && (
+                <ChangeMealModal
+                  currentMeal={meal}
+                  mealType={mealType}
+                  date={date}
+                  snackIndex={isSnack ? snackIndex : undefined}
+                  onMealChange={handleMealChange}
+                >
+                  <button
+                    className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
+                    aria-label="Swap meal"
+                  >
+                    <RefreshCw className="w-4 h-4 text-gray-600 stroke-2" />
+                    <span className="text-sm text-gray-700 font-medium">
+                      Swap
+                    </span>
+                  </button>
+                </ChangeMealModal>
+              )}
+            </div>
           </div>
         </div>
       )}
-
-      {/* Toggle Button - Show for all meals (expandable option) */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={`w-full mt-3 pt-3 border-t border-gray-200 flex items-center justify-center gap-2 transition-colors ${
-          isPast
-            ? "text-xs text-gray-400 hover:text-gray-500"
-            : "text-sm text-gray-600 hover:text-gray-900"
-        }`}
-        aria-label={isExpanded ? "Collapse" : "Expand"}
-      >
-        {isExpanded ? (
-          <>
-            <ChevronUp className="w-4 h-4" />
-            <span>Show less</span>
-          </>
-        ) : (
-          <>
-            <ChevronDown className="w-4 h-4" />
-            <span>Show more</span>
-          </>
-        )}
-      </button>
     </div>
   );
 };

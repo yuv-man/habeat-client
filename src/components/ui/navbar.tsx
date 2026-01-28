@@ -8,7 +8,7 @@ import {
   User,
 } from "lucide-react";
 //import logo from "@/assets/habeatIcon.png";
-import logo from "@/assets/logos/app10.webp";
+import logo from "@/assets/logos/app1.webp";
 import "@/styles/navbar.css";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";
@@ -31,7 +31,11 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
       <div className="max-w-4xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex flex-row items-center gap-2">
-            <img src={logo} alt="logo" className="w-12 h-auto md:w-16 md:h-16" />
+            <img
+              src={logo}
+              alt="logo"
+              className="w-12 h-auto md:w-16 md:h-16"
+            />
             <div className="logo-text text-lg font-semibold">Habeats</div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">

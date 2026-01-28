@@ -22,7 +22,6 @@ import { useEngagementStore } from "@/stores/engagementStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
 import {
   formatTime12Hour,
-  toLocalDateString,
   formatDisplayDate,
 } from "@/lib/dateUtils";
 import FastingClock from "./FastingClock";
@@ -34,6 +33,9 @@ import {
 } from "@/components/challenges";
 import { DeleteWorkoutModal } from "./DeleteWorkoutModal";
 import { ExpiredPlanCard } from "./ExpiredPlanCard";
+import FloatingActionButton from "./FloatingActionButton";
+import AddSnackModal from "@/components/modals/AddSnackModal";
+import WorkoutModal from "@/components/modals/WorkoutModal";
 
 const DailyMealScreen = () => {
   const navigate = useNavigate();
@@ -91,6 +93,11 @@ const DailyMealScreen = () => {
 
   // Nutrition progress collapse state
   const [isNutritionExpanded, setIsNutritionExpanded] = useState(false);
+
+  // Modal states
+  const [showAddSnackModal, setShowAddSnackModal] = useState(false);
+  const [showWorkoutModal, setShowWorkoutModal] = useState(false);
+  const [isAddingSnack, setIsAddingSnack] = useState(false);
 
   // Track if we've already fetched to prevent duplicate calls
   const hasFetchedRef = useRef(false);
@@ -353,6 +360,60 @@ const DailyMealScreen = () => {
     if (dates.length === 0) return null;
     const lastDate = dates[dates.length - 1];
     return formatDisplayDate(lastDate);
+  };
+
+  // Handle adding snack
+  const handleAddSnack = async (
+    snackName: string,
+    time?: string,
+    photoBase64?: string
+  ) => {
+    if (!user?._id || !plan?._id || !dailyProgress) return;
+
+    setIsAddingSnack(true);
+    try {
+      const dateStr = currentDate.toISOString().split("T")[0];
+      await userAPI.addSnack(
+        plan._id,
+        dateStr,
+        snackName.trim(),
+        time,
+        photoBase64
+      );
+
+      // Refresh progress to get updated snacks
+      await fetchTodayProgress(user._id);
+      toast.success("Snack added successfully!");
+      setShowAddSnackModal(false);
+    } catch (error) {
+      console.error("Failed to add snack:", error);
+      toast.error("Failed to add snack. Please try again.");
+    } finally {
+      setIsAddingSnack(false);
+    }
+  };
+
+  // Handle adding workout
+  const handleAddWorkout = async (workout: WorkoutData) => {
+    if (!user?._id || !dailyProgress) return;
+
+    try {
+      const dateStr = currentDate.toISOString().split("T")[0];
+      const workoutWithDate: WorkoutData = {
+        ...workout,
+        date: dateStr,
+      };
+
+      await userAPI.addWorkout(user._id, workoutWithDate);
+
+      // Refresh progress to get updated workouts
+      await fetchTodayProgress(user._id);
+      toast.success("Workout added successfully!");
+      setShowWorkoutModal(false);
+    } catch (error) {
+      console.error("Failed to add workout:", error);
+      toast.error("Failed to add workout. Please try again.");
+    }
   };
 
   return (
@@ -766,6 +827,36 @@ const DailyMealScreen = () => {
               </p>
             </div>
           </div>
+        )}
+
+        {/* Floating Action Button */}
+        {dailyProgress && !isPlanExpired && (
+          <FloatingActionButton
+            onAddWorkout={() => setShowWorkoutModal(true)}
+            onAddSnack={() => setShowAddSnackModal(true)}
+          />
+        )}
+
+        {/* Add Snack Modal */}
+        {dailyProgress && (
+          <AddSnackModal
+            isOpen={showAddSnackModal}
+            onClose={() => setShowAddSnackModal(false)}
+            onAdd={handleAddSnack}
+            date={dailyProgress.date}
+            loading={isAddingSnack}
+          />
+        )}
+
+        {/* Add Workout Modal */}
+        {dailyProgress && (
+          <WorkoutModal
+            onWorkoutAdd={handleAddWorkout}
+            open={showWorkoutModal}
+            onOpenChange={setShowWorkoutModal}
+          >
+            <div style={{ display: "none" }} />
+          </WorkoutModal>
         )}
       </div>
     </>

@@ -59,6 +59,7 @@ const MealCard = ({
   );
   // State to track if title is expanded (to show full text)
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
 
   // Get meal ID with fallback for compatibility
   const mealId = meal._id || (meal as any).id || "";
@@ -95,10 +96,16 @@ const MealCard = ({
   const handleComplete = async () => {
     if (user?._id && todayProgress && mealId) {
       const date = todayProgress.date;
+      setIsCompleting(true);
       try {
         await completeMeal(user._id, date, mealType, mealId);
+        // Success animation duration
+        setTimeout(() => {
+          setIsCompleting(false);
+        }, 600);
       } catch (error) {
         // Error handling is done in the store with rollback
+        setIsCompleting(false);
         toast.error("Failed to update meal. Please try again.");
       }
     }
@@ -352,7 +359,7 @@ const MealCard = ({
               <div className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
                 <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
-                  Prep {meal.prepTime}m
+                  Prep time: {meal.prepTime}m
                 </span>
               </div>
             )}
@@ -375,7 +382,7 @@ const MealCard = ({
           {/* Nutrition Details */}
           <div className="space-y-3">
             {meal.macros && (
-              <div className="flex items-center gap-4 text-sm text-gray-600">
+              <div className="flex items-center gap-4 text-sm text-gray-600 justify-center">
                 <span>Protein: {meal.macros.protein}g</span>
                 <span>•</span>
                 <span>Carbs: {meal.macros.carbs}g</span>
@@ -393,21 +400,33 @@ const MealCard = ({
                 {/* Bold Done Button */}
                 <button
                   onClick={handleComplete}
-                  className={`flex-1 px-4 py-3 rounded-lg transition-all duration-200 font-bold text-base flex items-center justify-center gap-2 ${
-                    isCompleted
-                      ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  className={`flex-1 px-4 py-3 rounded-lg transition-all duration-300 font-bold text-base flex items-center justify-center gap-2 relative overflow-hidden ${
+                    isCompleting && !isCompleted
+                      ? "bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg"
+                      : isCompleted
+                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md"
+                        : "bg-gradient-to-br from-emerald-100 to-teal-100 hover:from-emerald-200 hover:to-teal-200 text-emerald-700 border border-emerald-200"
                   }`}
                   aria-label={
                     isCompleted ? "Mark as incomplete" : "Mark as complete"
                   }
+                  disabled={isCompleting}
                 >
+                  {isCompleting && !isCompleted && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent animate-shimmer" />
+                  )}
                   <Check
-                    className={`w-5 h-5 transition-all duration-200 ${
-                      isCompleted ? "stroke-[3]" : "stroke-2"
+                    className={`w-5 h-5 transition-all duration-300 ${
+                      isCompleted || isCompleting ? "stroke-[3]" : "stroke-2"
                     }`}
                   />
-                  <span>{isCompleted ? "Completed" : "Mark as Done"}</span>
+                  <span className="relative z-10">
+                    {isCompleting && !isCompleted
+                      ? "Completing..."
+                      : isCompleted
+                        ? "Completed"
+                        : "Mark as Done"}
+                  </span>
                 </button>
                 {/* I'm Tired Button - Quick meal swap */}
                 {!isSnack && (
@@ -422,16 +441,16 @@ const MealCard = ({
             )}
 
             {/* Other Action Buttons */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-4">
               <button
                 onClick={handleViewRecipe}
-                className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
+                className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors group"
                 aria-label="View recipe"
               >
-                <BookOpen className="w-4 h-4 text-gray-600 stroke-2" />
-                <span className="text-sm text-gray-700 font-medium">
-                  Recipe
-                </span>
+                <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-emerald-100 transition-colors">
+                  <BookOpen className="w-3.5 h-3.5 stroke-2" />
+                </div>
+                <span className="text-xs font-medium">Recipe</span>
               </button>
 
               {!isPast && (
@@ -443,13 +462,13 @@ const MealCard = ({
                   onMealChange={handleMealChange}
                 >
                   <button
-                    className="px-4 py-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2 border border-gray-200"
+                    className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition-colors group"
                     aria-label="Swap meal"
                   >
-                    <RefreshCw className="w-4 h-4 text-gray-600 stroke-2" />
-                    <span className="text-sm text-gray-700 font-medium">
-                      Swap
-                    </span>
+                    <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-blue-100 transition-colors">
+                      <RefreshCw className="w-3.5 h-3.5 stroke-2" />
+                    </div>
+                    <span className="text-xs font-medium">Swap</span>
                   </button>
                 </ChangeMealModal>
               )}

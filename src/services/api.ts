@@ -473,14 +473,18 @@ const getTodayProgress = async (
 const generateMealPlan = async (
   userData: IUser,
   planName: string,
-  language: string
+  language: string,
+  planTemplate?: string
 ): Promise<{ data: any }> => {
-  const payload = {
+  const payload: Record<string, any> = {
     startDate: new Date().toISOString(),
     language,
     planName: planName ?? "",
     useMock: config.useMock,
   };
+  if (planTemplate) {
+    payload.planTemplate = planTemplate;
+  }
   try {
     const response: AxiosResponse<{ data: any }> =
       await mealGenerationClient.post(

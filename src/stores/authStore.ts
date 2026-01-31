@@ -346,14 +346,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   generateMealPlan: async (
     userData: IUser,
     planName: string,
-    language: string
+    language: string,
+    planTemplate?: string
   ) => {
     try {
       set({ loading: true });
       const { data } = await userAPI.generateMealPlan(
         userData,
         planName,
-        language
+        language,
+        planTemplate
       );
 
       set({ plan: data.plan, loading: false });

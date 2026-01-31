@@ -1,5 +1,14 @@
 import { useState, useEffect, ReactNode } from "react";
-import { X, Sparkles, Heart, AlertCircle, Camera, ArrowLeft, Edit } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  X,
+  Sparkles,
+  Heart,
+  AlertCircle,
+  Camera,
+  ArrowLeft,
+  Edit,
+} from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI, MealCriteria } from "@/services/api";
@@ -108,7 +117,7 @@ const ChangeMealModal = ({
         dateString,
         mealType,
         newMeal,
-        mealType === "snacks" ? snackIndex : undefined
+        mealType === "snacks" ? snackIndex : undefined,
       );
     } catch (error) {
       console.error("Failed to change meal via API:", error);
@@ -175,7 +184,7 @@ const ChangeMealModal = ({
       const response = await userAPI.getAIMealSuggestions(
         user._id,
         mealCriteria,
-        aiRules || undefined
+        aiRules || undefined,
       );
       const suggestions = response.data?.meals || [];
       if (suggestions.length === 0) {
@@ -186,7 +195,7 @@ const ChangeMealModal = ({
     } catch (err: any) {
       console.error("AI suggestion error:", err);
       setAiError(
-        err.message || "Failed to get AI suggestions. Please try again."
+        err.message || "Failed to get AI suggestions. Please try again.",
       );
     } finally {
       setIsLoadingAI(false);
@@ -245,33 +254,33 @@ const ChangeMealModal = ({
   };
 
   const swapOptions = [
-    { 
-      id: "ai" as TabType, 
-      label: "AI Suggestion", 
-      icon: Sparkles, 
+    {
+      id: "ai" as TabType,
+      label: "AI Suggestion",
+      icon: Sparkles,
       description: "Get smart meal recommendations",
-      color: "purple"
+      color: "purple",
     },
-    { 
-      id: "favorites" as TabType, 
-      label: "From Favorites", 
-      icon: Heart, 
+    {
+      id: "favorites" as TabType,
+      label: "From Favorites",
+      icon: Heart,
       description: "Choose from your saved meals",
-      color: "red"
+      color: "red",
     },
-    { 
-      id: "photo" as TabType, 
-      label: "Take Photo", 
-      icon: Camera, 
+    {
+      id: "photo" as TabType,
+      label: "Take Photo",
+      icon: Camera,
       description: "Recognize meal from photo",
-      color: "blue"
+      color: "blue",
     },
-    { 
-      id: "manual" as TabType, 
-      label: "Manual Entry", 
-      icon: Edit, 
+    {
+      id: "manual" as TabType,
+      label: "Manual Entry",
+      icon: Edit,
       description: "Enter meal details manually",
-      color: "gray"
+      color: "gray",
     },
   ];
 
@@ -279,9 +288,16 @@ const ChangeMealModal = ({
     <>
       <div onClick={handleOpen}>{children}</div>
 
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl">
+      {isOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+            onClick={(e) => e.target === e.currentTarget && handleClose()}
+          >
+            <div
+              className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header */}
             <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
               <div>
@@ -314,12 +330,13 @@ const ChangeMealModal = ({
                   {swapOptions.map((option) => {
                     const Icon = option.icon;
                     const colorClasses = {
-                      purple: "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
+                      purple:
+                        "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
                       red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
                       blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
                       gray: "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100",
                     };
-                    
+
                     return (
                       <button
                         key={option.id}
@@ -329,9 +346,13 @@ const ChangeMealModal = ({
                       >
                         <div className="flex items-center gap-2 mb-2">
                           <Icon className="w-5 h-5" />
-                          <span className="font-semibold text-sm">{option.label}</span>
+                          <span className="font-semibold text-sm">
+                            {option.label}
+                          </span>
                         </div>
-                        <p className="text-xs opacity-75">{option.description}</p>
+                        <p className="text-xs opacity-75">
+                          {option.description}
+                        </p>
                       </button>
                     );
                   })}
@@ -362,272 +383,275 @@ const ChangeMealModal = ({
               <div className="px-6 pb-6 overflow-y-auto max-h-[60vh]">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {swapOptions.find(opt => opt.id === activeTab)?.label}
+                    {swapOptions.find((opt) => opt.id === activeTab)?.label}
                   </h3>
                 </div>
-                
+
                 {/* Manual Tab */}
-              {activeTab === "manual" && (
-                <div className="space-y-4">
-                  <div>
-                    <label
-                      htmlFor="meal-name"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Meal Name
-                    </label>
-                    <input
-                      id="meal-name"
-                      type="text"
-                      placeholder="E.g., Chicken Salad"
-                      value={manualMeal.name}
-                      onChange={(e) =>
-                        setManualMeal({ ...manualMeal, name: e.target.value })
-                      }
-                      disabled={isSaving}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="meal-calories"
-                      className="block text-sm font-medium text-gray-700 mb-1"
-                    >
-                      Calories
-                    </label>
-                    <input
-                      id="meal-calories"
-                      type="number"
-                      value={manualMeal.calories}
-                      onChange={(e) =>
-                        setManualMeal({
-                          ...manualMeal,
-                          calories: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      disabled={isSaving}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
+                {activeTab === "manual" && (
+                  <div className="space-y-4">
                     <div>
                       <label
-                        htmlFor="meal-carbs"
+                        htmlFor="meal-name"
                         className="block text-sm font-medium text-gray-700 mb-1"
                       >
-                        Carbs (g)
+                        Meal Name
                       </label>
                       <input
-                        id="meal-carbs"
+                        id="meal-name"
+                        type="text"
+                        placeholder="E.g., Chicken Salad"
+                        value={manualMeal.name}
+                        onChange={(e) =>
+                          setManualMeal({ ...manualMeal, name: e.target.value })
+                        }
+                        disabled={isSaving}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="meal-calories"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Calories
+                      </label>
+                      <input
+                        id="meal-calories"
                         type="number"
-                        value={manualMeal.carbs}
+                        value={manualMeal.calories}
                         onChange={(e) =>
                           setManualMeal({
                             ...manualMeal,
-                            carbs: parseInt(e.target.value) || 0,
+                            calories: parseInt(e.target.value) || 0,
                           })
                         }
                         disabled={isSaving}
                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
                       />
                     </div>
-                    <div>
-                      <label
-                        htmlFor="meal-fat"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Fat (g)
-                      </label>
-                      <input
-                        id="meal-fat"
-                        type="number"
-                        value={manualMeal.fat}
-                        onChange={(e) =>
-                          setManualMeal({
-                            ...manualMeal,
-                            fat: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        disabled={isSaving}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="meal-protein"
-                        className="block text-sm font-medium text-gray-700 mb-1"
-                      >
-                        Protein (g)
-                      </label>
-                      <input
-                        id="meal-protein"
-                        type="number"
-                        value={manualMeal.protein}
-                        onChange={(e) =>
-                          setManualMeal({
-                            ...manualMeal,
-                            protein: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        disabled={isSaving}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
-                      />
-                    </div>
-                  </div>
 
-                  <div>
-                    <label
-                      htmlFor="meal-preptime"
-                      className="block text-sm font-medium text-gray-700 mb-1"
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label
+                          htmlFor="meal-carbs"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Carbs (g)
+                        </label>
+                        <input
+                          id="meal-carbs"
+                          type="number"
+                          value={manualMeal.carbs}
+                          onChange={(e) =>
+                            setManualMeal({
+                              ...manualMeal,
+                              carbs: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          disabled={isSaving}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="meal-fat"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Fat (g)
+                        </label>
+                        <input
+                          id="meal-fat"
+                          type="number"
+                          value={manualMeal.fat}
+                          onChange={(e) =>
+                            setManualMeal({
+                              ...manualMeal,
+                              fat: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          disabled={isSaving}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="meal-protein"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Protein (g)
+                        </label>
+                        <input
+                          id="meal-protein"
+                          type="number"
+                          value={manualMeal.protein}
+                          onChange={(e) =>
+                            setManualMeal({
+                              ...manualMeal,
+                              protein: parseInt(e.target.value) || 0,
+                            })
+                          }
+                          disabled={isSaving}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="meal-preptime"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Prep Time (min)
+                      </label>
+                      <input
+                        id="meal-preptime"
+                        type="number"
+                        value={manualMeal.prepTime}
+                        onChange={(e) =>
+                          setManualMeal({
+                            ...manualMeal,
+                            prepTime: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        min="0"
+                        disabled={isSaving}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSaveManual}
+                      disabled={!manualMeal.name.trim() || isSaving}
+                      className="w-full py-3 bg-emerald-400 hover:bg-emerald-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition mt-4 flex items-center justify-center gap-2"
                     >
-                      Prep Time (min)
-                    </label>
-                    <input
-                      id="meal-preptime"
-                      type="number"
-                      value={manualMeal.prepTime}
-                      onChange={(e) =>
-                        setManualMeal({
-                          ...manualMeal,
-                          prepTime: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      min="0"
-                      disabled={isSaving}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
-                    />
+                      {isSaving ? (
+                        <>
+                          <MealLoader size="small" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Meal"
+                      )}
+                    </button>
                   </div>
+                )}
 
-                  <button
-                    onClick={handleSaveManual}
-                    disabled={!manualMeal.name.trim() || isSaving}
-                    className="w-full py-3 bg-emerald-400 hover:bg-emerald-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition mt-4 flex items-center justify-center gap-2"
-                  >
-                    {isSaving ? (
-                      <>
-                        <MealLoader size="small" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Meal"
-                    )}
-                  </button>
-                </div>
-              )}
+                {/* AI Suggestion Tab */}
+                {activeTab === "ai" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Describe your preferences (optional)
+                      </label>
+                      <textarea
+                        placeholder="E.g., High protein, low carb, vegetarian, under 400 calories..."
+                        value={aiRules}
+                        onChange={(e) => setAiRules(e.target.value)}
+                        rows={3}
+                        disabled={isLoadingAI || isSaving}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none disabled:bg-gray-100"
+                      />
+                    </div>
 
-              {/* AI Suggestion Tab */}
-              {activeTab === "ai" && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Describe your preferences (optional)
-                    </label>
-                    <textarea
-                      placeholder="E.g., High protein, low carb, vegetarian, under 400 calories..."
-                      value={aiRules}
-                      onChange={(e) => setAiRules(e.target.value)}
-                      rows={3}
+                    <button
+                      onClick={handleAISuggest}
                       disabled={isLoadingAI || isSaving}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none disabled:bg-gray-100"
-                    />
-                  </div>
+                      className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
+                    >
+                      {isLoadingAI ? (
+                        <MealLoader size="small" />
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          Get AI Suggestions
+                        </>
+                      )}
+                    </button>
 
-                  <button
-                    onClick={handleAISuggest}
-                    disabled={isLoadingAI || isSaving}
-                    className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
-                  >
-                    {isLoadingAI ? (
-                      <MealLoader size="small" />
-                    ) : (
-                      <>
-                        <Sparkles className="w-5 h-5" />
-                        Get AI Suggestions
-                      </>
+                    {/* AI Error */}
+                    {aiError && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {aiError}
+                      </div>
                     )}
-                  </button>
 
-                  {/* AI Error */}
-                  {aiError && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      {aiError}
-                    </div>
-                  )}
+                    {/* AI Suggestions List */}
+                    {aiSuggestions.length > 0 && (
+                      <div className="mt-4 space-y-3">
+                        <p className="text-sm font-medium text-gray-700">
+                          Suggested meals:
+                        </p>
+                        {aiSuggestions.map((meal) => (
+                          <button
+                            key={meal._id}
+                            onClick={() => handleSelectAISuggestion(meal)}
+                            disabled={isSaving}
+                            className="w-full p-4 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <div className="font-medium text-gray-900 break-words">
+                              {formatMealName(meal.name)}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {meal.calories} cal • {meal.macros?.protein || 0}g
+                              protein • {meal.macros?.carbs || 0}g carbs •{" "}
+                              {meal.macros?.fat || 0}g fat
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                  {/* AI Suggestions List */}
-                  {aiSuggestions.length > 0 && (
-                    <div className="mt-4 space-y-3">
-                      <p className="text-sm font-medium text-gray-700">
-                        Suggested meals:
-                      </p>
-                      {aiSuggestions.map((meal) => (
+                {/* Favorites Tab */}
+                {activeTab === "favorites" && (
+                  <div className="space-y-3">
+                    {isLoadingFavorites ? (
+                      <div className="flex items-center justify-center py-8">
+                        <MealLoader size="small" />
+                      </div>
+                    ) : favoriteMealsData && favoriteMealsData.length > 0 ? (
+                      favoriteMealsData.map((meal) => (
                         <button
                           key={meal._id}
-                          onClick={() => handleSelectAISuggestion(meal)}
+                          onClick={() => handleSelectFavorite(meal)}
                           disabled={isSaving}
-                          className="w-full p-4 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <div className="font-medium text-gray-900 break-words">
-                            {formatMealName(meal.name)}
+                          <img
+                            src={getMealImageVite(meal.name)}
+                            alt={formatMealName(meal.name)}
+                            className="w-14 h-14 rounded-lg object-cover"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="font-medium text-gray-900 truncate"
+                              title={formatMealName(meal.name)}
+                            >
+                              {formatMealName(meal.name)}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {meal.calories} cal • {meal.macros?.protein || 0}g
+                              protein
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {meal.calories} cal • {meal.macros?.protein || 0}g
-                            protein • {meal.macros?.carbs || 0}g carbs •{" "}
-                            {meal.macros?.fat || 0}g fat
-                          </div>
+                          <Heart className="w-5 h-5 text-red-500 fill-red-500 flex-shrink-0" />
                         </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Favorites Tab */}
-              {activeTab === "favorites" && (
-                <div className="space-y-3">
-                  {isLoadingFavorites ? (
-                    <div className="flex items-center justify-center py-8">
-                      <MealLoader size="small" />
-                    </div>
-                  ) : favoriteMealsData && favoriteMealsData.length > 0 ? (
-                    favoriteMealsData.map((meal) => (
-                      <button
-                        key={meal._id}
-                        onClick={() => handleSelectFavorite(meal)}
-                        disabled={isSaving}
-                        className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <img
-                          src={getMealImageVite(meal.name)}
-                          alt={formatMealName(meal.name)}
-                          className="w-14 h-14 rounded-lg object-cover"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate" title={formatMealName(meal.name)}>
-                            {formatMealName(meal.name)}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {meal.calories} cal • {meal.macros?.protein || 0}g
-                            protein
-                          </div>
-                        </div>
-                        <Heart className="w-5 h-5 text-red-500 fill-red-500 flex-shrink-0" />
-                      </button>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No favorite meals yet</p>
-                      <p className="text-sm text-gray-400 mt-1">
-                        Like meals to add them to your favorites
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No favorite meals yet</p>
+                        <p className="text-sm text-gray-400 mt-1">
+                          Like meals to add them to your favorites
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Photo Tab */}
                 {activeTab === "photo" && (
@@ -642,7 +666,7 @@ const ChangeMealModal = ({
 
             {/* Saving Overlay */}
             {isSaving && (
-              <div className="absolute inset-0 bg-white/50 flex items-center justify-center rounded-2xl">
+              <div className="absolute inset-0 bg-white flex items-center justify-center rounded-2xl">
                 <div className="flex items-center gap-2 text-emerald-600">
                   <MealLoader size="small" />
                   <span className="font-medium">Saving...</span>
@@ -650,8 +674,9 @@ const ChangeMealModal = ({
               </div>
             )}
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 };

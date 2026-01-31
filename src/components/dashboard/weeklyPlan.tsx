@@ -27,6 +27,7 @@ import WeeklyPlanTable from "./WeeklyPlanTable";
 import WorkoutModal from "@/components/modals/WorkoutModal";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import AddSnackModal from "@/components/modals/AddSnackModal";
+import PlanSelector from "./PlanSelector";
 import { formatMealName } from "@/lib/formatters";
 
 // Components
@@ -414,6 +415,9 @@ export default function WeeklyMealPlan() {
   } | null>(null);
   const [isMealEditModalOpen, setIsMealEditModalOpen] = useState(false);
 
+  // Plan Selector state
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
+
   // Add Snack Modal state
   const [showAddSnackModal, setShowAddSnackModal] = useState(false);
   const [addSnackDate, setAddSnackDate] = useState<string>("");
@@ -676,11 +680,21 @@ export default function WeeklyMealPlan() {
     }
   };
 
-  const generatePlan = async () => {
+  const openPlanSelector = () => {
+    setShowPlanSelector(true);
+  };
+
+  const handlePlanSelect = async (planTemplateId: string) => {
     if (!user) return;
     try {
       setIsGenerating(true);
-      await generateMealPlan(user, "My Plan", "en");
+      await generateMealPlan(
+        user,
+        "My Plan",
+        "en",
+        planTemplateId === "custom" ? undefined : planTemplateId
+      );
+      setShowPlanSelector(false);
     } catch (error) {
       console.error("Failed to generate meal plan:", error);
     } finally {
@@ -730,21 +744,12 @@ export default function WeeklyMealPlan() {
             </div>
             <Button
               disabled={isGenerating}
-              onClick={generatePlan}
+              onClick={openPlanSelector}
               className="flex items-center gap-2 mx-auto bg-green-500 text-white hover:bg-green-600"
               size="lg"
             >
-              {isGenerating ? (
-                <>
-                  <MealLoader size="small" />
-                  <span>Generating New Plan...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5" />
-                  <span>Generate New Plan</span>
-                </>
-              )}
+              <Sparkles className="h-5 w-5" />
+              <span>Generate New Plan</span>
             </Button>
           </div>
         </div>
@@ -761,20 +766,11 @@ export default function WeeklyMealPlan() {
             <div className="flex gap-2">
               <Button
                 disabled={isGenerating}
-                onClick={generatePlan}
+                onClick={openPlanSelector}
                 className="flex items-center gap-2"
               >
-                {isGenerating ? (
-                  <>
-                    <MealLoader size="small" />
-                    <span>Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    <span>AI Generate</span>
-                  </>
-                )}
+                <Sparkles className="h-4 w-4" />
+                <span>AI Generate</span>
               </Button>
             </div>
           </div>
@@ -815,19 +811,15 @@ export default function WeeklyMealPlan() {
         {/* Generate AI Button and Shopping Bag */}
         <div className="flex items-center gap-2 mb-4">
           <button
-            onClick={generatePlan}
+            onClick={openPlanSelector}
             disabled={isGenerating}
             className={`bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 ${
               plan && plan.weeklyPlan && dates.length > 0 ? "flex-1" : "w-full"
             }`}
           >
-            {isGenerating ? (
-              "Generating..."
-            ) : (
-              <span className="sm:inline flex items-center">
-                <Sparkles className="w-5 h-5 mr-2" /> Generate Plan
-              </span>
-            )}
+            <span className="sm:inline flex items-center">
+              <Sparkles className="w-5 h-5 mr-2" /> Generate Plan
+            </span>
           </button>
           {plan && plan.weeklyPlan && dates.length > 0 && (
             <button
@@ -1006,6 +998,14 @@ export default function WeeklyMealPlan() {
         onAdd={handleConfirmAddSnack}
         date={addSnackDate}
         loading={isAddingSnack}
+      />
+
+      {/* Plan Selector Modal */}
+      <PlanSelector
+        open={showPlanSelector}
+        onClose={() => setShowPlanSelector(false)}
+        onSelect={handlePlanSelect}
+        isGenerating={isGenerating}
       />
     </div>
   );

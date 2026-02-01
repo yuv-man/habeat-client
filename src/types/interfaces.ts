@@ -341,7 +341,8 @@ export interface AuthActions {
   generateMealPlan: (
     userData: IUser,
     planName: string,
-    language: string
+    language: string,
+    planTemplate?: string
   ) => Promise<void>;
   updateMealInPlan: (userId: string, date: Date, meal: IMeal) => Promise<void>;
   updateFavorite: (

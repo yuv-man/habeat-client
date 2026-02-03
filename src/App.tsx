@@ -28,6 +28,9 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Progress = lazy(() => import("./pages/Progress"));
 const ChallengesAndSummary = lazy(() => import("./pages/ChallengesAndSummary"));
 const Profile = lazy(() => import("./pages/Profile"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
+const SubscriptionCancel = lazy(() => import("./pages/SubscriptionCancel"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -68,6 +71,15 @@ const App = () => {
                 <Route
                   path="/challenges-summary"
                   element={<ChallengesAndSummary />}
+                />
+                <Route path="/subscription" element={<Subscription />} />
+                <Route
+                  path="/subscription/success"
+                  element={<SubscriptionSuccess />}
+                />
+                <Route
+                  path="/subscription/cancel"
+                  element={<SubscriptionCancel />}
                 />
                 <Route path="/auth/callback" element={<OAuthCallback />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

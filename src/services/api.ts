@@ -1064,7 +1064,12 @@ const addSnack = async (
   photoBase64?: string
 ): Promise<ApiResponse<{ plan: IPlan }>> => {
   return withErrorHandling(async () => {
-    const payload: { date: string; name: string; time?: string; photoBase64?: string } = {
+    const payload: {
+      date: string;
+      name: string;
+      time?: string;
+      photoBase64?: string;
+    } = {
       date,
       name,
     };
@@ -1214,64 +1219,88 @@ const clearChatHistory = async (
 
 const getEngagementStats = async (): Promise<ApiResponse<IEngagementStats>> => {
   return withErrorHandling(async () => {
-    const response = await userClient.get<{ success: boolean; data: IEngagementStats }>(
-      `/engagement/stats`,
-      { headers: getAuthHeaders() }
-    );
+    const response = await userClient.get<{
+      success: boolean;
+      data: IEngagementStats;
+    }>(`/engagement/stats`, { headers: getAuthHeaders() });
     return { data: response.data.data };
   }, "Failed to get engagement stats. Please try again.");
 };
 
-const getStreak = async (): Promise<ApiResponse<{
-  currentStreak: number;
-  longestStreak: number;
-  lastActiveDate: string | null;
-}>> => {
+const getStreak = async (): Promise<
+  ApiResponse<{
+    currentStreak: number;
+    longestStreak: number;
+    lastActiveDate: string | null;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: { currentStreak: number; longestStreak: number; lastActiveDate: string | null };
+      data: {
+        currentStreak: number;
+        longestStreak: number;
+        lastActiveDate: string | null;
+      };
     }>(`/engagement/streak`, { headers: getAuthHeaders() });
     return { data: response.data.data };
   }, "Failed to get streak. Please try again.");
 };
 
-const useStreakFreeze = async (): Promise<{ success: boolean; message: string }> => {
+const useStreakFreeze = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
   return withErrorHandling(async () => {
-    const response = await userClient.post<{ success: boolean; message: string }>(
-      `/engagement/streak-freeze`,
-      {},
-      { headers: getAuthHeaders() }
-    );
+    const response = await userClient.post<{
+      success: boolean;
+      message: string;
+    }>(`/engagement/streak-freeze`, {}, { headers: getAuthHeaders() });
     return response.data;
   }, "Failed to use streak freeze. Please try again.");
 };
 
-const getEngagementRewards = async (): Promise<ApiResponse<{
-  xpRewards: Record<string, number>;
-  levelFormula: string;
-  badges: Array<{ id: string; name: string; description: string; icon: string; category: string }>;
-}>> => {
+const getEngagementRewards = async (): Promise<
+  ApiResponse<{
+    xpRewards: Record<string, number>;
+    levelFormula: string;
+    badges: Array<{
+      id: string;
+      name: string;
+      description: string;
+      icon: string;
+      category: string;
+    }>;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
       data: {
         xpRewards: Record<string, number>;
         levelFormula: string;
-        badges: Array<{ id: string; name: string; description: string; icon: string; category: string }>;
+        badges: Array<{
+          id: string;
+          name: string;
+          description: string;
+          icon: string;
+          category: string;
+        }>;
       };
     }>(`/engagement/rewards`);
     return { data: response.data.data };
   }, "Failed to get rewards info. Please try again.");
 };
 
-const getLevelInfo = async (): Promise<ApiResponse<{
-  currentLevel: number;
-  currentXp: number;
-  xpProgress: { current: number; required: number };
-  xpToNextLevel: number;
-  progressPercentage: number;
-}>> => {
+const getLevelInfo = async (): Promise<
+  ApiResponse<{
+    currentLevel: number;
+    currentXp: number;
+    xpProgress: { current: number; required: number };
+    xpToNextLevel: number;
+    progressPercentage: number;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1291,10 +1320,12 @@ const getLevelInfo = async (): Promise<ApiResponse<{
 // CHALLENGES API
 // ============================================================================
 
-const getChallenges = async (): Promise<ApiResponse<{
-  challenges: IChallenge[];
-  count: number;
-}>> => {
+const getChallenges = async (): Promise<
+  ApiResponse<{
+    challenges: IChallenge[];
+    count: number;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1304,10 +1335,12 @@ const getChallenges = async (): Promise<ApiResponse<{
   }, "Failed to get challenges. Please try again.");
 };
 
-const getChallengeHistory = async (): Promise<ApiResponse<{
-  challenges: IChallenge[];
-  count: number;
-}>> => {
+const getChallengeHistory = async (): Promise<
+  ApiResponse<{
+    challenges: IChallenge[];
+    count: number;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1317,10 +1350,12 @@ const getChallengeHistory = async (): Promise<ApiResponse<{
   }, "Failed to get challenge history. Please try again.");
 };
 
-const getClaimableChallenges = async (): Promise<ApiResponse<{
-  challenges: IChallenge[];
-  count: number;
-}>> => {
+const getClaimableChallenges = async (): Promise<
+  ApiResponse<{
+    challenges: IChallenge[];
+    count: number;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1330,7 +1365,9 @@ const getClaimableChallenges = async (): Promise<ApiResponse<{
   }, "Failed to get claimable challenges. Please try again.");
 };
 
-const claimChallengeReward = async (challengeId: string): Promise<ApiResponse<IChallengeClaimResult>> => {
+const claimChallengeReward = async (
+  challengeId: string
+): Promise<ApiResponse<IChallengeClaimResult>> => {
   return withErrorHandling(async () => {
     const response = await userClient.post<{
       success: boolean;
@@ -1340,10 +1377,12 @@ const claimChallengeReward = async (challengeId: string): Promise<ApiResponse<IC
   }, "Failed to claim challenge reward. Please try again.");
 };
 
-const refreshChallenges = async (): Promise<ApiResponse<{
-  challenges: IChallenge[];
-  count: number;
-}>> => {
+const refreshChallenges = async (): Promise<
+  ApiResponse<{
+    challenges: IChallenge[];
+    count: number;
+  }>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.post<{
       success: boolean;
@@ -1353,7 +1392,9 @@ const refreshChallenges = async (): Promise<ApiResponse<{
   }, "Failed to refresh challenges. Please try again.");
 };
 
-const archiveChallenge = async (challengeId: string): Promise<ApiResponse<{ success: boolean }>> => {
+const archiveChallenge = async (
+  challengeId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
   return withErrorHandling(async () => {
     const response = await userClient.post<{
       success: boolean;
@@ -1363,7 +1404,9 @@ const archiveChallenge = async (challengeId: string): Promise<ApiResponse<{ succ
   }, "Failed to archive challenge. Please try again.");
 };
 
-const deleteChallenge = async (challengeId: string): Promise<ApiResponse<{ success: boolean }>> => {
+const deleteChallenge = async (
+  challengeId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
   return withErrorHandling(async () => {
     const response = await userClient.delete<{
       success: boolean;
@@ -1377,7 +1420,9 @@ const deleteChallenge = async (challengeId: string): Promise<ApiResponse<{ succe
 // REFLECTION API
 // ============================================================================
 
-const getDailySummary = async (date?: string): Promise<ApiResponse<IDailySummary>> => {
+const getDailySummary = async (
+  date?: string
+): Promise<ApiResponse<IDailySummary>> => {
   return withErrorHandling(async () => {
     const params = date ? `?date=${date}` : "";
     const response = await userClient.get<{
@@ -1402,7 +1447,9 @@ const getWeeklyStory = async (): Promise<ApiResponse<IWeeklyStory>> => {
 // NOTIFICATIONS API
 // ============================================================================
 
-const getNotificationPreferences = async (): Promise<ApiResponse<INotificationPreferences>> => {
+const getNotificationPreferences = async (): Promise<
+  ApiResponse<INotificationPreferences>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1419,7 +1466,9 @@ const updateNotificationPreferences = async (
     const response = await userClient.put<{
       success: boolean;
       data: INotificationPreferences;
-    }>(`/notifications/preferences`, preferences, { headers: getAuthHeaders() });
+    }>(`/notifications/preferences`, preferences, {
+      headers: getAuthHeaders(),
+    });
     return { data: response.data.data };
   }, "Failed to update notification preferences. Please try again.");
 };
@@ -1443,7 +1492,9 @@ const removeDeviceToken = async (token: string): Promise<void> => {
   }, "Failed to remove device token. Please try again.");
 };
 
-const getScheduledNotifications = async (): Promise<ApiResponse<INotificationPayload[]>> => {
+const getScheduledNotifications = async (): Promise<
+  ApiResponse<INotificationPayload[]>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1453,7 +1504,9 @@ const getScheduledNotifications = async (): Promise<ApiResponse<INotificationPay
   }, "Failed to get scheduled notifications. Please try again.");
 };
 
-const checkStreakWarning = async (): Promise<ApiResponse<INotificationPayload | null>> => {
+const checkStreakWarning = async (): Promise<
+  ApiResponse<INotificationPayload | null>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1463,7 +1516,9 @@ const checkStreakWarning = async (): Promise<ApiResponse<INotificationPayload | 
   }, "Failed to check streak warning. Please try again.");
 };
 
-const getDefaultNotificationPreferences = async (): Promise<ApiResponse<INotificationPreferences>> => {
+const getDefaultNotificationPreferences = async (): Promise<
+  ApiResponse<INotificationPreferences>
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
@@ -1524,13 +1579,81 @@ const getNutritionFromUSDA = async (
       success: boolean;
       data: USDANutrition | null;
       message?: string;
-    }>(
-      "/photo/nutrition",
-      { mealName },
-      { headers: getAuthHeaders() }
-    );
+    }>("/photo/nutrition", { mealName }, { headers: getAuthHeaders() });
     return { data: response.data.data, message: response.data.message };
   }, "Failed to get nutrition data. Please try again.");
+};
+
+// ============================================================================
+// SUBSCRIPTION API
+// ============================================================================
+
+const getSubscriptionDetails = async (): Promise<
+  ApiResponse<import("@/types/interfaces").SubscriptionDetails>
+> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: import("@/types/interfaces").SubscriptionDetails;
+    }>(`/subscription/details`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get subscription details. Please try again.");
+};
+
+const createCheckoutSession = async (
+  request: import("@/types/interfaces").CreateCheckoutSessionRequest
+): Promise<
+  ApiResponse<import("@/types/interfaces").CreateCheckoutSessionResponse>
+> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: import("@/types/interfaces").CreateCheckoutSessionResponse;
+    }>(`/subscription/create-checkout-session`, request, {
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to create checkout session. Please try again.");
+};
+
+const createPortalSession = async (
+  request: import("@/types/interfaces").CreatePortalSessionRequest
+): Promise<
+  ApiResponse<import("@/types/interfaces").CreatePortalSessionResponse>
+> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: import("@/types/interfaces").CreatePortalSessionResponse;
+    }>(`/subscription/create-portal-session`, request, {
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to create portal session. Please try again.");
+};
+
+const changeTier = async (
+  request: import("@/types/interfaces").ChangeTierRequest
+): Promise<ApiResponse<{ message: string }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: { message: string };
+    }>(`/subscription/change-tier`, request, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to change subscription tier. Please try again.");
+};
+
+const cancelSubscription = async (): Promise<
+  ApiResponse<{ message: string }>
+> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: { message: string };
+    }>(`/subscription/cancel`, {}, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to cancel subscription. Please try again.");
 };
 
 export const userAPI = {
@@ -1623,4 +1746,10 @@ export const userAPI = {
   // Photo Recognition
   recognizeMealFromPhoto,
   getNutritionFromUSDA,
+  // Subscription
+  getSubscriptionDetails,
+  createCheckoutSession,
+  createPortalSession,
+  changeTier,
+  cancelSubscription,
 };

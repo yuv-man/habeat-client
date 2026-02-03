@@ -21,6 +21,7 @@ import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
 import MealLoader from "../helper/MealLoader";
+import { SLOGAN_HABITS } from "@/lib/copy";
 
 interface AuthModalProps {
   children: React.ReactNode;
@@ -145,10 +146,8 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
         <Card className="border-0 shadow-none">
           <CardHeader className="text-center">
             <CardTitle>{isLogin ? "Welcome back" : "Create account"}</CardTitle>
-            <CardDescription>
-              {isLogin
-                ? "Sign in to your Habeats account"
-                : "Join Habeats and start your health journey"}
+            <CardDescription className="text-sm">
+              {SLOGAN_HABITS}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

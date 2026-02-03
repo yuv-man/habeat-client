@@ -262,7 +262,7 @@ export default function KYCFlow() {
         dietaryRestrictions: kycData.dietaryRestrictions || [],
         foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
-        isPremium: false,
+        subscriptionTier: "free",
       };
 
       // Add fasting data if fasting is selected

@@ -245,7 +245,7 @@ export const mockUser: IUser = {
   weight: 75,
   gender: "male",
   age: 30,
-  isPremium: false,
+  subscriptionTier: "free",
   path: "healthy",
   bmr: 1800,
   tdee: 2400,

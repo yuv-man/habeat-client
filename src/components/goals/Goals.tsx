@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import PlanSelector from "@/components/dashboard/PlanSelector";
 
 export interface Milestone {
   id: string;
@@ -72,11 +73,13 @@ const Goals = ({
   void _onUpdateProgress;
   void _onMarkAchieved;
   const navigate = useNavigate();
-  const { plan } = useAuthStore();
+  const { plan, user, generateMealPlan } = useAuthStore();
   const deleteGoal = useGoalsStore((state) => state.deleteGoal);
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Check if user has no plan
   const hasNoPlan =
@@ -109,6 +112,33 @@ const Goals = ({
           error instanceof Error ? error.message : "Failed to delete goal",
         variant: "destructive",
       });
+    }
+  };
+
+  const openPlanSelector = () => {
+    setShowPlanSelector(true);
+  };
+
+  const handlePlanSelect = async (planTemplateId: string) => {
+    if (!user) return;
+    try {
+      setIsGenerating(true);
+      await generateMealPlan(
+        user,
+        "My Plan",
+        "en",
+        planTemplateId === "custom" ? undefined : planTemplateId
+      );
+      setShowPlanSelector(false);
+    } catch (error) {
+      console.error("Failed to generate meal plan:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate meal plan. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
   const getIcon = (iconType: Goal["icon"]) => {
@@ -194,7 +224,8 @@ const Goals = ({
                 Create a meal plan to start tracking your nutrition goals.
               </p>
               <Button
-                onClick={() => navigate("/weekly-overview")}
+                onClick={openPlanSelector}
+                disabled={isGenerating}
                 className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-2 flex items-center gap-2"
                 size="sm"
               >
@@ -314,6 +345,17 @@ const Goals = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Plan Selector Modal */}
+      <PlanSelector
+        open={showPlanSelector}
+        onClose={() => setShowPlanSelector(false)}
+        onSelect={handlePlanSelect}
+        isGenerating={isGenerating}
+        isRegeneration={
+          !plan || Object.keys(plan.weeklyPlan || {}).length === 0
+        }
+      />
     </div>
   );
 };

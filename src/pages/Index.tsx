@@ -13,6 +13,12 @@ import foodBg from "@/assets/food-bg.webp";
 //import logo from "@/assets/habeatIcon.png";
 import logo from "@/assets/logos/app1.webp";
 import { features } from "@/lib/paths";
+import {
+  HABEAT_SLOGAN,
+  SLOGAN_NO_GUILT,
+  SLOGAN_EAT_WELL,
+  SLOGAN_HABITS,
+} from "@/lib/copy";
 import AuthModal from "@/components/auth/AuthModal";
 import { useAuthStore } from "@/stores/authStore";
 import { isNativePlatform } from "@/lib/platform";
@@ -87,11 +93,14 @@ const Index = () => {
           </div>
 
           {/* Heading */}
-          <h1 className="text-3xl font-bold text-gray-900 text-center mb-8 leading-tight">
+          <h1 className="text-3xl font-bold text-gray-900 text-center mb-3 leading-tight">
             Nourish Your Body,
             <br />
             Elevate Your Mind.
           </h1>
+          <p className="text-center text-gray-600 text-base mb-8 max-w-sm mx-auto">
+            {HABEAT_SLOGAN}
+          </p>
 
           {/* Features List */}
           <div className="space-y-4 mb-12">
@@ -151,11 +160,10 @@ const Index = () => {
                 Welcome to <span className="text-yellow-300">Habeats</span>
               </h1>
               <p
-                className="text-xl md:text-2xl mb-8 text-white font-bold"
+                className="text-xl md:text-2xl mb-8 text-white font-bold max-w-3xl mx-auto"
                 style={{ textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)" }}
               >
-                Transform your relationship with food. Track habits, achieve
-                goals, and build a healthier you.
+                {HABEAT_SLOGAN}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
@@ -183,8 +191,7 @@ const Index = () => {
                 Everything you need to succeed
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Habeats provides comprehensive tools to help you build
-                sustainable healthy habits
+                {SLOGAN_EAT_WELL}
               </p>
             </div>
 
@@ -255,8 +262,7 @@ const Index = () => {
                   Ready to transform your health?
                 </h2>
                 <p className="text-xl mb-8 text-white/90">
-                  Join thousands of users who have already started their journey
-                  to better health with Habeats.
+                  {SLOGAN_HABITS}
                 </p>
                 <div className="flex items-center justify-center space-x-4 mb-8">
                   <CheckCircle className="h-5 w-5" />
@@ -282,9 +288,9 @@ const Index = () => {
         <footer className="bg-gray-900 text-white py-12">
           <div className="container mx-auto px-6">
             <div className="text-center">
-              <h3 className="text-2xl font-bold mb-4">Habeat</h3>
-              <p className="text-gray-400 mb-4">
-                Your journey to better health starts here
+              <h3 className="text-2xl font-bold mb-4">Habeats</h3>
+              <p className="text-gray-400 mb-4 max-w-xl mx-auto">
+                {SLOGAN_NO_GUILT}
               </p>
               <div className="flex justify-center space-x-6">
                 <a

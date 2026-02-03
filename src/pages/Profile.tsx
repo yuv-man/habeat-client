@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { IUser, MealTimes, IRecipe } from "@/types/interfaces";
-import { dietTypes, dietaryRestrictions as dietaryRestrictionsList } from "@/components/kyc/types";
+import {
+  dietTypes,
+  dietaryRestrictions as dietaryRestrictionsList,
+} from "@/components/kyc/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +26,8 @@ import {
   User,
   Settings as SettingsIcon,
   Heart,
+  Crown,
+  Sparkles,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
@@ -48,7 +53,9 @@ const Profile = () => {
     fetchFavoriteMeals,
     updateFavorite,
   } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<"settings" | "favorites">("settings");
+  const [activeTab, setActiveTab] = useState<"settings" | "favorites">(
+    "settings"
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -297,13 +304,18 @@ const Profile = () => {
       newDietaryRestriction.trim() &&
       !dietaryRestrictions.includes(newDietaryRestriction.trim())
     ) {
-      setDietaryRestrictions([...dietaryRestrictions, newDietaryRestriction.trim()]);
+      setDietaryRestrictions([
+        ...dietaryRestrictions,
+        newDietaryRestriction.trim(),
+      ]);
       setNewDietaryRestriction("");
     }
   };
 
   const removeDietaryRestriction = (restriction: string) => {
-    setDietaryRestrictions(dietaryRestrictions.filter((r) => r !== restriction));
+    setDietaryRestrictions(
+      dietaryRestrictions.filter((r) => r !== restriction)
+    );
   };
 
   const updateMealTime = (mealType: keyof MealTimes, time: string) => {
@@ -557,14 +569,19 @@ const Profile = () => {
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
-                  <Label htmlFor="breakfast-time" className="text-xs font-medium">
+                  <Label
+                    htmlFor="breakfast-time"
+                    className="text-xs font-medium"
+                  >
                     Breakfast
                   </Label>
                   <Input
                     id="breakfast-time"
                     type="time"
                     value={mealTimes.breakfast}
-                    onChange={(e) => updateMealTime("breakfast", e.target.value)}
+                    onChange={(e) =>
+                      updateMealTime("breakfast", e.target.value)
+                    }
                     className="mt-1 h-9 text-sm"
                   />
                 </div>
@@ -753,7 +770,7 @@ const Profile = () => {
                     const displayName = restriction.startsWith("other:")
                       ? restriction.replace("other:", "")
                       : restriction;
-                    
+
                     return (
                       <div
                         key={restriction}
@@ -782,7 +799,9 @@ const Profile = () => {
                     onChange={(e) => setNewDietaryRestriction(e.target.value)}
                     placeholder="Add dietary restriction"
                     className="h-8 text-sm"
-                    onKeyPress={(e) => e.key === "Enter" && addDietaryRestriction()}
+                    onKeyPress={(e) =>
+                      e.key === "Enter" && addDietaryRestriction()
+                    }
                   />
                   <Button
                     type="button"
@@ -828,6 +847,72 @@ const Profile = () => {
               </Button>
             </div>
 
+            {/* Subscription Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">
+                Subscription
+              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  {user.subscriptionTier === "free" && (
+                    <Sparkles className="w-5 h-5 text-orange-500" />
+                  )}
+                  {user.subscriptionTier === "plus" && (
+                    <Sparkles className="w-5 h-5 text-yellow-500" />
+                  )}
+                  {user.subscriptionTier === "premium" && (
+                    <Crown className="w-5 h-5 text-purple-500" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium capitalize">
+                      {user.subscriptionTier || "Free"} Plan
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {user.subscriptionTier === "free" && "Basic features"}
+                      {user.subscriptionTier === "plus" && "$9.99/month"}
+                      {user.subscriptionTier === "premium" && "$14.99/month"}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/subscription")}
+                  className="h-8 text-xs"
+                >
+                  {user.subscriptionTier === "free" ? (
+                    <>
+                      <Crown className="w-3.5 h-3.5 mr-1.5" />
+                      Upgrade
+                    </>
+                  ) : (
+                    "Manage"
+                  )}
+                </Button>
+              </div>
+              {user.subscriptionTier === "free" && (
+                <div className="bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-xs text-gray-700 mb-2">
+                    Unlock premium features with Plus or Premium
+                  </p>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-green-600" />
+                      <span>All star-inspired meal plans</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-green-600" />
+                      <span>Smart grocery lists</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-green-600" />
+                      <span>Personalized insights</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
             {/* Account Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">
@@ -863,10 +948,11 @@ const Profile = () => {
                   Favorite Meals
                 </h2>
                 <span className="text-sm text-gray-500">
-                  {favoriteMealsAsRecipes.length} {favoriteMealsAsRecipes.length === 1 ? 'meal' : 'meals'}
+                  {favoriteMealsAsRecipes.length}{" "}
+                  {favoriteMealsAsRecipes.length === 1 ? "meal" : "meals"}
                 </span>
               </div>
-              
+
               {!favoriteMealsLoaded ? (
                 <div className="flex items-center justify-center py-12">
                   <MealLoader />
@@ -875,7 +961,8 @@ const Profile = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {favoriteMealsAsRecipes.map((recipe: IRecipe) => {
                     const recipeId = recipe.mealId;
-                    const isFavorite = user?.favoriteMeals?.includes(recipeId) || false;
+                    const isFavorite =
+                      user?.favoriteMeals?.includes(recipeId) || false;
                     return (
                       <RecipeItem
                         key={recipeId}
@@ -884,7 +971,11 @@ const Profile = () => {
                         onFavoriteToggle={async () => {
                           if (user?._id && recipeId) {
                             try {
-                              await updateFavorite(user._id, recipeId, !isFavorite);
+                              await updateFavorite(
+                                user._id,
+                                recipeId,
+                                !isFavorite
+                              );
                               // Refresh favorites after toggle
                               await fetchFavoriteMeals(user._id);
                               if (isFavorite) {
@@ -897,7 +988,10 @@ const Profile = () => {
                                 });
                               }
                             } catch (error) {
-                              console.error("Failed to update favorite:", error);
+                              console.error(
+                                "Failed to update favorite:",
+                                error
+                              );
                               toast.error("Failed to update favorite");
                             }
                           }

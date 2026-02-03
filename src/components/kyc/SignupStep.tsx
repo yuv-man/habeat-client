@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { AuthData } from "./types";
 import GoogleIcon from "@/assets/icons/google";
 import MealLoader from "@/components/helper/MealLoader";
+import { SLOGAN_EAT_WELL } from "@/lib/copy";
 
 interface SignupStepProps {
   authData: AuthData;
@@ -34,7 +35,7 @@ export default function SignupStep({
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Get Started</h1>
-          <p className="text-gray-600 text-lg">Create your account to begin</p>
+          <p className="text-gray-600 text-sm max-w-sm mx-auto">{SLOGAN_EAT_WELL}</p>
         </div>
 
         <div className="backdrop-blur-sm bg-white/95 rounded-lg p-6 shadow-lg">

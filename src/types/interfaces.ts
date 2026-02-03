@@ -9,7 +9,7 @@ export interface IUser {
   weight: number;
   gender: string;
   age: number;
-  isPremium: boolean;
+  subscriptionTier: "free" | "plus" | "premium";
   path: string;
   bmr: number;
   tdee: number;
@@ -385,7 +385,14 @@ export interface IBadge {
   description: string;
   icon: string;
   earnedAt: string;
-  category: "streak" | "meals" | "nutrition" | "milestone" | "special" | "consistency" | "hydration";
+  category:
+    | "streak"
+    | "meals"
+    | "nutrition"
+    | "milestone"
+    | "special"
+    | "consistency"
+    | "hydration";
 }
 
 // Weekly summary for habit tracking
@@ -498,14 +505,14 @@ export interface IAnalyticsData {
 
 // Habit-based challenge types
 export type HabitChallengeType =
-  | "daily_logging"      // Log all meals for X days
-  | "breakfast_habit"    // Log breakfast X days in a row
-  | "hydration_habit"    // Hit water goal X days
-  | "balanced_eating"    // Balanced macros X days
-  | "protein_focus"      // Hit protein goal X days
-  | "mindful_eating"     // Log meals consistently
-  | "meal_consistency"   // Don't skip any meals X days
-  | "weekly_streak";     // Complete full week of tracking
+  | "daily_logging" // Log all meals for X days
+  | "breakfast_habit" // Log breakfast X days in a row
+  | "hydration_habit" // Hit water goal X days
+  | "balanced_eating" // Balanced macros X days
+  | "protein_focus" // Hit protein goal X days
+  | "mindful_eating" // Log meals consistently
+  | "meal_consistency" // Don't skip any meals X days
+  | "weekly_streak"; // Complete full week of tracking
 
 // Legacy challenge types (kept for backward compatibility)
 export type ChallengeType =
@@ -531,7 +538,7 @@ export interface IChallenge {
   icon: string;
   target: number;
   progress: number;
-  daysRequired: number;    // Duration of the habit challenge
+  daysRequired: number; // Duration of the habit challenge
   difficulty: ChallengeDifficulty;
   status: ChallengeStatus;
   startDate: string;
@@ -645,4 +652,44 @@ export interface INotificationPayload {
   title: string;
   body: string;
   data?: Record<string, any>;
+}
+
+// Subscription types
+export type SubscriptionStatus =
+  | "active"
+  | "canceled"
+  | "past_due"
+  | "trialing"
+  | "incomplete"
+  | "incomplete_expired"
+  | "unpaid"
+  | "none";
+
+export interface SubscriptionDetails {
+  tier: "free" | "plus" | "premium";
+  status: SubscriptionStatus;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd?: boolean;
+}
+
+export interface CreateCheckoutSessionRequest {
+  tier: "plus" | "premium";
+  successUrl: string;
+  cancelUrl: string;
+}
+
+export interface CreateCheckoutSessionResponse {
+  url: string;
+}
+
+export interface CreatePortalSessionRequest {
+  returnUrl: string;
+}
+
+export interface CreatePortalSessionResponse {
+  url: string;
+}
+
+export interface ChangeTierRequest {
+  tier: "free" | "plus" | "premium";
 }

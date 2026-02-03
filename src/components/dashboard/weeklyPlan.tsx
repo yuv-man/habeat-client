@@ -127,7 +127,7 @@ const MealItem = ({
   dayStatus?: "past" | "current" | "future";
 }) => {
   const navigate = useNavigate();
-  
+
   const getTextColor = () => {
     if (dayStatus === "past") return "text-gray-500";
     if (dayStatus === "current") return "text-gray-900";
@@ -147,13 +147,23 @@ const MealItem = ({
       }`}
     >
       <div className="flex-1 min-w-0">
-        <div className={`text-sm capitalize ${dayStatus === "past" ? "text-gray-400" : "text-gray-600"}`}>
+        <div
+          className={`text-sm capitalize ${
+            dayStatus === "past" ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           {mealType}
         </div>
-        <div className={`font-medium break-words line-clamp-2 ${getTextColor()}`}>
+        <div
+          className={`font-medium break-words line-clamp-2 ${getTextColor()}`}
+        >
           {formatMealName(meal.name)}
         </div>
-        <div className={`flex items-center gap-3 text-xs mt-0.5 ${dayStatus === "past" ? "text-gray-400" : "text-gray-500"}`}>
+        <div
+          className={`flex items-center gap-3 text-xs mt-0.5 ${
+            dayStatus === "past" ? "text-gray-400" : "text-gray-500"
+          }`}
+        >
           <span>{meal.calories} kcal</span>
           {!isSnack && meal.prepTime > 0 && (
             <span className="flex items-center gap-1">
@@ -169,36 +179,36 @@ const MealItem = ({
           <button
             onClick={handleViewRecipe}
             className={`hover:bg-blue-50 p-2 rounded transition flex-shrink-0 ${
-              dayStatus === "past" ? "text-gray-400 hover:text-gray-600" : "text-blue-500"
+              dayStatus === "past"
+                ? "text-gray-400 hover:text-gray-600"
+                : "text-blue-500"
             }`}
             aria-label="View recipe"
           >
             <BookOpen className="w-5 h-5" />
           </button>
         )}
-        { /* Show swap icon for all days (including past days) */}
-        {dayStatus !== "past" && <ChangeMealModal
-          currentMeal={meal}
-          mealType={mealType}
-          date={date}
-          snackIndex={isSnack ? snackIndex : undefined}
-          onMealChange={onMealChange}
-        >
-          <button
-            className={`hover:bg-green-50 p-2 rounded transition flex-shrink-0 ${
-              "text-green-500"
-            }`}
-            aria-label="Swap meal"
+        {/* Show swap icon for all days (including past days) */}
+        {dayStatus !== "past" && (
+          <ChangeMealModal
+            currentMeal={meal}
+            mealType={mealType}
+            date={date}
+            snackIndex={isSnack ? snackIndex : undefined}
+            onMealChange={onMealChange}
           >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-        </ChangeMealModal>}
+            <button
+              className={`hover:bg-green-50 p-2 rounded transition flex-shrink-0 ${"text-green-500"}`}
+              aria-label="Swap meal"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </ChangeMealModal>
+        )}
         {isSnack && onDelete && dayStatus !== "past" && (
           <button
             onClick={onDelete}
-            className={`hover:bg-red-50 p-2 rounded transition flex-shrink-0 ${
-              "text-red-500"
-            }`}
+            className={`hover:bg-red-50 p-2 rounded transition flex-shrink-0 ${"text-red-500"}`}
             aria-label="Delete snack"
           >
             <Trash2 className="w-5 h-5" />
@@ -429,11 +439,15 @@ export default function WeeklyMealPlan() {
 
     // Get today's date in local timezone
     const today = new Date();
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
 
     // Get the last (most recent) date in the plan
     const lastDateStr = dates[dates.length - 1];
-    const [year, month, day] = lastDateStr.split('-').map(Number);
+    const [year, month, day] = lastDateStr.split("-").map(Number);
     const lastDate = new Date(year, month - 1, day);
 
     // Plan is expired if the last date is before today
@@ -444,7 +458,9 @@ export default function WeeklyMealPlan() {
     if (dates.length > 0 && (!selectedDate || !weeklyPlan[selectedDate])) {
       // Try to find today's date in the plan (using local timezone)
       const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const todayStr = `${today.getFullYear()}-${String(
+        today.getMonth() + 1
+      ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 
       // Check if today exists in the plan dates
       const todayInPlan = dates.find((d) => d === todayStr);
@@ -478,16 +494,22 @@ export default function WeeklyMealPlan() {
   const getDayStatus = (dateStr: string): "past" | "current" | "future" => {
     // Get today's date in local timezone (YYYY-MM-DD format)
     const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
+    const todayStr = `${today.getFullYear()}-${String(
+      today.getMonth() + 1
+    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
     // Compare date strings directly (both should be in YYYY-MM-DD format)
     if (dateStr === todayStr) return "current";
-    
+
     // For past/future comparison, parse dates in local timezone
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const [year, month, day] = dateStr.split("-").map(Number);
     const dayDate = new Date(year, month - 1, day);
-    
+
     if (dayDate < todayDate) return "past";
     return "future";
   };
@@ -883,23 +905,29 @@ export default function WeeklyMealPlan() {
           </div>
 
           {/* Selected Day Content */}
-          <div className={`p-4 rounded-lg ${
-            getDayStatus(selectedDate) === "current" 
-              ? "bg-green-50 border-2 border-green-200" 
-              : getDayStatus(selectedDate) === "past"
-              ? "bg-gray-50 border border-gray-200"
-              : "bg-gray-50 border border-gray-200"
-          }`}>
-            <h2 className={`text-xl font-bold mb-4 ${
+          <div
+            className={`p-4 rounded-lg ${
               getDayStatus(selectedDate) === "current"
-                ? "text-green-800"
+                ? "bg-green-50 border-2 border-green-200"
                 : getDayStatus(selectedDate) === "past"
-                ? "text-gray-500"
-                : "text-gray-900"
-            }`}>
+                ? "bg-gray-50 border border-gray-200"
+                : "bg-gray-50 border border-gray-200"
+            }`}
+          >
+            <h2
+              className={`text-xl font-bold mb-4 ${
+                getDayStatus(selectedDate) === "current"
+                  ? "text-green-800"
+                  : getDayStatus(selectedDate) === "past"
+                  ? "text-gray-500"
+                  : "text-gray-900"
+              }`}
+            >
               {getDayName(selectedDate)}
               {getDayStatus(selectedDate) === "current" && (
-                <span className="ml-2 text-sm font-normal text-green-600">(Today)</span>
+                <span className="ml-2 text-sm font-normal text-green-600">
+                  (Today)
+                </span>
               )}
             </h2>
             {currentDay && (
@@ -1006,6 +1034,7 @@ export default function WeeklyMealPlan() {
         onClose={() => setShowPlanSelector(false)}
         onSelect={handlePlanSelect}
         isGenerating={isGenerating}
+        isRegeneration={true}
       />
     </div>
   );

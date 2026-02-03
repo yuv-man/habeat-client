@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import NavBar from "@/components/ui/navbar";
 import BottomNav from "@/components/ui/BottomNav";
@@ -7,6 +7,8 @@ import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Sparkles, AlertCircle } from "lucide-react";
 import { ChatButton, ChatPanel } from "@/components/chat";
+import PlanSelector from "@/components/dashboard/PlanSelector";
+import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradePrompt";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -60,15 +62,37 @@ const DashboardLayout = ({
     }
   };
 
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const { user, generateMealPlan } = useAuthStore();
+
   const handleGeneratePlan = () => {
-    navigate("/weekly-overview");
+    setShowPlanSelector(true);
+  };
+
+  const handlePlanSelect = async (planTemplateId: string) => {
+    if (!user) return;
+    try {
+      setIsGeneratingPlan(true);
+      await generateMealPlan(
+        user,
+        "My Plan",
+        "en",
+        planTemplateId === "custom" ? undefined : planTemplateId
+      );
+      setShowPlanSelector(false);
+    } catch (error) {
+      console.error("Failed to generate meal plan:", error);
+    } finally {
+      setIsGeneratingPlan(false);
+    }
   };
 
   return (
-    <div 
+    <div
       className={`min-h-screen ${bgColor} pb-16 md:pb-0 md:pt-16`}
-      style={{ 
-        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 3.5rem)' // 3.5rem = 56px (h-14), safe area for mobile status bar
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)", // 3.5rem = 56px (h-14), safe area for mobile status bar
       }}
     >
       <MobileHeader />
@@ -110,6 +134,18 @@ const DashboardLayout = ({
 
       {/* Nutrition Chat Panel */}
       <ChatPanel />
+
+      {/* Plan Selector Modal */}
+      <PlanSelector
+        open={showPlanSelector}
+        onClose={() => setShowPlanSelector(false)}
+        onSelect={handlePlanSelect}
+        isGenerating={isGeneratingPlan}
+        isRegeneration={!plan || !plan.weeklyPlan}
+      />
+
+      {/* Streak Upgrade Prompt (shows after 5-day streak for free users) */}
+      <StreakUpgradePrompt />
     </div>
   );
 };

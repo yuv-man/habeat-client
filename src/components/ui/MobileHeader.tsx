@@ -5,6 +5,7 @@ import { Menu, X, BarChart3, User } from "lucide-react";
 import logo from "@/assets/logos/app1.webp";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";
+import { HealthyCoins } from "@/components/engagement/HealthyCoins";
 
 const MobileHeader = () => {
   const location = useLocation();
@@ -59,13 +60,20 @@ const MobileHeader = () => {
           <div className="text-lg font-semibold text-gray-900">Habeats</div>
         </Link>
 
-        {/* Chat Button, Profile Picture and Burger Menu */}
+        {/* Healthy Coins, Chat Button, and Profile Picture */}
         <div className="flex items-center gap-2">
+          {/* Healthy Coins */}
+          <button
+            onClick={() => navigate("/progress")}
+            aria-label="Healthy Coins"
+          >
+            <HealthyCoins variant="compact" />
+          </button>
+
           {/* Chat Button */}
           <div className="relative">
             <ChatButton variant="inline" />
           </div>
-
           {/* Profile Picture */}
           <button
             onClick={() => navigate("/profile")}

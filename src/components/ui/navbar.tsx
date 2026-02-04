@@ -12,6 +12,7 @@ import logo from "@/assets/logos/app1.webp";
 import "@/styles/navbar.css";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";
+import { HealthyCoins } from "@/components/engagement/HealthyCoins";
 
 interface NavBarProps {
   currentView?: "daily" | "weekly";
@@ -80,6 +81,11 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
             <div className="relative">
               <ChatButton variant="inline" />
             </div>
+
+            {/* Healthy Coins */}
+            <Link to="/progress">
+              <HealthyCoins variant="compact" />
+            </Link>
 
             {/* Profile Picture */}
             <Link

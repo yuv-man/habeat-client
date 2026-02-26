@@ -744,66 +744,84 @@ export default function WeeklyMealPlan() {
     });
 
     return (
-      <div className="bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
-          </div>
-          <div className="text-center py-12 space-y-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
-              <CalendarDays className="w-8 h-8 text-amber-600" />
+      <>
+        <div className="bg-white min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
             </div>
-            <div>
-              <p className="text-xl font-semibold text-gray-800">
-                Your meal plan has expired
-              </p>
-              <p className="text-gray-500 mt-2">
-                Your previous plan ended on {formattedLastDate}
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                Generate a new plan to get fresh meals for this week
-              </p>
+            <div className="text-center py-12 space-y-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
+                <CalendarDays className="w-8 h-8 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-xl font-semibold text-gray-800">
+                  Your meal plan has expired
+                </p>
+                <p className="text-gray-500 mt-2">
+                  Your previous plan ended on {formattedLastDate}
+                </p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Generate a new plan to get fresh meals for this week
+                </p>
+              </div>
+              <Button
+                disabled={isGenerating}
+                onClick={openPlanSelector}
+                className="flex items-center gap-2 mx-auto bg-green-500 text-white hover:bg-green-600"
+                size="lg"
+              >
+                <Sparkles className="h-5 w-5" />
+                <span>Generate New Plan</span>
+              </Button>
             </div>
-            <Button
-              disabled={isGenerating}
-              onClick={openPlanSelector}
-              className="flex items-center gap-2 mx-auto bg-green-500 text-white hover:bg-green-600"
-              size="lg"
-            >
-              <Sparkles className="h-5 w-5" />
-              <span>Generate New Plan</span>
-            </Button>
           </div>
         </div>
-      </div>
+        <PlanSelector
+          open={showPlanSelector}
+          onClose={() => setShowPlanSelector(false)}
+          onSelect={handlePlanSelect}
+          isGenerating={isGenerating}
+          isRegeneration={true}
+        />
+      </>
     );
   }
 
   if (!currentDay || dates.length === 0) {
     return (
-      <div className="bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
-            <div className="flex gap-2">
-              <Button
-                disabled={isGenerating}
-                onClick={openPlanSelector}
-                className="flex items-center gap-2"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>AI Generate</span>
-              </Button>
+      <>
+        <div className="bg-white min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
+              <div className="flex gap-2">
+                <Button
+                  disabled={isGenerating}
+                  onClick={openPlanSelector}
+                  className="flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>AI Generate</span>
+                </Button>
+              </div>
+            </div>
+            <div className="text-center py-12">
+              <p className="text-gray-500">No meal plan available</p>
+              <p className="text-sm text-gray-400 mt-2">
+                Click "AI Generate" to create your meal plan
+              </p>
             </div>
           </div>
-          <div className="text-center py-12">
-            <p className="text-gray-500">No meal plan available</p>
-            <p className="text-sm text-gray-400 mt-2">
-              Click "AI Generate" to create your meal plan
-            </p>
-          </div>
         </div>
-      </div>
+        <PlanSelector
+          open={showPlanSelector}
+          onClose={() => setShowPlanSelector(false)}
+          onSelect={handlePlanSelect}
+          isGenerating={isGenerating}
+          isRegeneration={true}
+        />
+      </>
     );
   }
 

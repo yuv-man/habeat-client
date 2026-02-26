@@ -304,3 +304,44 @@ export const getDifficultyColor = (difficulty: string): string => {
       return "text-gray-500";
   }
 };
+
+// CBT/Mindfulness challenge types
+const CBT_CHALLENGE_TYPES = [
+  "mood_tracking",
+  "mindful_meal",
+  "thought_journal",
+  "cbt_exercise",
+  "emotional_awareness",
+  "pre_meal_checkin",
+  "mindfulness_streak",
+];
+
+// Helper to check if a challenge is a CBT/mindfulness challenge
+export const isCBTChallenge = (challenge: IChallenge): boolean => {
+  return CBT_CHALLENGE_TYPES.includes(challenge.type);
+};
+
+// Helper to get challenge category
+export const getChallengeCategory = (challenge: IChallenge): "nutrition" | "mindfulness" | "consistency" => {
+  if (isCBTChallenge(challenge)) {
+    return "mindfulness";
+  }
+  if (["hydration_habit", "balanced_eating", "protein_focus"].includes(challenge.type)) {
+    return "nutrition";
+  }
+  return "consistency";
+};
+
+// Selector for CBT challenges only
+export const useCBTChallenges = () =>
+  useChallengeStore(
+    (state) => state.challenges.filter((c) => isCBTChallenge(c) && c.status === "active")
+  );
+
+// Selector for nutrition challenges only
+export const useNutritionChallenges = () =>
+  useChallengeStore(
+    (state) => state.challenges.filter((c) =>
+      !isCBTChallenge(c) && c.status === "active"
+    )
+  );

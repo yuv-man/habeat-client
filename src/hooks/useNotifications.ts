@@ -26,6 +26,14 @@ const NOTIFICATION_IDS = {
   dailySummary: 3001,
   weeklySummary: 3002,
   motivational: 4001,
+  // CBT notification IDs
+  moodCheckInMorning: 5001,
+  moodCheckInAfternoon: 5002,
+  moodCheckInEvening: 5003,
+  thoughtPrompt: 5004,
+  exerciseReminder: 5005,
+  emotionalEatingAlert: 5006,
+  cbtStreakWarning: 5007,
 };
 
 export function useNotifications(): UseNotificationsReturn {
@@ -231,6 +239,91 @@ export function useNotifications(): UseNotificationsReturn {
           every: "day" as any,
         },
       });
+    }
+
+    // CBT Reminders
+    if (prefs.cbtReminders?.enabled) {
+      // Mood check-in reminders
+      if (prefs.cbtReminders.moodCheckIn?.enabled) {
+        const frequency = prefs.cbtReminders.moodCheckIn.frequency;
+
+        if (frequency === "morning_evening") {
+          // Morning check-in at 9am
+          const morningTime = getNextTime("09:00");
+          notifications.push({
+            id: NOTIFICATION_IDS.moodCheckInMorning,
+            title: "Good morning! How are you feeling?",
+            body: "Take a moment to check in with your mood",
+            schedule: {
+              at: morningTime,
+              repeats: true,
+              every: "day" as any,
+            },
+          });
+          // Evening check-in at 8pm
+          const eveningTime = getNextTime("20:00");
+          notifications.push({
+            id: NOTIFICATION_IDS.moodCheckInEvening,
+            title: "Evening check-in",
+            body: "How has your mood been today?",
+            schedule: {
+              at: eveningTime,
+              repeats: true,
+              every: "day" as any,
+            },
+          });
+        } else if (frequency === "3_times_daily" && prefs.cbtReminders.moodCheckIn.times) {
+          const times = prefs.cbtReminders.moodCheckIn.times;
+          const moodIds = [
+            NOTIFICATION_IDS.moodCheckInMorning,
+            NOTIFICATION_IDS.moodCheckInAfternoon,
+            NOTIFICATION_IDS.moodCheckInEvening,
+          ];
+          times.slice(0, 3).forEach((time, index) => {
+            const scheduleAt = getNextTime(time);
+            notifications.push({
+              id: moodIds[index],
+              title: "Mood Check-In",
+              body: "How are you feeling right now?",
+              schedule: {
+                at: scheduleAt,
+                repeats: true,
+                every: "day" as any,
+              },
+            });
+          });
+        }
+      }
+
+      // Thought prompt
+      if (prefs.cbtReminders.thoughtPrompt?.enabled && prefs.cbtReminders.thoughtPrompt.time) {
+        const scheduleAt = getNextTime(prefs.cbtReminders.thoughtPrompt.time);
+        notifications.push({
+          id: NOTIFICATION_IDS.thoughtPrompt,
+          title: "Time for reflection",
+          body: "Notice any challenging thoughts? Take a moment to examine them",
+          schedule: {
+            at: scheduleAt,
+            repeats: true,
+            every: "day" as any,
+          },
+        });
+      }
+
+      // Exercise reminder
+      if (prefs.cbtReminders.exerciseReminder?.enabled && prefs.cbtReminders.exerciseReminder.preferredTime) {
+        const scheduleAt = getNextTime(prefs.cbtReminders.exerciseReminder.preferredTime);
+        notifications.push({
+          id: NOTIFICATION_IDS.exerciseReminder,
+          title: "CBT Exercise Time",
+          body: "A few minutes of mindfulness can make a big difference",
+          schedule: {
+            at: scheduleAt,
+            repeats: true,
+            every: "day" as any,
+          },
+        });
+      }
     }
 
     // Schedule all notifications

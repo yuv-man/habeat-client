@@ -13,7 +13,7 @@ interface EngagementState {
 
   // Celebration state - habit-focused
   showCelebration: boolean;
-  celebrationType: "milestone" | "badge" | "streak" | "habitScore" | null;
+  celebrationType: "milestone" | "badge" | "streak" | "habitScore" | "cbtMilestone" | "moodStreak" | null;
   celebrationData: {
     habitScore?: number;
     milestone?: {
@@ -22,6 +22,11 @@ interface EngagementState {
     };
     badge?: IBadge;
     streak?: number;
+    cbtMilestone?: {
+      type: "mood_streak" | "thought_entries" | "exercises_completed";
+      count: number;
+      message: string;
+    };
   } | null;
 
   // Actions

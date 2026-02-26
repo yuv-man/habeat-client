@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, BarChart3, User } from "lucide-react";
+import { Home, Calendar, BarChart3, User, Brain } from "lucide-react";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -20,6 +20,12 @@ const BottomNav = () => {
     if (path === "/profile") {
       return (
         location.pathname === "/profile" || location.pathname === "/settings"
+      );
+    }
+    if (path === "/mindfulness") {
+      return (
+        location.pathname === "/mindfulness" ||
+        location.pathname.startsWith("/mindfulness/")
       );
     }
     return location.pathname === path;
@@ -92,6 +98,7 @@ const BottomNav = () => {
           isMain={true}
         />
         <NavButton path="/weekly-overview" icon={Calendar} label="Plan" />
+        <NavButton path="/mindfulness" icon={Brain} label="Mind" />
         <NavButton path="/progress" icon={BarChart3} label="Progress" />
         <NavButton path="/profile" icon={User} label="Profile" />
       </div>

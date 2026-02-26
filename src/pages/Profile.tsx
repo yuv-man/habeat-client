@@ -35,6 +35,7 @@ import MealLoader from "@/components/helper/MealLoader";
 import { NotificationSettings } from "@/components/settings";
 import RecipeItem from "@/components/recipes/RecipeItem";
 import { toast } from "sonner";
+import { CBTProgressCard } from "@/components/cbt";
 
 const Profile = () => {
   const { toast: uiToast } = useToast();
@@ -845,6 +846,11 @@ const Profile = () => {
                   </>
                 )}
               </Button>
+            </div>
+
+            {/* Mindfulness & CBT Exercises */}
+            <div className="mb-4">
+              <CBTProgressCard compact />
             </div>
 
             {/* Subscription Section */}

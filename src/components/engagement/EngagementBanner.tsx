@@ -17,12 +17,11 @@ export function EngagementBanner({
   // Use individual selectors to avoid object creation on every render
   const stats = useEngagementStore((state) => state.stats);
   const loading = useEngagementStore((state) => state.loading);
-  const fetchStats = useEngagementStore((state) => state.fetchStats);
 
   // Fetch stats on mount
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    useEngagementStore.getState().fetchStats();
+  }, []);
 
   // Calculate calories progress percentage
   const caloriesPercentage = caloriesGoal > 0 

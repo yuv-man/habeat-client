@@ -77,9 +77,9 @@ export function ChallengesBanner({ className }: ChallengesBannerProps) {
   }, [claimableChallenges]);
 
   useEffect(() => {
-    fetchChallenges();
-    fetchClaimableChallenges();
-  }, [fetchChallenges, fetchClaimableChallenges]);
+    useChallengeStore.getState().fetchChallenges();
+    useChallengeStore.getState().fetchClaimableChallenges();
+  }, []);
 
   const handleClaimReward = async (challengeId: string) => {
     const result = await claimReward(challengeId);

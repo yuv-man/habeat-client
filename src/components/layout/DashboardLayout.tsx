@@ -118,6 +118,7 @@ const DashboardLayout = ({
               </div>
             </div>
             <Button
+              type="button"
               onClick={handleGeneratePlan}
               className="bg-amber-600 hover:bg-amber-700 text-white text-xs md:text-sm font-semibold px-4 py-2 flex items-center gap-2 flex-shrink-0"
               size="sm"

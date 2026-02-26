@@ -6,6 +6,7 @@ import {
   Heart,
   Home,
   User,
+  Brain,
 } from "lucide-react";
 //import logo from "@/assets/habeatIcon.png";
 import logo from "@/assets/logos/app1.webp";
@@ -74,6 +75,16 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
             >
               <ShoppingCart className="w-5 h-5" />
               <div className="nav-link-text">Shopping List</div>
+            </Link>
+
+            <Link
+              to="/mindfulness"
+              className={`nav-link ${
+                isActive("/mindfulness") || location.pathname.startsWith("/mindfulness/") ? "active" : ""
+              }`}
+            >
+              <Brain className="w-5 h-5" />
+              <div className="nav-link-text">Mindfulness</div>
             </Link>
           </div>
           <div className="flex items-center gap-2">

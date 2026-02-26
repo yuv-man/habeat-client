@@ -20,12 +20,11 @@ export function StreakDisplay({ className, showFreeze = false, compact = false }
   // Use individual selectors to avoid object creation on every render
   const stats = useEngagementStore((state) => state.stats);
   const loading = useEngagementStore((state) => state.loading);
-  const fetchStats = useEngagementStore((state) => state.fetchStats);
   const useStreakFreeze = useEngagementStore((state) => state.useStreakFreeze);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    useEngagementStore.getState().fetchStats();
+  }, []);
 
   if (loading && !stats) {
     return (

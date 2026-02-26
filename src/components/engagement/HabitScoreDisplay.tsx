@@ -43,11 +43,10 @@ function getScoreMessage(score: number): string {
 export function HabitScoreDisplay({ className, showLabel = true, compact = false }: HabitScoreDisplayProps) {
   const stats = useEngagementStore((state) => state.stats);
   const loading = useEngagementStore((state) => state.loading);
-  const fetchStats = useEngagementStore((state) => state.fetchStats);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    useEngagementStore.getState().fetchStats();
+  }, []);
 
   if (loading && !stats) {
     return (

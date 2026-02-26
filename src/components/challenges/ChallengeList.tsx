@@ -59,10 +59,10 @@ export function ChallengeList({
   );
 
   useEffect(() => {
-    fetchChallenges();
-    fetchClaimableChallenges();
-    fetchCompletedChallenges();
-  }, [fetchChallenges, fetchClaimableChallenges, fetchCompletedChallenges]);
+    useChallengeStore.getState().fetchChallenges();
+    useChallengeStore.getState().fetchClaimableChallenges();
+    useChallengeStore.getState().fetchCompletedChallenges();
+  }, []);
 
   const handleClaimReward = async (challengeId: string) => {
     const result = await claimReward(challengeId);

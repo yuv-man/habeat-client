@@ -14,11 +14,11 @@ export function HealthyCoins({
   showTrend = false,
   className,
 }: HealthyCoinsProps) {
-  const { stats, fetchStats } = useEngagementStore();
+  const stats = useEngagementStore((s) => s.stats);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    useEngagementStore.getState().fetchStats();
+  }, []);
 
   const xp = stats?.xp || 0;
   const level = stats?.level || 1;

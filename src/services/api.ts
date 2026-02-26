@@ -15,6 +15,15 @@ import {
   IWeeklyStory,
   INotificationPreferences,
   INotificationPayload,
+  // CBT types
+  IMoodEntry,
+  IMoodSummary,
+  IThoughtEntry,
+  ICBTExercise,
+  ICBTExerciseCompletion,
+  IMealMoodCorrelation,
+  IEmotionalEatingInsight,
+  ICBTEngagementStats,
 } from "../types/interfaces";
 import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
@@ -1654,6 +1663,254 @@ const cancelSubscription = async (): Promise<
     }>(`/subscription/cancel`, {}, { headers: getAuthHeaders() });
     return { data: response.data.data };
   }, "Failed to cancel subscription. Please try again.");
+};
+
+// ============================================================================
+// CBT (COGNITIVE BEHAVIORAL THERAPY) API
+// ============================================================================
+
+// ----- Mood API -----
+
+const getTodayMoods = async (): Promise<ApiResponse<IMoodEntry[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IMoodEntry[];
+    }>(`/cbt/moods/today`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get today's moods. Please try again.");
+};
+
+const getMoodHistory = async (
+  startDate: string,
+  endDate: string
+): Promise<ApiResponse<IMoodEntry[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IMoodEntry[];
+    }>(`/cbt/moods/history`, {
+      params: { startDate, endDate },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get mood history. Please try again.");
+};
+
+const logMood = async (
+  entry: Omit<IMoodEntry, "_id" | "userId" | "createdAt" | "updatedAt">
+): Promise<ApiResponse<IMoodEntry>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: IMoodEntry;
+    }>(`/cbt/moods`, entry, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to log mood. Please try again.");
+};
+
+const getMoodSummary = async (
+  period: "week" | "month"
+): Promise<ApiResponse<IMoodSummary>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IMoodSummary;
+    }>(`/cbt/moods/summary`, {
+      params: { period },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get mood summary. Please try again.");
+};
+
+// ----- Thought Journal API -----
+
+const getThoughts = async (
+  limit: number = 20
+): Promise<ApiResponse<IThoughtEntry[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IThoughtEntry[];
+    }>(`/cbt/thoughts`, {
+      params: { limit },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get thoughts. Please try again.");
+};
+
+const logThought = async (
+  entry: Omit<IThoughtEntry, "_id" | "userId" | "createdAt" | "updatedAt">
+): Promise<ApiResponse<IThoughtEntry>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: IThoughtEntry;
+    }>(`/cbt/thoughts`, entry, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to log thought. Please try again.");
+};
+
+const updateThought = async (
+  id: string,
+  updates: Partial<IThoughtEntry>
+): Promise<ApiResponse<IThoughtEntry>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<{
+      success: boolean;
+      data: IThoughtEntry;
+    }>(`/cbt/thoughts/${id}`, updates, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to update thought. Please try again.");
+};
+
+const deleteThought = async (
+  id: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data: { success: boolean };
+    }>(`/cbt/thoughts/${id}`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to delete thought. Please try again.");
+};
+
+// ----- CBT Exercises API -----
+
+const getExercises = async (
+  category?: string
+): Promise<ApiResponse<ICBTExercise[]>> => {
+  return withErrorHandling(async () => {
+    const params = category ? { category } : {};
+    const response = await userClient.get<{
+      success: boolean;
+      data: ICBTExercise[];
+    }>(`/cbt/exercises`, { params, headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get exercises. Please try again.");
+};
+
+const getRecommendedExercises = async (): Promise<
+  ApiResponse<ICBTExercise[]>
+> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: ICBTExercise[];
+    }>(`/cbt/exercises/recommended`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get recommended exercises. Please try again.");
+};
+
+const completeExercise = async (
+  completion: Omit<ICBTExerciseCompletion, "_id" | "userId" | "createdAt">
+): Promise<ApiResponse<ICBTExerciseCompletion>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: ICBTExerciseCompletion;
+    }>(`/cbt/exercises/complete`, completion, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to complete exercise. Please try again.");
+};
+
+const getExerciseHistory = async (
+  limit: number = 20
+): Promise<ApiResponse<ICBTExerciseCompletion[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: ICBTExerciseCompletion[];
+    }>(`/cbt/exercises/history`, {
+      params: { limit },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get exercise history. Please try again.");
+};
+
+// ----- Meal-Mood Correlation API -----
+
+const linkMoodToMeal = async (
+  correlation: Omit<IMealMoodCorrelation, "_id" | "userId" | "createdAt">
+): Promise<ApiResponse<IMealMoodCorrelation>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success: boolean;
+      data: IMealMoodCorrelation;
+    }>(`/cbt/meal-mood`, correlation, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to link mood to meal. Please try again.");
+};
+
+const getEmotionalEatingInsights = async (
+  period: "week" | "month"
+): Promise<ApiResponse<IEmotionalEatingInsight>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IEmotionalEatingInsight;
+    }>(`/cbt/meal-mood/insights`, {
+      params: { period },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get emotional eating insights. Please try again.");
+};
+
+const getMealMoodHistory = async (
+  limit: number = 20
+): Promise<ApiResponse<IMealMoodCorrelation[]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: IMealMoodCorrelation[];
+    }>(`/cbt/meal-mood/history`, {
+      params: { limit },
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get meal-mood history. Please try again.");
+};
+
+// ----- CBT Stats API -----
+
+const getCBTStats = async (): Promise<ApiResponse<ICBTEngagementStats>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: ICBTEngagementStats;
+    }>(`/cbt/stats`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to get CBT stats. Please try again.");
+};
+
+// CBT API export object
+export const cbtAPI = {
+  // Mood
+  getTodayMoods,
+  getMoodHistory,
+  logMood,
+  getMoodSummary,
+  // Thoughts
+  getThoughts,
+  logThought,
+  updateThought,
+  deleteThought,
+  // Exercises
+  getExercises,
+  getRecommendedExercises,
+  completeExercise,
+  getExerciseHistory,
+  // Meal-Mood
+  linkMoodToMeal,
+  getEmotionalEatingInsights,
+  getMealMoodHistory,
+  // Stats
+  getCBTStats,
 };
 
 export const userAPI = {

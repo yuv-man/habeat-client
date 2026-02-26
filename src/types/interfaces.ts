@@ -392,7 +392,10 @@ export interface IBadge {
     | "milestone"
     | "special"
     | "consistency"
-    | "hydration";
+    | "hydration"
+    | "cbt"
+    | "mindfulness"
+    | "emotional_awareness";
 }
 
 // Weekly summary for habit tracking
@@ -512,7 +515,15 @@ export type HabitChallengeType =
   | "protein_focus" // Hit protein goal X days
   | "mindful_eating" // Log meals consistently
   | "meal_consistency" // Don't skip any meals X days
-  | "weekly_streak"; // Complete full week of tracking
+  | "weekly_streak" // Complete full week of tracking
+  // CBT/Mindfulness challenge types
+  | "mood_tracking" // Log mood X times
+  | "mindful_meal" // Complete mindful eating exercise before meals
+  | "thought_journal" // Complete X thought records
+  | "cbt_exercise" // Complete X CBT exercises
+  | "emotional_awareness" // Link mood to X meals
+  | "pre_meal_checkin" // Do mood check-in before X meals
+  | "mindfulness_streak"; // CBT activity streak for X days
 
 // Legacy challenge types (kept for backward compatibility)
 export type ChallengeType =
@@ -645,6 +656,8 @@ export interface INotificationPreferences {
     start: string;
     end: string;
   };
+  // CBT reminders
+  cbtReminders?: ICBTNotificationPreferences;
 }
 
 export interface INotificationPayload {
@@ -692,4 +705,267 @@ export interface CreatePortalSessionResponse {
 
 export interface ChangeTierRequest {
   tier: "free" | "plus" | "premium";
+}
+
+// ============================================
+// CBT (Cognitive Behavioral Therapy) Interfaces
+// ============================================
+
+// Mood tracking types
+export type MoodLevel = 1 | 2 | 3 | 4 | 5;
+
+export type MoodCategory =
+  | "happy"
+  | "calm"
+  | "anxious"
+  | "sad"
+  | "angry"
+  | "stressed"
+  | "tired"
+  | "energetic"
+  | "neutral";
+
+export type MoodTrigger =
+  | "work"
+  | "relationships"
+  | "health"
+  | "finances"
+  | "sleep"
+  | "food"
+  | "exercise"
+  | "weather"
+  | "social"
+  | "other";
+
+export interface IMoodEntry {
+  _id?: string;
+  userId: string;
+  date: string;
+  time: string;
+  moodLevel: MoodLevel;
+  moodCategory: MoodCategory;
+  energyLevel?: MoodLevel;
+  stressLevel?: MoodLevel;
+  notes?: string;
+  triggers?: MoodTrigger[];
+  linkedMealId?: string;
+  linkedMealType?: "breakfast" | "lunch" | "dinner" | "snacks";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface IMoodSummary {
+  date: string;
+  avgMoodLevel: number;
+  avgEnergyLevel: number;
+  avgStressLevel: number;
+  dominantMood: MoodCategory;
+  moodEntryCount: number;
+  mealMoodCorrelations: IMealMoodCorrelation[];
+}
+
+// Cognitive distortion types for thought journaling
+export type CognitiveDistortionType =
+  | "all_or_nothing" // Black and white thinking
+  | "overgeneralization" // Seeing single events as patterns
+  | "mental_filter" // Focusing on negatives
+  | "disqualifying_positive" // Dismissing good things
+  | "jumping_to_conclusions" // Mind reading or fortune telling
+  | "magnification" // Catastrophizing or minimizing
+  | "emotional_reasoning" // Feelings as facts
+  | "should_statements" // Rigid rules
+  | "labeling" // Assigning negative labels
+  | "personalization"; // Blaming self for external events
+
+export interface ICognitiveDistortion {
+  type: CognitiveDistortionType;
+  name: string;
+  description: string;
+  example: string;
+  reframeQuestion: string;
+}
+
+export interface IThoughtEmotion {
+  name: string;
+  intensity: MoodLevel;
+}
+
+export interface IThoughtEntry {
+  _id?: string;
+  userId: string;
+  date: string;
+  time: string;
+  situation: string;
+  automaticThought: string;
+  emotions: IThoughtEmotion[];
+  cognitiveDistortions?: CognitiveDistortionType[];
+  evidence?: {
+    supporting: string[];
+    contradicting: string[];
+  };
+  balancedThought?: string;
+  outcomeEmotion?: IThoughtEmotion;
+  linkedMealId?: string;
+  linkedMealType?: "breakfast" | "lunch" | "dinner" | "snacks";
+  isEmotionalEating?: boolean;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// CBT Exercise types
+export type CBTExerciseType =
+  | "thought_record" // Standard CBT thought record
+  | "behavioral_activation" // Activity scheduling
+  | "mindful_eating" // Eating awareness
+  | "gratitude" // Gratitude journaling
+  | "progressive_relaxation" // Muscle relaxation
+  | "breathing" // Breathing exercises
+  | "cognitive_restructuring" // Challenging thoughts
+  | "urge_surfing" // Managing cravings
+  | "self_compassion" // Self-kindness exercises
+  | "body_scan"; // Body awareness
+
+export type CBTExerciseCategory = "mood" | "eating" | "stress" | "general";
+export type CBTExerciseDifficulty = "beginner" | "intermediate" | "advanced";
+
+export interface ICBTExercise {
+  id: string;
+  type: CBTExerciseType;
+  title: string;
+  description: string;
+  duration: number; // in minutes
+  difficulty: CBTExerciseDifficulty;
+  category: CBTExerciseCategory;
+  instructions: string[];
+  benefits: string[];
+  icon: string;
+}
+
+export interface ICBTExerciseCompletion {
+  _id?: string;
+  userId: string;
+  exerciseId: string;
+  exerciseType: CBTExerciseType;
+  date: string;
+  duration: number; // actual time spent in minutes
+  responses?: Record<string, any>; // Exercise-specific responses
+  reflection?: string;
+  moodBefore?: MoodLevel;
+  moodAfter?: MoodLevel;
+  linkedMealId?: string;
+  createdAt?: string;
+}
+
+// Meal-Mood correlation types
+export interface IMealMoodCorrelation {
+  _id?: string;
+  userId: string;
+  mealId: string;
+  mealName: string;
+  mealType: "breakfast" | "lunch" | "dinner" | "snacks";
+  date: string;
+  moodBefore?: IMoodEntry;
+  moodAfter?: IMoodEntry;
+  wasEmotionalEating: boolean;
+  hungerLevelBefore?: MoodLevel; // 1=not hungry, 5=very hungry
+  satisfactionAfter?: MoodLevel;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface IEmotionalEatingInsight {
+  period: { start: string; end: string };
+  totalMeals: number;
+  emotionalEatingInstances: number;
+  emotionalEatingPercentage: number;
+  commonTriggers: { trigger: string; count: number }[];
+  commonEmotions: { emotion: string; count: number }[];
+  mealTypeBreakdown: {
+    breakfast: number;
+    lunch: number;
+    dinner: number;
+    snacks: number;
+  };
+  recommendations: string[];
+}
+
+// CBT Engagement Stats (extends main engagement)
+export interface ICBTEngagementStats {
+  moodEntriesLogged: number;
+  thoughtEntriesLogged: number;
+  exercisesCompleted: number;
+  moodCheckStreak: number;
+  cbtActivityStreak: number;
+  emotionalEatingAwareness: number; // 0-100 score
+  mealMoodCorrelationsLogged: number;
+}
+
+// CBT Notification types
+export type CBTNotificationType =
+  | "mood_checkin"
+  | "thought_prompt"
+  | "exercise_reminder"
+  | "emotional_eating_alert"
+  | "cbt_streak_warning";
+
+export type CBTMoodCheckInFrequency =
+  | "after_meals"
+  | "3_times_daily"
+  | "morning_evening";
+
+export type CBTThoughtPromptFrequency =
+  | "daily"
+  | "when_stressed"
+  | "after_emotional_eating";
+
+export type CBTExerciseReminderFrequency = "daily" | "weekly" | "when_stressed";
+
+export interface ICBTNotificationPreferences {
+  enabled: boolean;
+  moodCheckIn: {
+    enabled: boolean;
+    frequency: CBTMoodCheckInFrequency;
+    times?: string[]; // Specific times if 3_times_daily
+  };
+  thoughtPrompt: {
+    enabled: boolean;
+    frequency: CBTThoughtPromptFrequency;
+    time?: string;
+  };
+  exerciseReminder: {
+    enabled: boolean;
+    frequency: CBTExerciseReminderFrequency;
+    preferredTime?: string;
+  };
+}
+
+// CBT Points system constants
+export const CBT_POINTS = {
+  MOOD_LOG: 5,
+  DETAILED_MOOD_LOG: 10,
+  THOUGHT_ENTRY: 15,
+  COMPLETE_THOUGHT_RECORD: 25,
+  EXERCISE_COMPLETE: 20,
+  MEAL_MOOD_LINK: 10,
+  EMOTIONAL_EATING_AWARENESS: 15,
+  BALANCED_THOUGHT: 20,
+} as const;
+
+// CBT Badge definitions
+export type CBTBadgeCategory =
+  | "cbt"
+  | "mindfulness"
+  | "emotional_awareness";
+
+export interface ICBTBadge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  category: CBTBadgeCategory;
+  requirement: {
+    type: "mood_entries" | "thought_entries" | "exercises" | "meal_mood_links" | "cbt_streak";
+    count: number;
+  };
 }

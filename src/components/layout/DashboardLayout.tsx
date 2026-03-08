@@ -6,9 +6,10 @@ import MobileHeader from "@/components/ui/MobileHeader";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Sparkles, AlertCircle } from "lucide-react";
-import { ChatButton, ChatPanel } from "@/components/chat";
+import { ChatPanel } from "@/components/chat";
 import PlanSelector from "@/components/dashboard/PlanSelector";
 import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradePrompt";
+import { MoodCheckInPrompt } from "@/components/cbt";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -78,7 +79,7 @@ const DashboardLayout = ({
         user,
         "My Plan",
         "en",
-        planTemplateId === "custom" ? undefined : planTemplateId
+        planTemplateId === "custom" ? undefined : planTemplateId,
       );
       setShowPlanSelector(false);
     } catch (error) {
@@ -147,6 +148,9 @@ const DashboardLayout = ({
 
       {/* Streak Upgrade Prompt (shows after 5-day streak for free users) */}
       <StreakUpgradePrompt />
+
+      {/* Mood Check-In Prompt (triggered from meal cards) */}
+      <MoodCheckInPrompt />
     </div>
   );
 };

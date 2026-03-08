@@ -8,11 +8,13 @@ import {
   Flame,
   ChevronUp,
   ChevronDown,
+  Brain,
 } from "lucide-react";
 import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
 import { useProgressStore } from "@/stores/progressStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useCBTStore } from "@/stores/cbtStore";
 import { useNavigate } from "react-router-dom";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
@@ -53,6 +55,7 @@ const MealCard = ({
   const displayName = formatMealName(meal.name);
   const { user, updateFavorite } = useAuthStore();
   const { completeMeal, todayProgress } = useProgressStore();
+  const startMealMoodLink = useCBTStore((state) => state.startMealMoodLink);
   // Auto-expand if current meal (but never for snacks), otherwise start collapsed
   const [isExpanded, setIsExpanded] = useState(
     !isSnack && mealStatus === "current",
@@ -126,6 +129,17 @@ const MealCard = ({
       toast.success(`Meal changed to ${formatMealName(newMeal.name)}`, {
         duration: 2000,
       });
+    }
+  };
+
+  const handleMoodLink = (phase: "before" | "after") => {
+    if (mealId) {
+      startMealMoodLink(
+        mealId,
+        mealType as "breakfast" | "lunch" | "dinner" | "snacks",
+        displayName,
+        phase
+      );
     }
   };
 
@@ -472,6 +486,18 @@ const MealCard = ({
                   </button>
                 </ChangeMealModal>
               )}
+
+              {/* Mood Link Button */}
+              <button
+                onClick={() => handleMoodLink(isCompleted ? "after" : "before")}
+                className="flex items-center gap-1.5 text-gray-600 hover:text-purple-600 transition-colors group"
+                aria-label="Link mood to meal"
+              >
+                <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-purple-100 transition-colors">
+                  <Brain className="w-3.5 h-3.5 stroke-2" />
+                </div>
+                <span className="text-xs font-medium">Mood</span>
+              </button>
             </div>
           </div>
         </div>

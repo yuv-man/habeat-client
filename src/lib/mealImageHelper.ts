@@ -126,6 +126,7 @@ const availableImages = [
   "baked-cod-with-sweet-potato-wedges-and-green-beans",
   "herb-crusted-beef-steak-with-potato-wedges",
   "yogurt-with-muesli",
+  "spicy-red-tuna-poke-bowl",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -219,6 +220,7 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   fish: [
     "grilled-fish-fillet",
+    "spicy-red-tuna-poke-bowl",
     "fish-tacos",
     "baked-cod-with-quinoa",
     "baked-salmon-with-roasted-sweet-potatoes",
@@ -316,6 +318,7 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // Rice dishes
   rice: [
+    "spicy-red-tuna-poke-bowl",
     "biryani-rice",
     "rice-with-curry",
     "tofu-and-rice-noodles",

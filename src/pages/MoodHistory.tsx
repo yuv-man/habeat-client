@@ -1,13 +1,29 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, TrendingUp, Heart, Filter } from "lucide-react";
+import { ArrowLeft, Calendar, TrendingUp, Heart, Filter, Trash2, Edit2, X, Check, MoreVertical } from "lucide-react";
 import { useCBTStore, useMoodHistory, useTodayMoods } from "@/stores/cbtStore";
-import { IMoodEntry, MoodCategory } from "@/types/interfaces";
+import { IMoodEntry, MoodCategory, MoodLevel } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MoodTracker } from "@/components/cbt/MoodTracker";
+import { MoodTracker, MOOD_IMAGES } from "@/components/cbt/MoodTracker";
 import { MoodHistoryChart } from "@/components/cbt/MoodHistoryChart";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const MOOD_COLORS: Record<MoodCategory, string> = {
   happy: "bg-yellow-100 text-yellow-700 border-yellow-200",
@@ -21,24 +37,48 @@ const MOOD_COLORS: Record<MoodCategory, string> = {
   angry: "bg-rose-100 text-rose-700 border-rose-200",
 };
 
-const MOOD_EMOJIS: Record<MoodCategory, string> = {
-  happy: "😊",
-  calm: "😌",
-  energetic: "⚡",
-  neutral: "😐",
-  tired: "😴",
-  stressed: "😰",
-  anxious: "😟",
-  sad: "😢",
-  angry: "😠",
-};
-
 const MoodHistory = () => {
   const navigate = useNavigate();
-  const { fetchMoodHistory } = useCBTStore();
+  const { fetchMoodHistory, updateMood, deleteMood, loading } = useCBTStore();
   const moodHistory = useMoodHistory();
   const todayMoods = useTodayMoods();
   const [period, setPeriod] = useState<"week" | "month">("week");
+  const [editingMood, setEditingMood] = useState<IMoodEntry | null>(null);
+  const [editLevel, setEditLevel] = useState<MoodLevel>(3);
+  const [editNotes, setEditNotes] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const handleStartEdit = (mood: IMoodEntry) => {
+    setEditingMood(mood);
+    setEditLevel(mood.moodLevel);
+    setEditNotes(mood.notes || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMood(null);
+    setEditLevel(3);
+    setEditNotes("");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMood?._id) return;
+
+    const result = await updateMood(editingMood._id, {
+      moodLevel: editLevel,
+      notes: editNotes.trim() || undefined,
+    });
+
+    if (result) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const result = await deleteMood(id);
+    if (result) {
+      setDeleteConfirmId(null);
+    }
+  };
 
   useEffect(() => {
     const now = new Date();
@@ -51,9 +91,11 @@ const MoodHistory = () => {
     );
   }, [fetchMoodHistory, period]);
 
-  // Combine today's moods with history
+  // Combine today's moods with history (with safeguards for non-array values)
   const allMoods = useMemo(() => {
-    const combined = [...todayMoods, ...moodHistory];
+    const safeToday = Array.isArray(todayMoods) ? todayMoods : [];
+    const safeHistory = Array.isArray(moodHistory) ? moodHistory : [];
+    const combined = [...safeToday, ...safeHistory];
     // Remove duplicates by _id and sort by date descending
     const unique = combined.reduce((acc, mood) => {
       if (!acc.find((m) => m._id === mood._id)) {
@@ -179,45 +221,148 @@ const MoodHistory = () => {
                     .map((mood) => (
                       <div
                         key={mood._id}
-                        className="p-3 bg-white rounded-xl border border-gray-200"
+                        className={cn(
+                          "p-3 bg-white rounded-xl border transition-all",
+                          editingMood?._id === mood._id
+                            ? "border-purple-300 ring-2 ring-purple-100"
+                            : "border-gray-200"
+                        )}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">
-                              {MOOD_EMOJIS[mood.moodCategory]}
-                            </span>
-                            <div>
+                        {editingMood?._id === mood._id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
+                                <img
+                                  src={MOOD_IMAGES[mood.moodCategory]}
+                                  alt={mood.moodCategory}
+                                  className="w-10 h-10 object-contain"
+                                />
                                 <span
                                   className={cn(
-                                    "px-2 py-0.5 rounded-full text-xs font-medium border",
+                                    "px-2 py-0.5 rounded-full text-xs font-medium border capitalize",
                                     MOOD_COLORS[mood.moodCategory]
                                   )}
                                 >
                                   {mood.moodCategory}
                                 </span>
-                                <span className="text-xs text-gray-400">
-                                  Level {mood.moodLevel}/5
-                                </span>
                               </div>
-                              {mood.triggers && mood.triggers.length > 0 && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Triggers: {mood.triggers.join(", ")}
-                                </p>
-                              )}
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={handleSaveEdit}
+                                  disabled={loading}
+                                  className="p-1.5 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-lg"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Edit intensity */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1.5">Intensity</p>
+                              <div className="flex gap-1">
+                                {([1, 2, 3, 4, 5] as MoodLevel[]).map((level) => (
+                                  <button
+                                    key={level}
+                                    onClick={() => setEditLevel(level)}
+                                    className={cn(
+                                      "flex-1 py-1.5 rounded text-xs font-medium transition-all",
+                                      editLevel === level
+                                        ? "bg-purple-500 text-white"
+                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    )}
+                                  >
+                                    {level}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Edit notes */}
+                            <div>
+                              <p className="text-xs text-gray-500 mb-1.5">Notes</p>
+                              <textarea
+                                value={editNotes}
+                                onChange={(e) => setEditNotes(e.target.value)}
+                                placeholder="Add notes..."
+                                rows={2}
+                                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-200 focus:border-purple-300 resize-none"
+                              />
                             </div>
                           </div>
-                          <span className="text-xs text-gray-400">{mood.time}</span>
-                        </div>
-                        {mood.notes && (
-                          <p className="text-sm text-gray-600 mt-2 pl-10">
-                            {mood.notes}
-                          </p>
-                        )}
-                        {mood.linkedMealType && (
-                          <p className="text-xs text-orange-500 mt-1 pl-10">
-                            Linked to {mood.linkedMealType}
-                          </p>
+                        ) : (
+                          // View mode
+                          <>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={MOOD_IMAGES[mood.moodCategory]}
+                                  alt={mood.moodCategory}
+                                  className="w-10 h-10 object-contain"
+                                />
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={cn(
+                                        "px-2 py-0.5 rounded-full text-xs font-medium border capitalize",
+                                        MOOD_COLORS[mood.moodCategory]
+                                      )}
+                                    >
+                                      {mood.moodCategory}
+                                    </span>
+                                    <span className="text-xs text-gray-400">
+                                      Level {mood.moodLevel}/5
+                                    </span>
+                                  </div>
+                                  {mood.triggers && mood.triggers.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      Triggers: {mood.triggers.join(", ")}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">{mood.time}</span>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                                      <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleStartEdit(mood)}>
+                                      <Edit2 className="w-4 h-4 mr-2" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteConfirmId(mood._id || null)}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                            {mood.notes && (
+                              <p className="text-sm text-gray-600 mt-2 pl-10">
+                                {mood.notes}
+                              </p>
+                            )}
+                            {mood.linkedMealType && (
+                              <p className="text-xs text-orange-500 mt-1 pl-10">
+                                Linked to {mood.linkedMealType}
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}
@@ -225,6 +370,27 @@ const MoodHistory = () => {
               </div>
             ))
           )}
+
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Mood Entry</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this mood entry? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
+                  className="bg-red-500 hover:bg-red-600"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
       </div>

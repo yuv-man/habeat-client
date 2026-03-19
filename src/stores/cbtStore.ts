@@ -55,6 +55,8 @@ interface CBTState {
 interface CBTActions {
   // Mood actions
   logMood: (entry: Omit<IMoodEntry, "_id" | "userId" | "createdAt" | "updatedAt">) => Promise<IMoodEntry | null>;
+  updateMood: (id: string, updates: Partial<IMoodEntry>) => Promise<IMoodEntry | null>;
+  deleteMood: (id: string) => Promise<boolean>;
   fetchTodayMoods: () => Promise<void>;
   fetchMoodHistory: (startDate: string, endDate: string) => Promise<void>;
 
@@ -138,6 +140,57 @@ export const useCBTStore = create<CBTStore>()(
         }
       },
 
+      updateMood: async (id, updates) => {
+        set({ loading: true, error: null });
+
+        try {
+          const response = await cbtAPI.updateMood(id, updates);
+          const updatedMood = response.data;
+
+          // Update in today's moods if present
+          set((state) => ({
+            todayMoodEntries: state.todayMoodEntries.map((m) =>
+              m._id === id ? updatedMood : m
+            ),
+            moodHistory: state.moodHistory.map((m) =>
+              m._id === id ? updatedMood : m
+            ),
+            loading: false,
+          }));
+
+          return updatedMood;
+        } catch (error: any) {
+          set({
+            error: error.message || "Failed to update mood",
+            loading: false,
+          });
+          return null;
+        }
+      },
+
+      deleteMood: async (id) => {
+        set({ loading: true, error: null });
+
+        try {
+          await cbtAPI.deleteMood(id);
+
+          // Remove from state
+          set((state) => ({
+            todayMoodEntries: state.todayMoodEntries.filter((m) => m._id !== id),
+            moodHistory: state.moodHistory.filter((m) => m._id !== id),
+            loading: false,
+          }));
+
+          return true;
+        } catch (error: any) {
+          set({
+            error: error.message || "Failed to delete mood",
+            loading: false,
+          });
+          return false;
+        }
+      },
+
       fetchTodayMoods: async () => {
         set({ loading: true, error: null });
 
@@ -161,11 +214,12 @@ export const useCBTStore = create<CBTStore>()(
         try {
           const response = await cbtAPI.getMoodHistory(startDate, endDate);
           set({
-            moodHistory: response.data,
+            moodHistory: Array.isArray(response.data) ? response.data : [],
             loading: false,
           });
         } catch (error: any) {
           set({
+            moodHistory: [], // Reset to empty array on error
             error: error.message || "Failed to fetch mood history",
             loading: false,
           });

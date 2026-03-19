@@ -77,7 +77,7 @@ export function EmotionalEatingInsights({
     );
   }
 
-  const emotionalPercentage = Math.round(insight.emotionalEatingPercentage);
+  const emotionalPercentage = Math.round(insight.emotionalEatingPercentage ?? 0) || 0;
   const isHigh = emotionalPercentage > 40;
   const isMedium = emotionalPercentage > 20;
 

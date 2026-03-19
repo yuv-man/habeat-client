@@ -4,6 +4,7 @@ import { useCBTStore } from "@/stores/cbtStore";
 import { MoodLevel, MoodCategory, IMealMoodCorrelation, IMoodEntry } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { MOOD_IMAGES } from "./MoodTracker";
 
 interface MealMoodLinkProps {
   mealId: string;
@@ -14,12 +15,12 @@ interface MealMoodLinkProps {
   onMoodLinked?: (correlation: IMealMoodCorrelation) => void;
 }
 
-const QUICK_MOODS: { value: MoodCategory; label: string; emoji: string }[] = [
-  { value: "happy", label: "Happy", emoji: "😊" },
-  { value: "calm", label: "Calm", emoji: "😌" },
-  { value: "neutral", label: "Neutral", emoji: "😐" },
-  { value: "stressed", label: "Stressed", emoji: "😰" },
-  { value: "sad", label: "Sad", emoji: "😢" },
+const QUICK_MOODS: { value: MoodCategory; label: string }[] = [
+  { value: "happy", label: "Happy" },
+  { value: "calm", label: "Calm" },
+  { value: "neutral", label: "Neutral" },
+  { value: "stressed", label: "Stressed" },
+  { value: "sad", label: "Sad" },
 ];
 
 const HUNGER_LEVELS = [
@@ -171,7 +172,11 @@ export function MealMoodLink({
                           : "border-gray-200 hover:border-gray-300"
                       )}
                     >
-                      <span className="text-xl">{mood.emoji}</span>
+                      <img
+                        src={MOOD_IMAGES[mood.value]}
+                        alt={mood.label}
+                        className="w-8 h-8 object-contain"
+                      />
                       <span className="text-xs text-gray-600">{mood.label}</span>
                     </button>
                   ))}
@@ -234,7 +239,11 @@ export function MealMoodLink({
                           : "border-gray-200 hover:border-gray-300"
                       )}
                     >
-                      <span className="text-xl">{mood.emoji}</span>
+                      <img
+                        src={MOOD_IMAGES[mood.value]}
+                        alt={mood.label}
+                        className="w-8 h-8 object-contain"
+                      />
                       <span className="text-xs text-gray-600">{mood.label}</span>
                     </button>
                   ))}

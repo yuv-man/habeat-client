@@ -116,7 +116,7 @@ const login = async (email: string, password: string): Promise<string> => {
     const response = await userClient.post<{
       data: { token: string };
       status: string;
-    }>("/login", { email, password });
+    }>("/auth/login", { email, password });
     return response.data.data.token;
   }, "Failed to login. Please try again.");
 };
@@ -1709,6 +1709,31 @@ const logMood = async (
   }, "Failed to log mood. Please try again.");
 };
 
+const updateMood = async (
+  id: string,
+  updates: Partial<IMoodEntry>
+): Promise<ApiResponse<IMoodEntry>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<{
+      success: boolean;
+      data: IMoodEntry;
+    }>(`/cbt/moods/${id}`, updates, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to update mood. Please try again.");
+};
+
+const deleteMood = async (
+  id: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data: { success: boolean };
+    }>(`/cbt/moods/${id}`, { headers: getAuthHeaders() });
+    return { data: response.data.data };
+  }, "Failed to delete mood. Please try again.");
+};
+
 const getMoodSummary = async (
   period: "week" | "month"
 ): Promise<ApiResponse<IMoodSummary>> => {
@@ -1894,6 +1919,8 @@ export const cbtAPI = {
   getTodayMoods,
   getMoodHistory,
   logMood,
+  updateMood,
+  deleteMood,
   getMoodSummary,
   // Thoughts
   getThoughts,

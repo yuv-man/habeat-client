@@ -383,6 +383,10 @@ const initiateOAuth = async (
   action: "signin" | "signup" = "signin"
 ): Promise<string> => {
   try {
+    // Detect platform to use correct endpoint (web vs mobile)
+    const { isNativePlatform } = await import("@/lib/platform");
+    const platformType = isNativePlatform() ? "mobile" : "web";
+
     // Construct the callback URLs
     // redirectUri: Backend callback URL where Google will redirect after authentication
     //   This should be your backend's OAuth callback endpoint
@@ -397,6 +401,7 @@ const initiateOAuth = async (
     const redirectUri = `${API_URL}/auth/${provider}/callback`;
 
     // Debug logging
+    console.log("[OAuth Debug] Platform:", platformType);
     console.log("[OAuth Debug] API_URL:", API_URL);
     console.log("[OAuth Debug] redirectUri (backend callback):", redirectUri);
     console.log("[OAuth Debug] frontendRedirectUri:", frontendRedirectUri);
@@ -420,7 +425,7 @@ const initiateOAuth = async (
     }
 
     const response: AxiosResponse<{ authUrl: string }> = await userClient.get(
-      `/auth/${provider}/${action}`,
+      `/auth/${provider}/${platformType}/${action}`,
       {
         params,
         // Prevent axios from following redirects (in case backend accidentally redirects)

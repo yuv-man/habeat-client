@@ -67,10 +67,12 @@ export default function KYCFlow() {
       );
       const storedStep = localStorage.getItem(STORAGE_KEYS.CURRENT_STEP);
 
+      let parsedAuthData: AuthData | null = null;
+
       if (storedAuthData) {
         try {
-          const parsed = JSON.parse(storedAuthData);
-          setAuthData((prev) => ({ ...prev, ...parsed }));
+          parsedAuthData = JSON.parse(storedAuthData);
+          setAuthData((prev) => ({ ...prev, ...parsedAuthData }));
         } catch (err) {
           console.error("Failed to parse stored auth data:", err);
         }
@@ -93,16 +95,25 @@ export default function KYCFlow() {
       }
 
       // Handle step restoration - skip signup if user is already authenticated
+      // IMPORTANT: Only restore step if authMethod is properly set
+      const hasValidAuthMethod = parsedAuthData?.authMethod === "email" || parsedAuthData?.authMethod === "google";
+
       if (
         storedStep &&
         storedStep !== "signup" &&
         storedStep !== "complete" &&
-        storedStep !== "google_oauth_pending"
+        storedStep !== "google_oauth_pending" &&
+        hasValidAuthMethod // Only restore if we have valid auth method
       ) {
         setStep(storedStep);
       } else if (storedStep === "google_oauth_pending") {
         // This shouldn't happen as OAuthCallback sets it to "diet", but handle it just in case
         setStep("diet");
+      } else if (storedStep && !hasValidAuthMethod && storedStep !== "signup") {
+        // User has a stored step but no valid auth method - reset to signup
+        console.warn("Invalid auth state detected, resetting to signup");
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
+        setStep("signup");
       }
     } catch (err) {
       console.error("Failed to load from localStorage:", err);
@@ -291,7 +302,11 @@ export default function KYCFlow() {
         // Generate meal plan
         await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
       } else {
-        throw new Error("Invalid authentication method");
+        // Reset to signup step and clear corrupted state
+        localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
+        setStep("signup");
+        throw new Error("Session expired. Please sign up again to continue.");
       }
 
       // Clear all KYC-related localStorage on successful completion

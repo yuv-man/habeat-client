@@ -124,11 +124,16 @@ export const useCBTStore = create<CBTStore>()(
           const response = await cbtAPI.logMood(entry);
           const newMood = response.data;
 
-          // Add to today's moods
-          set((state) => ({
-            todayMoodEntries: [...state.todayMoodEntries, newMood],
-            loading: false,
-          }));
+          if (newMood) {
+            // Add to today's moods and invalidate stats cache
+            set((state) => ({
+              todayMoodEntries: [...state.todayMoodEntries, newMood],
+              loading: false,
+              lastFetchTime: null, // Invalidate cache to refresh stats
+            }));
+          } else {
+            set({ loading: false });
+          }
 
           return newMood;
         } catch (error: any) {
@@ -237,6 +242,7 @@ export const useCBTStore = create<CBTStore>()(
           set((state) => ({
             thoughtEntries: [newThought, ...state.thoughtEntries],
             loading: false,
+            lastFetchTime: null, // Invalidate cache to refresh stats
           }));
 
           return newThought;
@@ -303,6 +309,7 @@ export const useCBTStore = create<CBTStore>()(
           set((state) => ({
             exerciseCompletions: [newCompletion, ...state.exerciseCompletions],
             loading: false,
+            lastFetchTime: null, // Invalidate cache to refresh stats
           }));
 
           return newCompletion;

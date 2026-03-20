@@ -8,10 +8,12 @@ import {
   Camera,
   ArrowLeft,
   Edit,
+  Brain,
 } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
-import { userAPI, MealCriteria } from "@/services/api";
+import { userAPI, MealCriteria, cbtAPI, MoodMealRecommendations } from "@/services/api";
+import { useTodayMoods } from "@/stores/cbtStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
@@ -59,6 +61,15 @@ const ChangeMealModal = ({
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
+  // Mood-aware suggestions state
+  const todayMoods = useTodayMoods();
+  const [moodRecommendations, setMoodRecommendations] = useState<MoodMealRecommendations | null>(null);
+  const [isLoadingMoodRecs, setIsLoadingMoodRecs] = useState(false);
+  const [useMoodAware, setUseMoodAware] = useState(true);
+
+  // Get the latest mood
+  const latestMood = todayMoods.length > 0 ? todayMoods[todayMoods.length - 1] : null;
+
   // Favorites state - use store instead of local fetch
   const {
     user,
@@ -75,6 +86,30 @@ const ChangeMealModal = ({
       fetchFavoritesFromStore(user._id);
     }
   }, [activeTab, user?._id, favoriteMealsLoaded, fetchFavoritesFromStore]);
+
+  // Fetch mood-based recommendations when AI tab is opened and user has a mood logged
+  useEffect(() => {
+    const fetchMoodRecommendations = async () => {
+      if (activeTab === "ai" && latestMood && useMoodAware) {
+        setIsLoadingMoodRecs(true);
+        try {
+          const response = await cbtAPI.getMoodBasedMealRecommendations(
+            latestMood.moodCategory,
+            latestMood.moodLevel
+          );
+          if (response.data) {
+            setMoodRecommendations(response.data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch mood recommendations:", error);
+        } finally {
+          setIsLoadingMoodRecs(false);
+        }
+      }
+    };
+
+    fetchMoodRecommendations();
+  }, [activeTab, latestMood, useMoodAware]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -173,6 +208,8 @@ const ChangeMealModal = ({
         mealType === "snacks"
           ? "snack"
           : (mealType as "breakfast" | "lunch" | "dinner");
+
+      // Build mood-aware criteria
       const mealCriteria: MealCriteria = {
         category,
         targetCalories: currentMeal?.calories || 300,
@@ -180,6 +217,19 @@ const ChangeMealModal = ({
         preferences: user.foodPreferences || [],
         dislikes: user.dislikes || [],
       };
+
+      // Add mood context if available and enabled
+      if (useMoodAware && latestMood) {
+        mealCriteria.currentMood = {
+          moodCategory: latestMood.moodCategory,
+          moodLevel: latestMood.moodLevel,
+        };
+
+        // Add mood-based food suggestions if we have recommendations
+        if (moodRecommendations?.foodSuggestions?.recommended) {
+          mealCriteria.moodFoodSuggestions = moodRecommendations.foodSuggestions.recommended;
+        }
+      }
 
       const response = await userAPI.getAIMealSuggestions(
         user._id,
@@ -541,6 +591,86 @@ const ChangeMealModal = ({
                 {/* AI Suggestion Tab */}
                 {activeTab === "ai" && (
                   <div className="space-y-4">
+                    {/* Mood-Aware Section */}
+                    {latestMood && (
+                      <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Brain className="w-5 h-5 text-purple-600" />
+                            <span className="font-medium text-purple-800">Mood-Aware Mode</span>
+                          </div>
+                          <button
+                            onClick={() => setUseMoodAware(!useMoodAware)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              useMoodAware ? "bg-purple-500" : "bg-gray-300"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                useMoodAware ? "translate-x-6" : "translate-x-1"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {useMoodAware && (
+                          <>
+                            <p className="text-sm text-purple-700 mb-3">
+                              You're feeling <span className="font-semibold capitalize">{latestMood.moodCategory}</span>.
+                              Suggestions will be tailored to improve your mood.
+                            </p>
+
+                            {isLoadingMoodRecs ? (
+                              <div className="flex items-center gap-2 text-purple-600">
+                                <MealLoader size="small" />
+                                <span className="text-sm">Loading recommendations...</span>
+                              </div>
+                            ) : moodRecommendations?.foodSuggestions && (
+                              <div className="space-y-2">
+                                <p className="text-xs text-purple-600 font-medium">
+                                  Recommended ingredients:
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {moodRecommendations.foodSuggestions.recommended.slice(0, 6).map((food, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-1 bg-white/70 text-purple-700 text-xs rounded-full border border-purple-200"
+                                    >
+                                      {food}
+                                    </span>
+                                  ))}
+                                </div>
+                                <p className="text-xs text-purple-500 italic mt-2">
+                                  {moodRecommendations.foodSuggestions.reasoning}
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Historical recommendations */}
+                            {moodRecommendations?.historicalRecommendations &&
+                             moodRecommendations.historicalRecommendations.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-purple-200">
+                                <p className="text-xs text-purple-600 font-medium mb-2">
+                                  Meals that improved your mood before:
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {moodRecommendations.historicalRecommendations.slice(0, 3).map((rec, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full border border-green-200"
+                                      title={`${rec.successRate}% success rate`}
+                                    >
+                                      {rec.mealName}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Describe your preferences (optional)
@@ -565,7 +695,7 @@ const ChangeMealModal = ({
                       ) : (
                         <>
                           <Sparkles className="w-5 h-5" />
-                          Get AI Suggestions
+                          {useMoodAware && latestMood ? "Get Mood-Aware Suggestions" : "Get AI Suggestions"}
                         </>
                       )}
                     </button>

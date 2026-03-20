@@ -127,6 +127,8 @@ const availableImages = [
   "herb-crusted-beef-steak-with-potato-wedges",
   "yogurt-with-muesli",
   "spicy-red-tuna-poke-bowl",
+  "red-tuna-with-mixed-greens-noodles",
+  "red-tuna-sashimi",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -226,6 +228,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "baked-salmon-with-roasted-sweet-potatoes",
     "baked-cod-with-sweet-potato-wedges-and-green-beans",
     "grilled-salmon-quinoa-salad-with-avocado",
+    "red-tuna-with-mixed-greens-noodles",
+    "red-tuna-sashimi",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -344,6 +348,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "beef-and-broccoli-with-noodles",
     "stirfried-noodles",
     "chicken-pad-see-ew",
+    "red-tuna-with-mixed-greens-noodles",
   ],
   stir: [
     "stirfried-noodles",

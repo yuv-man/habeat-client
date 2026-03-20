@@ -987,6 +987,12 @@ const completeMeal = async (
   }, "Failed to complete meal. Please try again.");
 };
 
+// Current mood interface for mood-aware suggestions
+export interface CurrentMood {
+  moodCategory: string;
+  moodLevel: number;
+}
+
 // Meal criteria interface for AI suggestions
 export interface MealCriteria {
   category: "breakfast" | "lunch" | "dinner" | "snack";
@@ -994,6 +1000,9 @@ export interface MealCriteria {
   dietaryRestrictions: string[];
   preferences: string[];
   dislikes: string[];
+  // Mood-aware parameters
+  currentMood?: CurrentMood;
+  moodFoodSuggestions?: string[];
 }
 
 // AI Meal Suggestions
@@ -1675,9 +1684,9 @@ const getTodayMoods = async (): Promise<ApiResponse<IMoodEntry[]>> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: IMoodEntry[];
+      data: { moods: IMoodEntry[] };
     }>(`/cbt/moods/today`, { headers: getAuthHeaders() });
-    return { data: response.data.data };
+    return { data: response.data.data.moods };
   }, "Failed to get today's moods. Please try again.");
 };
 
@@ -1688,12 +1697,12 @@ const getMoodHistory = async (
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: IMoodEntry[];
+      data: { moods: IMoodEntry[] };
     }>(`/cbt/moods/history`, {
       params: { startDate, endDate },
       headers: getAuthHeaders(),
     });
-    return { data: response.data.data };
+    return { data: response.data.data.moods };
   }, "Failed to get mood history. Please try again.");
 };
 
@@ -1703,9 +1712,9 @@ const logMood = async (
   return withErrorHandling(async () => {
     const response = await userClient.post<{
       success: boolean;
-      data: IMoodEntry;
+      data: { mood: IMoodEntry };
     }>(`/cbt/moods`, entry, { headers: getAuthHeaders() });
-    return { data: response.data.data };
+    return { data: response.data.data.mood };
   }, "Failed to log mood. Please try again.");
 };
 
@@ -1716,9 +1725,9 @@ const updateMood = async (
   return withErrorHandling(async () => {
     const response = await userClient.put<{
       success: boolean;
-      data: IMoodEntry;
+      data: { mood: IMoodEntry };
     }>(`/cbt/moods/${id}`, updates, { headers: getAuthHeaders() });
-    return { data: response.data.data };
+    return { data: response.data.data.mood };
   }, "Failed to update mood. Please try again.");
 };
 
@@ -1907,10 +1916,48 @@ const getCBTStats = async (): Promise<ApiResponse<ICBTEngagementStats>> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: ICBTEngagementStats;
+      data: { stats: ICBTEngagementStats };
     }>(`/cbt/stats`, { headers: getAuthHeaders() });
-    return { data: response.data.data };
+    return { data: response.data.data.stats };
   }, "Failed to get CBT stats. Please try again.");
+};
+
+// Mood-based meal recommendations response interface
+export interface MoodMealRecommendations {
+  historicalRecommendations: Array<{
+    mealName: string;
+    mealType: string;
+    avgMoodImprovement: number;
+    successRate: number;
+  }>;
+  moodSpecificRecommendations: string[];
+  currentMood: CurrentMood | null;
+  foodSuggestions: {
+    recommended: string[];
+    nutrients: string[];
+    avoid: string[];
+    reasoning: string;
+  };
+}
+
+const getMoodBasedMealRecommendations = async (
+  moodCategory?: string,
+  moodLevel?: number
+): Promise<ApiResponse<MoodMealRecommendations>> => {
+  return withErrorHandling(async () => {
+    const params: Record<string, string> = {};
+    if (moodCategory) params.moodCategory = moodCategory;
+    if (moodLevel) params.moodLevel = moodLevel.toString();
+
+    const response = await userClient.get<{
+      success: boolean;
+      data: MoodMealRecommendations;
+    }>(`/cbt/meal-recommendations`, {
+      params,
+      headers: getAuthHeaders(),
+    });
+    return { data: response.data.data };
+  }, "Failed to get mood-based recommendations. Please try again.");
 };
 
 // CBT API export object
@@ -1936,6 +1983,7 @@ export const cbtAPI = {
   linkMoodToMeal,
   getEmotionalEatingInsights,
   getMealMoodHistory,
+  getMoodBasedMealRecommendations,
   // Stats
   getCBTStats,
 };

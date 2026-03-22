@@ -129,6 +129,10 @@ const availableImages = [
   "spicy-red-tuna-poke-bowl",
   "red-tuna-with-mixed-greens-noodles",
   "red-tuna-sashimi",
+  "salmon-with-grill-aspargus-and-brocolli",
+  "philly-cheese-steak",
+  "beef-steak-in-baguette",
+  "japanese-katsu-chicken-bowl",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -218,6 +222,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-with-broccoli",
     "teriyaki-salmon-on-a-plate",
     "baked-salmon-with-roasted-sweet-potatoes",
+    "salmon-with-grill-aspargus-and-brocolli",
     "grilled-salmon-quinoa-salad-with-avocado",
   ],
   fish: [
@@ -230,6 +235,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "grilled-salmon-quinoa-salad-with-avocado",
     "red-tuna-with-mixed-greens-noodles",
     "red-tuna-sashimi",
+    "salmon-with-grill-aspargus-and-brocolli",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -380,6 +386,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "lean-steak-with-quinoa-and-asparagus",
     "herb-crusted-beef-steak-with-potato-wedges",
+    "philly-cheese-steak",
+    "beef-steak-in-baguette",
+    "japanese-katsu-chicken-bowl",
   ],
   meatballs: ["meat-balls"],
   meat: [
@@ -392,6 +401,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
     "lean-steak-with-quinoa-and-asparagus",
     "herb-crusted-beef-steak-with-potato-wedges",
+    "beef-steak-in-baguette",
+    "japanese-katsu-chicken-bowl",
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos"],

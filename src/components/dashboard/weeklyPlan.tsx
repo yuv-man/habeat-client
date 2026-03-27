@@ -15,6 +15,8 @@ import {
   CircleDot,
   ShoppingCart,
   BookOpen,
+  Heart,
+  ArrowLeft,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
@@ -29,6 +31,7 @@ import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import AddSnackModal from "@/components/modals/AddSnackModal";
 import PlanSelector from "./PlanSelector";
 import { formatMealName } from "@/lib/formatters";
+import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
 
 // Components
 const MacroCard = ({
@@ -433,6 +436,9 @@ export default function WeeklyMealPlan() {
   const [addSnackDate, setAddSnackDate] = useState<string>("");
   const [isAddingSnack, setIsAddingSnack] = useState(false);
 
+  // Favorites view state
+  const [showFavorites, setShowFavorites] = useState(false);
+
   // Check if plan is expired (all dates are in the past)
   const isPlanExpired = React.useMemo(() => {
     if (dates.length === 0) return false;
@@ -825,6 +831,32 @@ export default function WeeklyMealPlan() {
     );
   }
 
+  // Favorites View
+  if (showFavorites) {
+    return (
+      <div className="bg-white min-h-screen md:pb-0">
+        <div className="max-w-full mx-auto px-4 py-6 pt-6 md:max-w-7xl">
+          {/* Header with Back Button */}
+          <div className="flex items-center gap-3 mb-6">
+            <button
+              onClick={() => setShowFavorites(false)}
+              className="p-2 rounded-full hover:bg-gray-100 transition"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <div className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+              <h1 className="text-xl font-bold text-gray-900">Favorite Meals</h1>
+            </div>
+          </div>
+
+          {/* Favorites Content */}
+          <FavoriteMealsSection maxVisible={20} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white min-h-screen md:pb-0">
       <div className="max-w-full mx-auto px-4 py-6 pt-6 md:max-w-7xl">
@@ -848,7 +880,7 @@ export default function WeeklyMealPlan() {
           }}
         />
 
-        {/* Generate AI Button and Shopping Bag */}
+        {/* Generate AI Button, Shopping List, and Favorites */}
         <div className="flex items-center gap-2 mb-4">
           <button
             onClick={openPlanSelector}
@@ -862,13 +894,22 @@ export default function WeeklyMealPlan() {
             </span>
           </button>
           {plan && plan.weeklyPlan && dates.length > 0 && (
-            <button
-              onClick={() => navigate("/shopping-list")}
-              className="flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span className=" sm:inline">Shopping List</span>
-            </button>
+            <>
+              <button
+                onClick={() => navigate("/shopping-list")}
+                className="flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                <span className="hidden sm:inline">Shopping List</span>
+              </button>
+              <button
+                onClick={() => setShowFavorites(true)}
+                className="flex items-center justify-center gap-2 bg-white border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
+              >
+                <Heart className="w-5 h-5" />
+                <span className="hidden sm:inline">Favorites</span>
+              </button>
+            </>
           )}
         </div>
 

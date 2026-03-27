@@ -35,6 +35,9 @@ const SubscriptionCancel = lazy(() => import("./pages/SubscriptionCancel"));
 const Mindfulness = lazy(() => import("./pages/Mindfulness"));
 const MoodHistory = lazy(() => import("./pages/MoodHistory"));
 const EmotionalEating = lazy(() => import("./pages/EmotionalEating"));
+// Social pages
+const Social = lazy(() => import("./pages/Social"));
+const Discover = lazy(() => import("./pages/Discover"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -89,6 +92,10 @@ const App = () => {
                 <Route path="/mindfulness" element={<Mindfulness />} />
                 <Route path="/mindfulness/mood" element={<MoodHistory />} />
                 <Route path="/mindfulness/emotional-eating" element={<EmotionalEating />} />
+                {/* Social/Community Routes */}
+                <Route path="/social" element={<Social />} />
+                <Route path="/community" element={<Social />} />
+                <Route path="/social/discover" element={<Discover />} />
                 <Route path="/auth/callback" element={<OAuthCallback />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

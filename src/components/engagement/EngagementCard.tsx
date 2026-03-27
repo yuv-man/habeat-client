@@ -1,7 +1,10 @@
-import { useEffect } from "react";
-import { ChevronRight, Flame, Target, TrendingUp, Award, Calendar, CheckCircle2, BarChart3 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronRight, Flame, Target, TrendingUp, Award, Calendar, CheckCircle2, BarChart3, Share2 } from "lucide-react";
 import { useEngagementStore } from "../../stores/engagementStore";
+import { useAuthStore } from "../../stores/authStore";
 import { cn } from "../../lib/utils";
+import ShareModal from "../modals/ShareModal";
+import { StreakCard, HabitScoreCard } from "../social/cards";
 
 interface EngagementCardProps {
   className?: string;
@@ -12,6 +15,11 @@ export function EngagementCard({ className, onViewDetails }: EngagementCardProps
   // Use individual selectors to avoid object creation on every render
   const stats = useEngagementStore((state) => state.stats);
   const loading = useEngagementStore((state) => state.loading);
+  const user = useAuthStore((state) => state.user);
+
+  // Share modal states
+  const [shareStreakOpen, setShareStreakOpen] = useState(false);
+  const [shareHabitOpen, setShareHabitOpen] = useState(false);
 
   useEffect(() => {
     useEngagementStore.getState().fetchStats();
@@ -73,7 +81,14 @@ export function EngagementCard({ className, onViewDetails }: EngagementCardProps
         {/* Main Metrics Row */}
         <div className="grid grid-cols-2 gap-4">
           {/* Habit Score */}
-          <div className={cn("p-4 rounded-xl border-2", scoreColors.bg, scoreColors.border)}>
+          <div className={cn("p-4 rounded-xl border-2 relative", scoreColors.bg, scoreColors.border)}>
+            <button
+              onClick={() => setShareHabitOpen(true)}
+              className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white transition shadow-sm"
+              title="Share your habit score"
+            >
+              <Share2 className="w-3.5 h-3.5 text-gray-600" />
+            </button>
             <div className="flex items-center gap-2 mb-2">
               <Target className={cn("w-5 h-5", scoreColors.text)} />
               <span className="text-sm font-semibold text-gray-700">Habit Score</span>
@@ -98,7 +113,14 @@ export function EngagementCard({ className, onViewDetails }: EngagementCardProps
           </div>
 
           {/* Streak */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200">
+          <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-200 relative">
+            <button
+              onClick={() => setShareStreakOpen(true)}
+              className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white transition shadow-sm"
+              title="Share your streak"
+            >
+              <Share2 className="w-3.5 h-3.5 text-gray-600" />
+            </button>
             <div className="flex items-center gap-2 mb-2">
               <Flame className={cn("w-5 h-5", stats.streak >= 7 ? "text-orange-500 animate-pulse" : "text-orange-400")} />
               <span className="text-sm font-semibold text-gray-700">Current Streak</span>
@@ -179,6 +201,49 @@ export function EngagementCard({ className, onViewDetails }: EngagementCardProps
           </div>
         </div>
       </div>
+
+      {/* Share Modals */}
+      <ShareModal
+        isOpen={shareStreakOpen}
+        onClose={() => setShareStreakOpen(false)}
+        type="streak"
+        data={{
+          days: stats.streak,
+          streakDays: stats.streak,
+          longestStreak: stats.longestStreak,
+          title: `${stats.streak}-Day Streak!`,
+        }}
+        cardComponent={
+          <StreakCard
+            streakDays={stats.streak}
+            longestStreak={stats.longestStreak}
+            userName={user?.name}
+          />
+        }
+        userName={user?.name}
+      />
+
+      <ShareModal
+        isOpen={shareHabitOpen}
+        onClose={() => setShareHabitOpen(false)}
+        type="habit"
+        data={{
+          score: habitScore,
+          habitScore: habitScore,
+          totalDaysTracked: stats.totalDaysTracked,
+          totalMealsLogged: stats.totalMealsLogged,
+          title: `Habit Score: ${habitScore}`,
+        }}
+        cardComponent={
+          <HabitScoreCard
+            habitScore={habitScore}
+            totalDaysTracked={stats.totalDaysTracked}
+            totalMealsLogged={stats.totalMealsLogged}
+            userName={user?.name}
+          />
+        }
+        userName={user?.name}
+      />
     </div>
   );
 }

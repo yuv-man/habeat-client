@@ -6,11 +6,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
 
 const weeklyPlanLoadingMessages = [
-  "🍽️ Our AI nutritionist is creating your meal plan...",
-  "🍎 Balancing your nutrients...",
-  "🍳 adding your favorite meals...",
-  "🏋️‍♂️ adding some workouts...",
-  "🍽️ Plating your weekly plan...",
+  "Our AI nutritionist is creating your meal plan...",
+  "Balancing your nutrients...",
+  "Adding your favorite meals...",
+  "Adding some workouts...",
+  "Plating your weekly plan...",
 ];
 
 const WeeklyOverview = () => {

@@ -1965,6 +1965,355 @@ const getMoodBasedMealRecommendations = async (
   }, "Failed to get mood-based recommendations. Please try again.");
 };
 
+// ============================================================================
+// SOCIAL API
+// ============================================================================
+
+export type PostType = "achievement" | "streak" | "weekly_summary" | "habit_score" | "cbt_milestone";
+export type PostVisibility = "public" | "friends" | "private";
+
+export interface PostContent {
+  title: string;
+  description?: string;
+  stats?: Record<string, any>;
+  imageUrl?: string;
+  badgeId?: string;
+  badgeName?: string;
+  badgeIcon?: string;
+  streakDays?: number;
+  habitScore?: number;
+  weeklyData?: {
+    daysTracked?: number;
+    consistencyScore?: number;
+    avgCalories?: number;
+  };
+  cbtData?: {
+    moodsLogged?: number;
+    exercisesCompleted?: number;
+    moodImprovement?: number;
+  };
+}
+
+export interface ISocialPost {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    profilePicture?: string;
+  };
+  type: PostType;
+  content: PostContent;
+  visibility: PostVisibility;
+  caption?: string;
+  likes: string[];
+  comments: Array<{
+    _id: string;
+    userId: {
+      _id: string;
+      name: string;
+      profilePicture?: string;
+    };
+    text: string;
+    createdAt: string;
+  }>;
+  shares: number;
+  likesCount: number;
+  commentsCount: number;
+  isLiked: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePostDto {
+  type: PostType;
+  content: PostContent;
+  visibility?: PostVisibility;
+  caption?: string;
+}
+
+export interface SocialFeedResponse {
+  posts: ISocialPost[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface FollowListResponse {
+  users: Array<{
+    _id: string;
+    name: string;
+    profilePicture?: string;
+  }>;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Social Posts
+const createSocialPost = async (
+  post: CreatePostDto
+): Promise<ApiResponse<ISocialPost>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success?: boolean;
+      data?: ISocialPost;
+    } & ISocialPost>(`/social/posts`, post, { headers: getAuthHeaders() });
+    // Handle both wrapped and unwrapped responses
+    const data = response.data.data || response.data;
+    return { data: data as ISocialPost };
+  }, "Failed to create post. Please try again.");
+};
+
+const getSocialFeed = async (
+  page: number = 1,
+  limit: number = 20
+): Promise<ApiResponse<SocialFeedResponse>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: SocialFeedResponse;
+    } & SocialFeedResponse>(`/social/posts/feed`, {
+      params: { page, limit },
+      headers: getAuthHeaders(),
+    });
+    const data = response.data.data || response.data;
+    return { data: data as SocialFeedResponse };
+  }, "Failed to get social feed. Please try again.");
+};
+
+const getSocialPost = async (
+  postId: string
+): Promise<ApiResponse<ISocialPost>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: ISocialPost;
+    } & ISocialPost>(`/social/posts/${postId}`, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as ISocialPost };
+  }, "Failed to get post. Please try again.");
+};
+
+const deleteSocialPost = async (
+  postId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data?: { success: boolean };
+    }>(`/social/posts/${postId}`, { headers: getAuthHeaders() });
+    return { data: response.data.data || { success: response.data.success } };
+  }, "Failed to delete post. Please try again.");
+};
+
+const getUserPosts = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<ApiResponse<SocialFeedResponse>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: SocialFeedResponse;
+    } & SocialFeedResponse>(`/social/users/${userId}/posts`, {
+      params: { page, limit },
+      headers: getAuthHeaders(),
+    });
+    const data = response.data.data || response.data;
+    return { data: data as SocialFeedResponse };
+  }, "Failed to get user posts. Please try again.");
+};
+
+// Likes
+const togglePostLike = async (
+  postId: string
+): Promise<ApiResponse<{ isLiked: boolean; likesCount: number }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success?: boolean;
+      data?: { isLiked: boolean; likesCount: number };
+      isLiked?: boolean;
+      likesCount?: number;
+    }>(`/social/posts/${postId}/like`, {}, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as { isLiked: boolean; likesCount: number } };
+  }, "Failed to like post. Please try again.");
+};
+
+// Comments
+const addPostComment = async (
+  postId: string,
+  text: string
+): Promise<ApiResponse<ISocialPost["comments"][0]>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success?: boolean;
+      data?: ISocialPost["comments"][0];
+    } & ISocialPost["comments"][0]>(`/social/posts/${postId}/comment`, { text }, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as ISocialPost["comments"][0] };
+  }, "Failed to add comment. Please try again.");
+};
+
+const deletePostComment = async (
+  postId: string,
+  commentId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data?: { success: boolean };
+    }>(`/social/posts/${postId}/comments/${commentId}`, { headers: getAuthHeaders() });
+    return { data: response.data.data || { success: response.data.success } };
+  }, "Failed to delete comment. Please try again.");
+};
+
+// Follows
+const followUser = async (
+  userId: string
+): Promise<ApiResponse<{ success: boolean; alreadyFollowing?: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success?: boolean;
+      data?: { success: boolean; alreadyFollowing?: boolean };
+      alreadyFollowing?: boolean;
+    }>(`/social/follow/${userId}`, {}, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as { success: boolean; alreadyFollowing?: boolean } };
+  }, "Failed to follow user. Please try again.");
+};
+
+const unfollowUser = async (
+  userId: string
+): Promise<ApiResponse<{ success: boolean }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.delete<{
+      success: boolean;
+      data?: { success: boolean };
+    }>(`/social/follow/${userId}`, { headers: getAuthHeaders() });
+    return { data: response.data.data || { success: response.data.success } };
+  }, "Failed to unfollow user. Please try again.");
+};
+
+const getFollowers = async (
+  page: number = 1,
+  limit: number = 50
+): Promise<ApiResponse<FollowListResponse>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: FollowListResponse;
+    } & FollowListResponse>(`/social/followers`, {
+      params: { page, limit },
+      headers: getAuthHeaders(),
+    });
+    const data = response.data.data || response.data;
+    return { data: data as FollowListResponse };
+  }, "Failed to get followers. Please try again.");
+};
+
+const getFollowing = async (
+  page: number = 1,
+  limit: number = 50
+): Promise<ApiResponse<FollowListResponse>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: FollowListResponse;
+    } & FollowListResponse>(`/social/following`, {
+      params: { page, limit },
+      headers: getAuthHeaders(),
+    });
+    const data = response.data.data || response.data;
+    return { data: data as FollowListResponse };
+  }, "Failed to get following. Please try again.");
+};
+
+const getFollowStatus = async (
+  userId: string
+): Promise<ApiResponse<{ isFollowing: boolean; followersCount: number; followingCount: number }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: { isFollowing: boolean; followersCount: number; followingCount: number };
+      isFollowing?: boolean;
+      followersCount?: number;
+      followingCount?: number;
+    }>(`/social/users/${userId}/follow-status`, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as { isFollowing: boolean; followersCount: number; followingCount: number } };
+  }, "Failed to get follow status. Please try again.");
+};
+
+// Suggested users
+interface SuggestedUser {
+  _id: string;
+  name: string;
+  profilePicture?: string;
+  reason?: string;
+  followerCount?: number;
+}
+
+const getSuggestedUsers = async (
+  limit: number = 10
+): Promise<ApiResponse<{ users: SuggestedUser[] }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success?: boolean;
+      data?: { users: SuggestedUser[] };
+      users?: SuggestedUser[];
+    }>(`/social/discover/suggested?limit=${limit}`, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as { users: SuggestedUser[] } };
+  }, "Failed to get suggested users. Please try again.");
+};
+
+// Share tracking
+const trackPostShare = async (
+  postId: string
+): Promise<ApiResponse<{ shares: number }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.post<{
+      success?: boolean;
+      data?: { shares: number };
+      shares?: number;
+    }>(`/social/posts/${postId}/share`, {}, { headers: getAuthHeaders() });
+    const data = response.data.data || response.data;
+    return { data: data as { shares: number } };
+  }, "Failed to track share. Please try again.");
+};
+
+// Social API export object
+export const socialAPI = {
+  // Posts
+  createPost: createSocialPost,
+  getFeed: getSocialFeed,
+  getPost: getSocialPost,
+  deletePost: deleteSocialPost,
+  getUserPosts,
+  // Likes
+  toggleLike: togglePostLike,
+  // Comments
+  addComment: addPostComment,
+  deleteComment: deletePostComment,
+  // Follows
+  follow: followUser,
+  unfollow: unfollowUser,
+  getFollowers,
+  getFollowing,
+  getFollowStatus,
+  // Discovery
+  getSuggestedUsers,
+  // Share tracking
+  trackShare: trackPostShare,
+};
+
 // CBT API export object
 export const cbtAPI = {
   // Mood

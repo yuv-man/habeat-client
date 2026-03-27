@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useGoalsStore } from "@/stores/goalsStore";
+import { useEngagementStore } from "@/stores/engagementStore";
 import { userAPI } from "@/services/api";
 import { IAnalyticsData } from "@/types/interfaces";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -13,11 +14,12 @@ import {
   Calendar,
   Target,
   Award,
+  Share2,
 } from "lucide-react";
 import MealLoader from "@/components/helper/MealLoader";
-import { EngagementCard } from "@/components/engagement";
 import { ChallengeList } from "@/components/challenges";
 import { DailySummaryCard } from "@/components/reflection";
+import SharePopup from "@/components/social/SharePopup";
 
 const Progress = () => {
   const navigate = useNavigate();
@@ -35,6 +37,17 @@ const Progress = () => {
   const [activeTab, setActiveTab] = useState<
     "goals" | "analytics" | "challenges"
   >("goals");
+
+  // Share popup state
+  const [sharePopupOpen, setSharePopupOpen] = useState(false);
+  const [shareType, setShareType] = useState<"streak" | "score" | "weekly">("streak");
+
+  // Engagement stats
+  const engagementStats = useEngagementStore((state) => state.stats);
+
+  useEffect(() => {
+    useEngagementStore.getState().fetchStats();
+  }, []);
 
   useEffect(() => {
     if (!loading && !user && !token) {
@@ -520,8 +533,73 @@ const Progress = () => {
         {/* Challenges Tab */}
         {activeTab === "challenges" && (
           <div>
-            {/* Engagement Card */}
-            {/* <EngagementCard className="mb-6" /> */}
+            {/* Engagement Stats with Share Icons */}
+            {engagementStats && (
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                {/* Streak Card */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-1.5 rounded-lg bg-orange-100">
+                      <Flame className="w-4 h-4 text-orange-500" />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShareType("streak");
+                        setSharePopupOpen(true);
+                      }}
+                      className="p-1 rounded-full hover:bg-gray-100 transition"
+                      aria-label="Share streak"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{engagementStats.streak}</p>
+                  <p className="text-xs text-gray-500">day streak</p>
+                </div>
+
+                {/* Score Card */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-100">
+                      <Target className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShareType("score");
+                        setSharePopupOpen(true);
+                      }}
+                      className="p-1 rounded-full hover:bg-gray-100 transition"
+                      aria-label="Share score"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{engagementStats.habitScore}</p>
+                  <p className="text-xs text-gray-500">habit score</p>
+                </div>
+
+                {/* Weekly Card */}
+                <div className="bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="p-1.5 rounded-lg bg-blue-100">
+                      <Calendar className="w-4 h-4 text-blue-500" />
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShareType("weekly");
+                        setSharePopupOpen(true);
+                      }}
+                      className="p-1 rounded-full hover:bg-gray-100 transition"
+                      aria-label="Share weekly"
+                    >
+                      <Share2 className="w-3.5 h-3.5 text-gray-400" />
+                    </button>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{engagementStats.weeklyConsistency}%</p>
+                  <p className="text-xs text-gray-500">weekly</p>
+                </div>
+              </div>
+            )}
 
             {/* Challenges */}
             <ChallengeList className="mb-6" />
@@ -531,6 +609,13 @@ const Progress = () => {
           </div>
         )}
       </div>
+
+      {/* Share Popup */}
+      <SharePopup
+        isOpen={sharePopupOpen}
+        onClose={() => setSharePopupOpen(false)}
+        initialTab={shareType}
+      />
     </DashboardLayout>
   );
 };

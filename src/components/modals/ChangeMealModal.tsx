@@ -591,6 +591,38 @@ const ChangeMealModal = ({
                 {/* AI Suggestion Tab */}
                 {activeTab === "ai" && (
                   <div className="space-y-4">
+                    {/* Quick Suggestion Chips */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Quick options
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { label: "Healthy", value: "healthy, nutritious, whole foods" },
+                          { label: "Low calorie", value: "low calorie, under 400 calories" },
+                          { label: "High protein", value: "high protein, at least 30g protein" },
+                          { label: "Low carb", value: "low carb, under 20g carbs" },
+                          { label: "Quick & easy", value: "quick to prepare, under 15 minutes" },
+                          { label: "Vegetarian", value: "vegetarian, no meat" },
+                        ].map((chip) => (
+                          <button
+                            key={chip.label}
+                            type="button"
+                            onClick={() => {
+                              const newRules = aiRules
+                                ? `${aiRules}, ${chip.value}`
+                                : chip.value;
+                              setAiRules(newRules);
+                            }}
+                            disabled={isLoadingAI || isSaving}
+                            className="px-3 py-1.5 text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full hover:bg-emerald-100 transition disabled:opacity-50"
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Mood-Aware Section */}
                     {latestMood && (
                       <div className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">

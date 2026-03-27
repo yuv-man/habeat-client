@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Users, UserPlus, UserCheck, ArrowLeft, Loader2, TrendingUp, Sparkles, UserHeart } from "lucide-react";
+import { Search, Users, UserPlus, UserCheck, ArrowLeft, Loader2, TrendingUp, Sparkles, HeartHandshake } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { socialAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -111,7 +111,7 @@ const Discover = () => {
       case "Active":
         return <Sparkles className="w-3 h-3" />;
       case "Follows you":
-        return <UserHeart className="w-3 h-3" />;
+        return <HeartHandshake className="w-3 h-3" />;
       default:
         return null;
     }

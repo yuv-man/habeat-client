@@ -45,12 +45,15 @@ const OAuthCallback = () => {
         }
 
         // Handle the OAuth callback with action
-        await handleOAuthCallback(
+        const { isNewUser } = await handleOAuthCallback(
           provider,
           action,
           userId || undefined,
           accessToken || undefined
         );
+
+        // Clean up any pending KYC state left before the OAuth redirect
+        localStorage.removeItem(KYC_STORAGE_KEY);
 
         toast({
           title: "Authentication Successful",
@@ -61,14 +64,8 @@ const OAuthCallback = () => {
         const currentUser = useAuthStore.getState().user;
         const currentPlan = useAuthStore.getState().plan;
 
-        // Check if user was in KYC flow (signup action)
-        const kycStep = localStorage.getItem(KYC_STORAGE_KEY);
-        const wasInKycFlow =
-          kycStep === "google_oauth_pending" || action === "signup";
-
-        if (wasInKycFlow && currentUser && !currentPlan) {
-          // User signed up via Google but hasn't completed KYC
-          // Update KYC state with Google user info and redirect to continue KYC
+        if (isNewUser && currentUser && !currentPlan) {
+          // New user - route to the first KYC page
           localStorage.setItem(KYC_STORAGE_KEY, "diet");
           localStorage.setItem(
             "habeat_auth_data",

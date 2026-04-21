@@ -294,7 +294,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         userId,
         accessToken
       );
-      const { token, user, plan } = response.data;
+      const { token, user, plan, isNewUser } = response.data;
       get().setToken(token);
       get().setUser(user);
       get().setPlan(plan || null);
@@ -305,6 +305,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().setPlan(fetchedPlan);
       }
       set({ loading: false });
+      return { isNewUser };
     } catch (error) {
       set({ loading: false });
       throw error;

@@ -146,12 +146,20 @@ const fetchUser = async (
   }, "Failed to fetch user. Please try again.");
 };
 
+const markKYCCompleted = async (userId: string): Promise<void> => {
+  return withErrorHandling(async () => {
+    await userClient.put(`/users/${userId}`, { kycCompleted: true }, {
+      headers: getAuthHeaders(),
+    });
+  }, "Failed to update KYC status. Please try again.");
+};
+
 const oauthAuth = async (
   provider: string,
   action: "signin" | "signup",
   userId?: string,
   accessToken?: string
-): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
+): Promise<{ data: { token: string; user: IUser; plan?: IPlan; isNewUser?: boolean } }> => {
   try {
     // Determine if we're on mobile or web platform
     const { isNativePlatform } = await import("@/lib/platform");
@@ -182,10 +190,11 @@ const oauthAuth = async (
     );
 
     const response: AxiosResponse<{
-      data?: { token: string; user: IUser; plan?: IPlan };
+      data?: { token: string; user: IUser; plan?: IPlan; isNewUser?: boolean };
       token?: string;
       user?: IUser;
       plan?: IPlan;
+      isNewUser?: boolean;
     }> = await userClient.post(endpoint, payload);
 
     // Handle different response structures
@@ -201,6 +210,7 @@ const oauthAuth = async (
         token: responseData.token,
         user: responseData.user,
         plan: responseData.plan,
+        isNewUser: responseData.isNewUser,
       },
     };
   } catch (error) {
@@ -2438,4 +2448,6 @@ export const userAPI = {
   createPortalSession,
   changeTier,
   cancelSubscription,
+  // KYC
+  markKYCCompleted,
 };

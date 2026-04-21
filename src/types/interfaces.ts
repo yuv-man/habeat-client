@@ -108,6 +108,7 @@ export interface IPlan {
   weeklyPlan: { [date: string]: IDailyPlan };
   language: string;
   generatedAt: Date;
+  generationStatus?: "generating" | "complete";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -336,7 +337,7 @@ export interface AuthActions {
     action: "signin" | "signup",
     userId?: string,
     accessToken?: string
-  ) => Promise<void>;
+  ) => Promise<{ isNewUser?: boolean }>;
   guestSignin: (userData: IUser) => void;
   generateMealPlan: (
     userData: IUser,

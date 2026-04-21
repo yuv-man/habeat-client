@@ -11,6 +11,7 @@ import PreferencesStep from "./PreferencesStep";
 import CompleteStep from "./CompleteStep";
 import { AuthData, KYCData, CustomInputs } from "./types";
 import { useAuthStore } from "@/stores/authStore";
+import { userAPI } from "@/services/api";
 import {
   calculateBMR,
   calculateTDEE,
@@ -307,6 +308,16 @@ export default function KYCFlow() {
         localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
         setStep("signup");
         throw new Error("Session expired. Please sign up again to continue.");
+      }
+
+      // Mark KYC as completed on the backend
+      try {
+        const finalUser = useAuthStore.getState().user;
+        if (finalUser?._id) {
+          await userAPI.markKYCCompleted(finalUser._id);
+        }
+      } catch (kycError) {
+        console.error("Failed to mark KYC as completed:", kycError);
       }
 
       // Clear all KYC-related localStorage on successful completion

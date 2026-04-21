@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   GlassWater,
@@ -17,6 +17,7 @@ import {
   BookOpen,
   Heart,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
@@ -414,13 +415,46 @@ const DayContent = ({
 // Main Component
 export default function WeeklyMealPlan() {
   const navigate = useNavigate();
-  const { user, plan, loading, generateMealPlan } = useAuthStore();
+  const { user, plan, loading, token, generateMealPlan } = useAuthStore();
   const weeklyPlan = plan?.weeklyPlan || {};
 
   // Get sorted dates from the weeklyPlan object
   const dates = Object.keys(weeklyPlan).sort();
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Poll for plan completion while remaining days are being generated in background
+  useEffect(() => {
+    const isGeneratingPlan = plan?.generationStatus === "generating";
+
+    if (isGeneratingPlan && token) {
+      pollingRef.current = setInterval(async () => {
+        try {
+          const { plan: freshPlan } = await userAPI.fetchUser(token);
+          if (freshPlan) {
+            useAuthStore.getState().setPlan(freshPlan);
+            if (freshPlan.generationStatus === "complete") {
+              clearInterval(pollingRef.current!);
+              pollingRef.current = null;
+            }
+          }
+        } catch {
+          // Silently ignore polling errors
+        }
+      }, 5000);
+    } else if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
+  }, [plan?.generationStatus, token]);
   const [selectedMeal, setSelectedMeal] = useState<{
     date: Date;
     meal: IMeal;
@@ -860,6 +894,14 @@ export default function WeeklyMealPlan() {
   return (
     <div className="bg-white min-h-screen md:pb-0">
       <div className="max-w-full mx-auto px-4 py-6 pt-6 md:max-w-7xl">
+        {/* Background generation banner */}
+        {plan?.generationStatus === "generating" && (
+          <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700">
+            <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+            <span className="text-sm font-medium">Building the rest of your week... Today is ready!</span>
+          </div>
+        )}
+
         {/* Macro Summary - Show target values from plan */}
         <MacroSummary
           macros={{

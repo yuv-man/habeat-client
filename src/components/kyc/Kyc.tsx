@@ -160,7 +160,10 @@ export default function KYCFlow() {
     }
     setLoading(true);
     try {
-      // Store auth data but don't signup yet - we'll do it at the end with all KYC data
+      // Create the account immediately with just name/email/password
+      await authStore.signup(authData.email, authData.password, {
+        name: authData.name,
+      } as any);
       setAuthData((prev) => ({ ...prev, authMethod: "email" }));
       setStep("diet");
     } catch (err: any) {
@@ -287,9 +290,15 @@ export default function KYCFlow() {
         userData.fastingStartTime = kycData.fastingStartTime;
       }
 
-      // Signup with all collected data
+      // Complete profile with all collected KYC data
       if (authData.authMethod === "email") {
-        await authStore.signup(authData.email, authData.password, userData);
+        // Account already created at signup — just update profile + generate plan
+        const currentUser = authStore.user;
+        if (!currentUser?._id) {
+          throw new Error("Session expired. Please sign up again.");
+        }
+        await authStore.updateProfile(currentUser._id, userData);
+        await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
       } else if (authData.authMethod === "google") {
         // User already authenticated via Google OAuth - update profile and generate plan
         const currentUser = authStore.user;

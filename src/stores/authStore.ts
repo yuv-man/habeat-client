@@ -15,6 +15,7 @@ import {
   setCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
+import { resolveUserDocumentId } from "@/lib/userId";
 
 // Default meal times
 const DEFAULT_MEAL_TIMES: MealTimes = {
@@ -51,14 +52,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   // Actions
   setUser: (user) => {
-    set({ user });
+    const id = user ? resolveUserDocumentId(user) : undefined;
+    const normalized =
+      user && id ? ({ ...user, _id: id } as IUser) : user;
+    set({ user: normalized });
     // Save user to localStorage (non-sensitive data only)
-    if (user) {
+    if (normalized) {
       const userDataToStore = {
-        _id: user._id,
-        email: user.email,
-        name: user.name,
-        profilePicture: user.profilePicture,
+        _id: normalized._id,
+        email: normalized.email,
+        name: normalized.name,
+        profilePicture: normalized.profilePicture,
         // Don't store sensitive data like password, tokens, etc.
       };
       localStorage.setItem("habeat_user", JSON.stringify(userDataToStore));
@@ -352,8 +356,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   ) => {
     try {
       set({ loading: true });
+      const stored = get().user;
+      const merged = {
+        ...(stored ?? {}),
+        ...userData,
+      } as IUser;
+      const userId = resolveUserDocumentId(merged);
+      if (!userId) {
+        set({ loading: false });
+        throw new Error(
+          "You must be signed in to generate a meal plan. Please sign in and try again."
+        );
+      }
+      const payloadUser = { ...merged, _id: userId };
       const { data } = await userAPI.generateMealPlan(
-        userData,
+        payloadUser,
         planName,
         language,
         planTemplate

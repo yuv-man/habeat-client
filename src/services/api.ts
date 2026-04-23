@@ -27,6 +27,7 @@ import {
 } from "../types/interfaces";
 import { IngredientInput } from "../lib/shoppingHelpers";
 import config from "./config";
+import { resolveUserDocumentId } from "@/lib/userId";
 
 const API_URL = config.baseURL;
 
@@ -181,8 +182,8 @@ const oauthAuth = async (
         payload.userId = userId;
       }
     } else {
-      // Web expects accessToken
-      payload = { accessToken, provider, userId };
+      // Web expects accessToken; omit userId when absent (avoids bad string payloads)
+      payload = { accessToken, provider, ...(userId ? { userId } : {}) };
     }
 
     console.log(
@@ -500,6 +501,12 @@ const generateMealPlan = async (
   language: string,
   planTemplate?: string
 ): Promise<{ data: any }> => {
+  const userId = resolveUserDocumentId(userData);
+  if (!userId) {
+    throw new Error(
+      "Missing user id. Please sign in again, then generate your meal plan."
+    );
+  }
   const payload: Record<string, any> = {
     startDate: new Date().toISOString(),
     language,
@@ -512,7 +519,7 @@ const generateMealPlan = async (
   try {
     const response: AxiosResponse<{ data: any }> =
       await mealGenerationClient.post(
-        `/generate/weekly-meal-plan/${userData._id}`,
+        `/generate/weekly-meal-plan/${userId}`,
         payload,
         {
           headers: getAuthHeaders(),

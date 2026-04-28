@@ -42,7 +42,7 @@ const availableImages = [
   "gnocchi-in-mushroom-sauce",
   "gnocchi-with-white-sauce",
   "greek-yogurt-topped-with-granola",
-  "grilled-fish-fillet",
+  "grilled-whole-fish",
   "grilled-salmon-with-veggies",
   "grilled-vegetable-wrap",
   "grilled-vegetables-platter",
@@ -226,7 +226,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "grilled-salmon-quinoa-salad-with-avocado",
   ],
   fish: [
-    "grilled-fish-fillet",
+    "grilled-whole-fish",
     "spicy-red-tuna-poke-bowl",
     "fish-tacos",
     "baked-cod-with-quinoa",

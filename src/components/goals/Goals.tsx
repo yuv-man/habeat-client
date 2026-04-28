@@ -7,7 +7,6 @@ import {
   Dumbbell,
   GlassWater,
   Leaf,
-  ChevronRight,
   Sparkles,
   Trash2,
 } from "lucide-react";
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import PlanSelector from "@/components/dashboard/PlanSelector";
+import targetImg from "@/assets/images/goals.webp";
 
 export interface Milestone {
   id: string;
@@ -239,6 +239,23 @@ const Goals = ({
 
       {/* Goals List */}
       <div className="px-4 py-6 space-y-4">
+        {goals.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+
+            <img src={targetImg} alt="Target" className="size-40" />
+            <p className="text-lg font-semibold text-gray-700 mb-1">No goals yet</p>
+            <p className="text-sm text-gray-400 mb-6 max-w-xs">
+              Set your first goal and start tracking your progress toward a healthier you.
+            </p>
+            <button
+              onClick={onAddGoal}
+              className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-2.5 rounded-lg transition"
+            >
+              <Plus className="w-4 h-4" />
+              Create your first goal
+            </button>
+          </div>
+        )}
         {goals.map((goal) => {
           const progress = getProgressPercentage(goal);
           const isAchieved = goal.status === "achieved" || progress === 100;

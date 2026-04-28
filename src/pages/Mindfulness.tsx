@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Brain, Heart, BookOpen, Dumbbell, Utensils, ChevronRight,
-  Flame, TrendingUp, Plus, Sparkles, Target, Award,
+  Flame, TrendingUp, Sparkles, Target, Award,
 } from "lucide-react";
 import { useCBTStore, useCBTStats, useTodayMoods, useLatestMood } from "@/stores/cbtStore";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import wellnessImg from "@/assets/images/wellness.webp";
 
 const Mindfulness = () => {
   const navigate = useNavigate();
@@ -38,14 +39,16 @@ const Mindfulness = () => {
       label: "Moods Today",
       value: todayMoods.length,
       target: 3,
-      color: "text-red-500 bg-red-50",
+      color: "text-indigo-500 bg-indigo-50",
+      bar: "bg-indigo-400",
       onClick: () => setActiveTab("mood"),
     },
     {
       icon: <BookOpen className="w-5 h-5" />,
       label: "Thought Records",
       value: cbtStats?.thoughtEntriesLogged || 0,
-      color: "text-purple-500 bg-purple-50",
+      color: "text-violet-500 bg-violet-50",
+      bar: "bg-violet-400",
       onClick: () => setActiveTab("thoughts"),
     },
     {
@@ -53,13 +56,15 @@ const Mindfulness = () => {
       label: "Exercises Done",
       value: cbtStats?.exercisesCompleted || 0,
       color: "text-blue-500 bg-blue-50",
+      bar: "bg-blue-400",
       onClick: () => setActiveTab("exercises"),
     },
     {
       icon: <Utensils className="w-5 h-5" />,
       label: "Meal Links",
       value: cbtStats?.mealMoodCorrelationsLogged || 0,
-      color: "text-orange-500 bg-orange-50",
+      color: "text-purple-500 bg-purple-50",
+      bar: "bg-purple-400",
       onClick: () => navigate("/mindfulness/emotional-eating"),
     },
   ];
@@ -71,7 +76,6 @@ const Mindfulness = () => {
     { id: "exercises", label: "Exercises", icon: <Dumbbell className="w-4 h-4" /> },
   ];
 
-  // Get streak milestone info
   const getStreakMilestone = (streak: number) => {
     const milestones = [7, 14, 21, 30, 60, 90];
     const nextMilestone = milestones.find(m => m > streak) || streak + 7;
@@ -91,10 +95,10 @@ const Mindfulness = () => {
   };
 
   const getFlameColor = (streak: number) => {
-    if (streak >= 30) return "text-orange-500";
-    if (streak >= 14) return "text-amber-500";
-    if (streak >= 7) return "text-yellow-500";
-    return "text-gray-400";
+    if (streak >= 30) return "text-violet-500";
+    if (streak >= 14) return "text-indigo-500";
+    if (streak >= 7) return "text-blue-400";
+    return "text-slate-300";
   };
 
   const moodStreakInfo = getStreakMilestone(cbtStats?.moodCheckStreak || 0);
@@ -105,23 +109,23 @@ const Mindfulness = () => {
       {/* Quick mood check */}
       <MoodTracker />
 
-      {/* Enhanced Streaks Section */}
+      {/* Streaks Section */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Award className="w-4 h-4 text-purple-500" />
+          <h3 className="font-semibold text-indigo-900 flex items-center gap-2">
+            <Award className="w-4 h-4 text-violet-400" />
             Your Streaks
           </h3>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button className="text-xs text-gray-400 hover:text-gray-600">
+                <button className="text-xs text-indigo-300 hover:text-indigo-500 transition-colors">
                   What's this?
                 </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
                 <p className="text-sm">
-                  <strong>Mood Streak:</strong> Days in a row you've logged at least one mood check-in.<br/><br/>
+                  <strong>Mood Streak:</strong> Days in a row you've logged at least one mood check-in.<br /><br />
                   <strong>CBT Streak:</strong> Days in a row you've done a mindfulness activity (mood log, thought record, or exercise).
                 </p>
               </TooltipContent>
@@ -129,19 +133,18 @@ const Mindfulness = () => {
           </TooltipProvider>
         </div>
 
-        {/* Mood Streak Card */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 border border-orange-100 relative overflow-hidden">
-          {/* Background decoration */}
+        {/* Mood Streak Card — periwinkle */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-periwinkle-50 border border-indigo-100 relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #eff6ff 0%, #eef2ff 50%, #f5f3ff 100%)" }}>
           {(cbtStats?.moodCheckStreak || 0) >= 7 && (
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-200/30 rounded-full blur-2xl" />
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-200/40 rounded-full blur-2xl" />
           )}
-
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className={cn(
-                  "p-2 rounded-lg",
-                  (cbtStats?.moodCheckStreak || 0) >= 7 ? "bg-orange-100" : "bg-gray-100"
+                  "p-2 rounded-xl",
+                  (cbtStats?.moodCheckStreak || 0) >= 7 ? "bg-indigo-100" : "bg-white/70"
                 )}>
                   <Flame className={cn(
                     "w-5 h-5",
@@ -150,31 +153,29 @@ const Mindfulness = () => {
                   )} />
                 </div>
                 <div>
-                  <span className="text-sm text-orange-700 font-medium">Mood Streak</span>
-                  <p className="text-xs text-orange-500">Daily mood check-ins</p>
+                  <span className="text-sm text-indigo-700 font-semibold">Mood Streak</span>
+                  <p className="text-xs text-indigo-400">Daily mood check-ins</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-orange-700">
+                <p className="text-3xl font-bold text-indigo-700">
                   {cbtStats?.moodCheckStreak || 0}
                 </p>
-                <p className="text-xs text-orange-500">days</p>
+                <p className="text-xs text-indigo-400">days</p>
               </div>
             </div>
-
-            {/* Progress to next milestone */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-orange-600">
+                <span className="text-indigo-600">
                   {getStreakMessage(cbtStats?.moodCheckStreak || 0, "mood")}
                 </span>
-                <span className="text-orange-500">
+                <span className="text-indigo-400">
                   {moodStreakInfo.nextMilestone} days
                 </span>
               </div>
-              <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-indigo-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-orange-400 to-amber-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full transition-all duration-500"
                   style={{ width: `${moodStreakInfo.progress}%` }}
                 />
               </div>
@@ -182,54 +183,51 @@ const Mindfulness = () => {
           </div>
         </div>
 
-        {/* CBT Activity Streak Card */}
-        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-50 via-indigo-50 to-violet-50 border border-purple-100 relative overflow-hidden">
-          {/* Background decoration */}
+        {/* CBT Activity Streak Card — lavender */}
+        <div className="p-4 rounded-2xl border border-violet-100 relative overflow-hidden"
+          style={{ background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 40%, #eef2ff 100%)" }}>
           {(cbtStats?.cbtActivityStreak || 0) >= 7 && (
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-200/30 rounded-full blur-2xl" />
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-violet-200/40 rounded-full blur-2xl" />
           )}
-
           <div className="relative">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className={cn(
-                  "p-2 rounded-lg",
-                  (cbtStats?.cbtActivityStreak || 0) >= 7 ? "bg-purple-100" : "bg-gray-100"
+                  "p-2 rounded-xl",
+                  (cbtStats?.cbtActivityStreak || 0) >= 7 ? "bg-violet-100" : "bg-white/70"
                 )}>
                   <TrendingUp className={cn(
                     "w-5 h-5",
-                    (cbtStats?.cbtActivityStreak || 0) >= 30 ? "text-purple-500" :
-                    (cbtStats?.cbtActivityStreak || 0) >= 14 ? "text-violet-500" :
-                    (cbtStats?.cbtActivityStreak || 0) >= 7 ? "text-indigo-500" : "text-gray-400",
+                    (cbtStats?.cbtActivityStreak || 0) >= 30 ? "text-violet-500" :
+                    (cbtStats?.cbtActivityStreak || 0) >= 14 ? "text-purple-500" :
+                    (cbtStats?.cbtActivityStreak || 0) >= 7 ? "text-indigo-400" : "text-slate-300",
                     (cbtStats?.cbtActivityStreak || 0) >= 7 && "animate-pulse"
                   )} />
                 </div>
                 <div>
-                  <span className="text-sm text-purple-700 font-medium">CBT Activity Streak</span>
-                  <p className="text-xs text-purple-500">Any mindfulness activity</p>
+                  <span className="text-sm text-violet-700 font-semibold">CBT Activity Streak</span>
+                  <p className="text-xs text-violet-400">Any mindfulness activity</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-purple-700">
+                <p className="text-3xl font-bold text-violet-700">
                   {cbtStats?.cbtActivityStreak || 0}
                 </p>
-                <p className="text-xs text-purple-500">days</p>
+                <p className="text-xs text-violet-400">days</p>
               </div>
             </div>
-
-            {/* Progress to next milestone */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs">
-                <span className="text-purple-600">
+                <span className="text-violet-600">
                   {getStreakMessage(cbtStats?.cbtActivityStreak || 0, "cbt")}
                 </span>
-                <span className="text-purple-500">
+                <span className="text-violet-400">
                   {cbtStreakInfo.nextMilestone} days
                 </span>
               </div>
-              <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-violet-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-purple-400 to-indigo-400 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-violet-400 to-purple-400 rounded-full transition-all duration-500"
                   style={{ width: `${cbtStreakInfo.progress}%` }}
                 />
               </div>
@@ -239,9 +237,10 @@ const Mindfulness = () => {
 
         {/* Streak tip */}
         {((cbtStats?.moodCheckStreak || 0) === 0 || (cbtStats?.cbtActivityStreak || 0) === 0) && (
-          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-            <Sparkles className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-blue-700">
+          <div className="flex items-start gap-2 p-3 rounded-xl border border-indigo-100"
+            style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)" }}>
+            <Sparkles className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-indigo-700">
               <strong>Tip:</strong> Log a mood check-in or complete a quick exercise to start building your streak. Consistency is key to forming healthy habits!
             </p>
           </div>
@@ -250,8 +249,8 @@ const Mindfulness = () => {
 
       {/* Quick stats */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <Target className="w-4 h-4 text-gray-500" />
+        <h3 className="font-semibold text-indigo-900 flex items-center gap-2">
+          <Target className="w-4 h-4 text-indigo-400" />
           Today's Progress
         </h3>
         <div className="grid grid-cols-2 gap-3">
@@ -262,45 +261,36 @@ const Mindfulness = () => {
                 key={i}
                 onClick={stat.onClick}
                 className={cn(
-                  "p-4 rounded-xl border transition-all text-left relative overflow-hidden group",
+                  "p-4 rounded-2xl border transition-all text-left relative overflow-hidden group",
                   isComplete
-                    ? "bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:shadow-md"
-                    : "bg-white border-gray-200 hover:shadow-md"
+                    ? "bg-white border-indigo-100 hover:shadow-md hover:shadow-indigo-100/50"
+                    : "bg-white border-slate-100 hover:shadow-md hover:shadow-indigo-100/30"
                 )}
               >
-                {/* Completion indicator */}
                 {isComplete && (
                   <div className="absolute top-2 right-2">
-                    <div className="w-2 h-2 bg-green-400 rounded-full" />
+                    <div className="w-2 h-2 bg-indigo-300 rounded-full" />
                   </div>
                 )}
-
-                <div className={cn("p-2 rounded-lg inline-block mb-2", stat.color)}>
+                <div className={cn("p-2 rounded-xl inline-block mb-2", stat.color)}>
                   {stat.icon}
                 </div>
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-2xl font-bold text-slate-700">
                   {stat.value}
                   {stat.target && (
-                    <span className="text-sm font-normal text-gray-400">/{stat.target}</span>
+                    <span className="text-sm font-normal text-slate-300">/{stat.target}</span>
                   )}
                 </p>
-                <p className="text-sm text-gray-500">{stat.label}</p>
-
-                {/* Progress bar for items with targets */}
+                <p className="text-xs text-slate-400">{stat.label}</p>
                 {stat.target && (
-                  <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="mt-2 h-1 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      className={cn(
-                        "h-full rounded-full transition-all",
-                        isComplete ? "bg-green-400" : "bg-gray-300"
-                      )}
+                      className={cn("h-full rounded-full transition-all", isComplete ? stat.bar : "bg-slate-200")}
                       style={{ width: `${Math.min(100, (stat.value / stat.target) * 100)}%` }}
                     />
                   </div>
                 )}
-
-                {/* Hover arrow */}
-                <ChevronRight className="absolute right-2 bottom-2 w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ChevronRight className="absolute right-2 bottom-2 w-4 h-4 text-indigo-200 opacity-0 group-hover:opacity-100 transition-opacity" />
               </button>
             );
           })}
@@ -309,49 +299,54 @@ const Mindfulness = () => {
 
       {/* Quick links */}
       <div className="space-y-3">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <Brain className="w-4 h-4 text-gray-500" />
+        <h3 className="font-semibold text-indigo-900 flex items-center gap-2">
+          <Brain className="w-4 h-4 text-indigo-400" />
           Explore More
         </h3>
         <div className="space-y-2">
+          {/* Mood History */}
           <button
             onClick={() => navigate("/mindfulness/mood")}
-            className="w-full p-4 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-100 hover:shadow-md hover:border-red-200 transition-all flex items-center justify-between group"
+            className="w-full p-4 rounded-2xl border border-indigo-100 hover:shadow-md hover:shadow-indigo-100/50 hover:border-indigo-200 transition-all flex items-center justify-between group"
+            style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" }}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white rounded-lg shadow-sm">
-                <Heart className="w-5 h-5 text-red-500" />
+              <div className="p-2.5 bg-white rounded-xl shadow-sm">
+                <Heart className="w-5 h-5 text-indigo-500" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-800">Mood History</p>
-                <p className="text-sm text-gray-500">View trends and patterns over time</p>
+                <p className="font-semibold text-indigo-900">Mood History</p>
+                <p className="text-xs text-indigo-400">View trends and patterns over time</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-red-300 group-hover:text-red-400 group-hover:translate-x-1 transition-all" />
+            <ChevronRight className="w-5 h-5 text-indigo-300 group-hover:text-indigo-500 group-hover:translate-x-1 transition-all" />
           </button>
 
+          {/* Emotional Eating */}
           <button
             onClick={() => navigate("/mindfulness/emotional-eating")}
-            className="w-full p-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 hover:shadow-md hover:border-orange-200 transition-all flex items-center justify-between group"
+            className="w-full p-4 rounded-2xl border border-violet-100 hover:shadow-md hover:shadow-violet-100/50 hover:border-violet-200 transition-all flex items-center justify-between group"
+            style={{ background: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)" }}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-white rounded-lg shadow-sm">
-                <Utensils className="w-5 h-5 text-orange-500" />
+              <div className="p-2.5 bg-white rounded-xl shadow-sm">
+                <Utensils className="w-5 h-5 text-violet-500" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-800">Emotional Eating Insights</p>
-                <p className="text-sm text-gray-500">Understand your eating patterns</p>
+                <p className="font-semibold text-violet-900">Emotional Eating Insights</p>
+                <p className="text-xs text-violet-400">Understand your eating patterns</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-orange-300 group-hover:text-orange-400 group-hover:translate-x-1 transition-all" />
+            <ChevronRight className="w-5 h-5 text-violet-300 group-hover:text-violet-500 group-hover:translate-x-1 transition-all" />
           </button>
         </div>
       </div>
 
       {/* Latest mood summary */}
       {latestMood && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200">
-          <p className="text-xs text-gray-500 mb-2">Your latest mood</p>
+        <div className="p-4 rounded-2xl border border-indigo-100"
+          style={{ background: "linear-gradient(135deg, #eef2ff 0%, #f5f3ff 100%)" }}>
+          <p className="text-xs text-indigo-400 mb-2 font-medium uppercase tracking-wide">Your latest mood</p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
@@ -360,15 +355,15 @@ const Mindfulness = () => {
                 className="w-12 h-12 object-contain"
               />
               <div>
-                <p className="font-medium text-gray-800 capitalize">{latestMood.moodCategory}</p>
-                <p className="text-xs text-gray-500">Level {latestMood.moodLevel}/5 • {latestMood.time}</p>
+                <p className="font-semibold text-indigo-900 capitalize">{latestMood.moodCategory}</p>
+                <p className="text-xs text-indigo-400">Level {latestMood.moodLevel}/5 • {latestMood.time}</p>
               </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/mindfulness/mood")}
-              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+              className="text-violet-600 hover:text-violet-700 hover:bg-violet-50"
             >
               View all
             </Button>
@@ -379,68 +374,77 @@ const Mindfulness = () => {
   );
 
   return (
-    <DashboardLayout hidePlanBanner bgColor="bg-gray-50">
-      <div className="min-h-screen bg-gray-50 pb-20">
+    <DashboardLayout hidePlanBanner bgColor="bg-slate-50">
+      <div className="min-h-screen pb-20" style={{ background: "linear-gradient(180deg, #eef2ff 0%, #f8f7ff 40%, #f5f3ff 100%)" }}>
         {/* Mood check-in modal */}
         <MoodCheckInPrompt />
 
-      {/* Header */}
-      <div className="bg-gradient-to-br from-purple-500 to-indigo-600 text-white px-4 pt-12 pb-6">
-        <div className="max-w-lg mx-auto">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/20 rounded-xl">
-              <Brain className="w-6 h-6" />
+        {/* Header */}
+        <div className="text-white p-4 "
+          style={{ background: "linear-gradient(135deg, #818cf8 0%, #a78bfa 50%, #c4b5fd 100%)" }}>
+          <div className="max-w-lg mx-auto">
+            {/* Soft glow decorations */}
+            <div className="absolute right-8 top-6 w-32 h-32 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute left-4 top-8 w-20 h-20 bg-blue-200/20 rounded-full blur-2xl pointer-events-none" />
+
+            <div className="relative flex flex-row items-center justify-start">
+              <img src={wellnessImg} alt="Wellness" className="size-40" />
+                <div className="relative flex flex-col gap-1 items-start justify-center">
+                <h1 className="text-2xl font-bold tracking-tight">Mindfulness</h1>
+                <p className="text-white/75 text-sm leading-relaxed">
+                  Track your mood, 
+                  <br />
+                  challenge negative thoughts,
+                  <br />
+                  and build healthy habits
+                </p>
+              </div>
             </div>
-            <h1 className="text-2xl font-bold">Mindfulness</h1>
           </div>
-          <p className="text-white/80">
-            Track your mood, challenge negative thoughts, and build healthy habits
-          </p>
         </div>
-      </div>
 
-      {/* Tab navigation */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-lg mx-auto px-4">
-          <div className="flex gap-1 py-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors",
-                  activeTab === tab.id
-                    ? "bg-purple-100 text-purple-700"
-                    : "text-gray-600 hover:bg-gray-100"
-                )}
+        {/* Tab navigation */}
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-indigo-100 shadow-sm shadow-indigo-100/30">
+          <div className="max-w-lg mx-auto px-4">
+            <div className="flex gap-1 py-2">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-medium transition-all",
+                    activeTab === tab.id
+                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
+                      : "text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                  )}
+                >
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="max-w-lg mx-auto px-4 py-6">
+          {activeTab === "overview" && renderOverview()}
+          {activeTab === "mood" && (
+            <div className="space-y-6">
+              <MoodTracker />
+              <Button
+                variant="outline"
+                className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 rounded-xl"
+                onClick={() => navigate("/mindfulness/mood")}
               >
-                {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-          </div>
+                View Mood History
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          )}
+          {activeTab === "thoughts" && <ThoughtJournal />}
+          {activeTab === "exercises" && <CBTExercises />}
         </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-6">
-        {activeTab === "overview" && renderOverview()}
-        {activeTab === "mood" && (
-          <div className="space-y-6">
-            <MoodTracker />
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => navigate("/mindfulness/mood")}
-            >
-              View Mood History
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        )}
-        {activeTab === "thoughts" && <ThoughtJournal />}
-        {activeTab === "exercises" && <CBTExercises />}
-      </div>
       </div>
     </DashboardLayout>
   );

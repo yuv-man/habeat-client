@@ -27,7 +27,7 @@ const EmotionalEating = () => {
             <div className="p-2 bg-white/20 rounded-xl">
               <Utensils className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-bold">Emotional Eating</h1>
+            <h1 className="text-2xl font-bold">Eating Patterns</h1>
           </div>
           <p className="text-white/80">
             Understand the connection between your emotions and eating habits

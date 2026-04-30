@@ -24,7 +24,7 @@ interface ProgressState {
 }
 
 interface ProgressActions {
-  fetchTodayProgress: (userId: string) => Promise<void>;
+  fetchTodayProgress: (userId: string, force?: boolean) => Promise<void>;
   fetchProgressHistory: (
     userId: string,
     startDate?: string,
@@ -119,7 +119,7 @@ export const useProgressStore = create<ProgressStore>()(
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
 
-      fetchTodayProgress: async (userId: string) => {
+      fetchTodayProgress: async (userId: string, force?: boolean) => {
         if (config.testFrontend) {
           // Use mock data in test mode
           set({ todayProgress: mockDailyProgress as IDailyProgress });
@@ -131,6 +131,7 @@ export const useProgressStore = create<ProgressStore>()(
 
         // Cache-first strategy: Use cached data if available and valid
         if (
+          !force &&
           todayProgress &&
           cachedDate === today &&
           lastFetchTime &&

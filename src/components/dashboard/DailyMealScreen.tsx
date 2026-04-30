@@ -381,8 +381,8 @@ const DailyMealScreen = () => {
         photoBase64
       );
 
-      // Refresh progress to get updated snacks
-      await fetchTodayProgress(user._id);
+      // Refresh progress to get updated snacks (force bypass cache)
+      await fetchTodayProgress(user._id, true);
       toast.success("Snack added successfully!");
       setShowAddSnackModal(false);
     } catch (error) {
@@ -406,8 +406,8 @@ const DailyMealScreen = () => {
 
       await userAPI.addWorkout(user._id, workoutWithDate);
 
-      // Refresh progress to get updated workouts
-      await fetchTodayProgress(user._id);
+      // Refresh progress to get updated workouts (force bypass cache)
+      await fetchTodayProgress(user._id, true);
       toast.success("Workout added successfully!");
       setShowWorkoutModal(false);
     } catch (error) {

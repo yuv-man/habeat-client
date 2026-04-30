@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, ChevronDown, Utensils, ArrowRight, Check } from "lucide-react";
+import { Heart, ChevronDown, Utensils, ArrowRight, Check, Leaf } from "lucide-react";
 import { useCBTStore } from "@/stores/cbtStore";
 import { MoodLevel, MoodCategory, IMealMoodCorrelation, IMoodEntry } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,49 @@ const HUNGER_LEVELS = [
   { value: 5, label: "Extremely hungry" },
 ];
 
+const EMOTIONAL_CATEGORIES = ["stressed", "anxious", "sad", "angry"];
+
+function calcClientScore(
+  moodCategory: MoodCategory | null,
+  hungerLevel: MoodLevel | null,
+  mealType: string
+): number {
+  let score = 0;
+  if (hungerLevel === 1) score += 0.40;
+  else if (hungerLevel === 2) score += 0.25;
+  else if (hungerLevel === 3) score += 0.10;
+
+  const cat = moodCategory ?? "";
+  if (EMOTIONAL_CATEGORIES.includes(cat)) score += 0.25;
+  else if (cat === "tired") score += 0.15;
+
+  const hour = new Date().getHours();
+  if (mealType === "snacks" && hour >= 21) score += 0.10;
+
+  return Math.min(1.0, score);
+}
+
+function getNudgeMessage(
+  moodCategory: MoodCategory | null,
+  hungerLevel: MoodLevel | null,
+  mealType: string
+): string {
+  const isLowHunger = (hungerLevel ?? 5) <= 2;
+  const cat = moodCategory ?? "";
+  const hour = new Date().getHours();
+
+  if (isLowHunger && (cat === "stressed" || cat === "anxious")) {
+    return `Feeling ${cat} with low hunger? Sometimes our body asks for comfort through food. A few deep breaths can help you check in with what you really need.`;
+  }
+  if (mealType === "snacks" && hour >= 21 && cat === "tired") {
+    return "Late-night snacking is super common, especially when tired. No judgment — just a moment to pause and see how you're feeling.";
+  }
+  if (cat === "sad" || cat === "anxious") {
+    return "Emotions and appetite are closely linked. Taking 30 seconds before eating can help you enjoy it more mindfully.";
+  }
+  return "Your hunger seems low right now. Checking in with yourself before eating can help you enjoy your meal more mindfully.";
+}
+
 export function MealMoodLink({
   mealId,
   mealType,
@@ -48,6 +91,13 @@ export function MealMoodLink({
   const [satisfaction, setSatisfaction] = useState<MoodLevel | null>(null);
   const [isEmotionalEating, setIsEmotionalEating] = useState(false);
   const [isLinked, setIsLinked] = useState(false);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+
+  const showNudge =
+    !nudgeDismissed &&
+    phase === "before" &&
+    (moodBefore !== null || hungerLevel !== null) &&
+    calcClientScore(moodBefore, hungerLevel, mealType) > 0.6;
 
   const handleLink = async () => {
     const now = new Date();
@@ -206,6 +256,24 @@ export function MealMoodLink({
                   ))}
                 </div>
               </div>
+
+              {/* Mindfulness nudge */}
+              {showNudge && (
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                  <Leaf className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-purple-700 leading-relaxed">
+                      {getNudgeMessage(moodBefore, hungerLevel, mealType)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setNudgeDismissed(true)}
+                    className="text-xs text-purple-400 hover:text-purple-600 flex-shrink-0 mt-0.5"
+                  >
+                    Got it
+                  </button>
+                </div>
+              )}
 
               {/* Emotional eating check */}
               <label className="flex items-center gap-2 cursor-pointer">

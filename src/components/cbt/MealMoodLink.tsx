@@ -94,8 +94,8 @@ export function MealMoodLink({
 
   if (isLinked) {
     return (
-      <div className={cn("p-3 rounded-lg bg-green-50 border border-green-200", className)}>
-        <div className="flex items-center gap-2 text-green-600">
+      <div className={cn("p-3 rounded-lg bg-green-500 border border-green-600", className)}>
+        <div className="flex items-center gap-2 text-white">
           <Check className="w-4 h-4" />
           <span className="text-sm font-medium">Mood linked to {mealName}</span>
         </div>

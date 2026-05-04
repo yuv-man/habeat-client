@@ -28,6 +28,7 @@ interface ChangeMealModalProps {
   date: string; // Date in YYYY-MM-DD format for API call
   snackIndex?: number; // Index of the snack being changed (for snacks only)
   onMealChange: (meal: IMeal) => void;
+  quickMode?: boolean;
 }
 
 type TabType = "manual" | "ai" | "favorites" | "photo" | null;
@@ -39,9 +40,11 @@ const ChangeMealModal = ({
   date,
   snackIndex,
   onMealChange,
+  quickMode = false,
 }: ChangeMealModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(null);
+  const [showAllOptions, setShowAllOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +63,9 @@ const ChangeMealModal = ({
   const [aiSuggestions, setAiSuggestions] = useState<IMeal[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiSuggestionSources, setAiSuggestionSources] = useState<Record<string, 'USDA' | 'Est.'>>({});
+  const [isLookingUpNutrition, setIsLookingUpNutrition] = useState(false);
+  const [nutritionLookupError, setNutritionLookupError] = useState<string | null>(null);
 
   // Mood-aware suggestions state
   const todayMoods = useTodayMoods();
@@ -115,7 +121,8 @@ const ChangeMealModal = ({
     setIsOpen(true);
     setError(null);
     setAiError(null);
-    setActiveTab(null as any); // Reset to show option selection
+    setActiveTab(null as any);
+    setShowAllOptions(false);
     if (currentMeal) {
       setManualMeal({
         name: currentMeal.name,
@@ -133,8 +140,10 @@ const ChangeMealModal = ({
     setActiveTab(null as any);
     setAiRules("");
     setAiSuggestions([]);
+    setAiSuggestionSources({});
     setError(null);
     setAiError(null);
+    setNutritionLookupError(null);
   };
 
   // API call to change the meal in the plan
@@ -240,7 +249,21 @@ const ChangeMealModal = ({
       if (suggestions.length === 0) {
         setAiError("No suggestions found. Try different preferences.");
       } else {
-        setAiSuggestions(suggestions);
+        const enrichmentResults = await Promise.allSettled(
+          suggestions.map((meal) => userAPI.getNutritionFromUSDA(meal.name))
+        );
+        const sources: Record<string, 'USDA' | 'Est.'> = {};
+        const enrichedMeals = suggestions.map((meal, idx) => {
+          const result = enrichmentResults[idx];
+          if (result.status === 'fulfilled' && result.value.data) {
+            sources[meal._id] = 'USDA';
+            return { ...meal, calories: result.value.data.calories, macros: result.value.data.macros };
+          }
+          sources[meal._id] = 'Est.';
+          return meal;
+        });
+        setAiSuggestions(enrichedMeals);
+        setAiSuggestionSources(sources);
       }
     } catch (err: any) {
       console.error("AI suggestion error:", err);
@@ -249,6 +272,33 @@ const ChangeMealModal = ({
       );
     } finally {
       setIsLoadingAI(false);
+    }
+  };
+
+  const handleLookupNutrition = async () => {
+    if (!manualMeal.name.trim()) {
+      setNutritionLookupError("Enter a meal name first");
+      return;
+    }
+    setIsLookingUpNutrition(true);
+    setNutritionLookupError(null);
+    try {
+      const response = await userAPI.getNutritionFromUSDA(manualMeal.name.trim());
+      if (response.data) {
+        setManualMeal((prev) => ({
+          ...prev,
+          calories: response.data!.calories,
+          carbs: response.data!.macros.carbs,
+          fat: response.data!.macros.fat,
+          protein: response.data!.macros.protein,
+        }));
+      } else {
+        setNutritionLookupError("Not found — enter manually");
+      }
+    } catch {
+      setNutritionLookupError("Not found — enter manually");
+    } finally {
+      setIsLookingUpNutrition(false);
     }
   };
 
@@ -351,9 +401,13 @@ const ChangeMealModal = ({
             {/* Header */}
             <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Swap Meal</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {quickMode && !showAllOptions ? "What did you eat?" : "Swap Meal"}
+                </h2>
                 <p className="text-sm text-gray-500 mt-0.5">
-                  Choose how you want to swap this meal
+                  {quickMode && !showAllOptions
+                    ? "Log what you actually had"
+                    : "Choose how you want to swap this meal"}
                 </p>
               </div>
               <button
@@ -373,8 +427,36 @@ const ChangeMealModal = ({
               </div>
             )}
 
-            {/* Option Selection - Show when no tab is selected or when activeTab is null */}
-            {!activeTab && (
+            {/* Quick Mode - 2-choice picker */}
+            {!activeTab && quickMode && !showAllOptions && (
+              <div className="p-6 space-y-3">
+                <button
+                  onClick={() => setActiveTab("manual")}
+                  disabled={isSaving}
+                  className="w-full p-4 border-2 border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Edit className="w-5 h-5" />
+                    <span className="font-semibold text-sm">Type it</span>
+                  </div>
+                  <p className="text-xs opacity-75">Enter what you ate — nutrition filled in automatically</p>
+                </button>
+                <button
+                  onClick={() => setActiveTab("photo")}
+                  disabled={isSaving}
+                  className="w-full p-4 border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Camera className="w-5 h-5" />
+                    <span className="font-semibold text-sm">Take a Photo</span>
+                  </div>
+                  <p className="text-xs opacity-75">Recognize meal from photo</p>
+                </button>
+              </div>
+            )}
+
+            {/* Option Selection - Full 4-tab grid */}
+            {!activeTab && (!quickMode || showAllOptions) && (
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-3">
                   {swapOptions.map((option) => {
@@ -418,6 +500,7 @@ const ChangeMealModal = ({
                     setActiveTab(null);
                     setAiSuggestions([]);
                     setAiError(null);
+                    setAiSuggestionSources({});
                   }}
                   disabled={isSaving}
                   className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition disabled:opacity-50"
@@ -452,12 +535,32 @@ const ChangeMealModal = ({
                         type="text"
                         placeholder="E.g., Chicken Salad"
                         value={manualMeal.name}
-                        onChange={(e) =>
-                          setManualMeal({ ...manualMeal, name: e.target.value })
-                        }
-                        disabled={isSaving}
+                        onChange={(e) => {
+                          setManualMeal({ ...manualMeal, name: e.target.value });
+                          setNutritionLookupError(null);
+                        }}
+                        disabled={isSaving || isLookingUpNutrition}
+                        autoFocus
                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
                       />
+                      <button
+                        type="button"
+                        onClick={handleLookupNutrition}
+                        disabled={!manualMeal.name.trim() || isLookingUpNutrition || isSaving}
+                        className="mt-2 w-full flex items-center justify-center gap-2 py-2.5 text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLookingUpNutrition ? (
+                          <>
+                            <MealLoader size="small" />
+                            Looking up...
+                          </>
+                        ) : (
+                          "Look up nutrition"
+                        )}
+                      </button>
+                      {nutritionLookupError && (
+                        <p className="text-sm text-gray-400 text-center mt-1">{nutritionLookupError}</p>
+                      )}
                     </div>
 
                     <div>
@@ -756,10 +859,21 @@ const ChangeMealModal = ({
                             <div className="font-medium text-gray-900 break-words">
                               {formatMealName(meal.name)}
                             </div>
-                            <div className="text-sm text-gray-500 mt-1">
-                              {meal.calories} cal • {meal.macros?.protein || 0}g
-                              protein • {meal.macros?.carbs || 0}g carbs •{" "}
-                              {meal.macros?.fat || 0}g fat
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span className="text-sm text-gray-500">
+                                {meal.calories} cal • {meal.macros?.protein || 0}g
+                                protein • {meal.macros?.carbs || 0}g carbs •{" "}
+                                {meal.macros?.fat || 0}g fat
+                              </span>
+                              {aiSuggestionSources[meal._id] && (
+                                <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
+                                  aiSuggestionSources[meal._id] === 'USDA'
+                                    ? 'bg-green-100 text-green-700'
+                                    : 'bg-gray-100 text-gray-500'
+                                }`}>
+                                  {aiSuggestionSources[meal._id]}
+                                </span>
+                              )}
                             </div>
                           </button>
                         ))}

@@ -114,6 +114,13 @@ const DailyMealScreen = () => {
     fetchEngagementStats();
   }, [userId, fetchTodayProgress, fetchFavorites, fetchEngagementStats]);
 
+  // Re-fetch progress when a new plan is generated
+  const planId = plan?._id?.toString();
+  useEffect(() => {
+    if (!userId || !planId || !hasFetchedRef.current) return;
+    fetchTodayProgress(userId, true);
+  }, [planId, userId]);
+
   // Fetch engagement stats on mount if not loaded
   useEffect(() => {
     if (!engagementStats && !engagementLoading) {

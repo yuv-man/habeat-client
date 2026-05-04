@@ -302,12 +302,12 @@ const DayCard = ({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 p-3 rounded-lg transition ${getStatusStyles()}`}
+      className={`flex flex-col items-center gap-1 p-4 rounded-lg transition ${getStatusStyles()}`}
     >
       <span className="font-semibold">{dayName}</span>
       <span className="text-xs">{date}</span>
       {dayStatus === "current" && (
-        <span className="text-[10px] font-bold">TODAY</span>
+        <span className="text-xs font-bold">TODAY</span>
       )}
     </button>
   );
@@ -420,6 +420,17 @@ export default function WeeklyMealPlan() {
 
   // Get sorted dates from the weeklyPlan object
   const dates = Object.keys(weeklyPlan).sort();
+
+  // When still generating, show placeholder slots for the full 7-day range
+  const allWeekDates = React.useMemo(() => {
+    if (!dates.length) return dates;
+    const [year, month, day] = dates[0].split("-").map(Number);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(year, month - 1, day + i);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    });
+  }, [dates]);
+  const displayDates = plan?.generationStatus === "generating" ? allWeekDates : dates;
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -987,9 +998,20 @@ export default function WeeklyMealPlan() {
         <div className="md:hidden">
           {/* Day Selector */}
           <div className="grid grid-cols-7 gap-2 mb-6">
-            {dates.map((date) => {
+            {displayDates.map((date) => {
               const day = weeklyPlan[date];
               const dayStatus = getDayStatus(date);
+              if (!day) {
+                return (
+                  <div
+                    key={date}
+                    className="flex flex-col items-center gap-1 p-4 rounded-lg bg-gray-100 animate-pulse"
+                  >
+                    <div className="h-3 w-5 bg-gray-300 rounded" />
+                    <div className="h-2 w-7 bg-gray-200 rounded mt-1" />
+                  </div>
+                );
+              }
               return (
                 <DayCard
                   key={date}
@@ -1031,7 +1053,7 @@ export default function WeeklyMealPlan() {
                 </span>
               )}
             </h2>
-            {currentDay && (
+            {currentDay ? (
               <DayContent
                 dayData={currentDay}
                 onMealChange={(mealType, newMeal) =>
@@ -1044,7 +1066,14 @@ export default function WeeklyMealPlan() {
                 date={new Date(selectedDate)}
                 dayStatus={getDayStatus(selectedDate)}
               />
-            )}
+            ) : plan?.generationStatus === "generating" ? (
+              <div className="space-y-3 animate-pulse">
+                <div className="h-24 bg-gray-200 rounded-lg" />
+                <div className="h-24 bg-gray-200 rounded-lg" />
+                <div className="h-24 bg-gray-200 rounded-lg" />
+                <p className="text-center text-sm text-gray-400 pt-1">Preparing your meals...</p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

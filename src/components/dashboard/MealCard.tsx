@@ -205,7 +205,7 @@ const MealCard = ({
           <div className="flex items-center gap-1">
             <button
               onClick={handleFavorite}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label={
                 isFavorite ? "Remove from favorites" : "Add to favorites"
               }
@@ -227,7 +227,7 @@ const MealCard = ({
               onMealChange={handleMealChange}
             >
               <button
-                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Swap snack"
               >
                 <RefreshCw className="w-4 h-4 text-gray-400 stroke-2" />
@@ -236,7 +236,8 @@ const MealCard = ({
 
             <button
               onClick={handleComplete}
-              className={`p-0.5 rounded-full transition-all duration-200 ${
+              disabled={isCompleting}
+              className={`p-1.5 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isCompleted
                   ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
                   : "bg-gray-100 hover:bg-gray-200"
@@ -317,7 +318,7 @@ const MealCard = ({
           {/* Favorite Button */}
           <button
             onClick={handleFavorite}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label={
               isFavorite ? "Remove from favorites" : "Add to favorites"
             }
@@ -334,7 +335,8 @@ const MealCard = ({
           {/* Done Button */}
           <button
             onClick={handleComplete}
-            className={`p-1 rounded-full transition-all duration-200 ${
+            disabled={isCompleting}
+            className={`p-2 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
               isCompleted
                 ? "bg-gradient-to-br from-emerald-400 to-teal-500 scale-110 shadow-sm"
                 : "bg-gray-100 hover:bg-gray-200"
@@ -352,7 +354,7 @@ const MealCard = ({
         {/* Chevron Button - Right side of card, fixed position */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute top-14 right-4 p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600 z-10"
+          className="absolute top-14 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600 z-10"
           aria-label={isExpanded ? "Collapse" : "Expand"}
         >
           {isExpanded ? (
@@ -461,7 +463,7 @@ const MealCard = ({
                 className="flex items-center gap-1.5 text-gray-600 hover:text-emerald-600 transition-colors group"
                 aria-label="View recipe"
               >
-                <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-emerald-100 transition-colors">
+                <div className="p-2 rounded-full bg-gray-100 group-hover:bg-emerald-100 transition-colors">
                   <BookOpen className="w-3.5 h-3.5 stroke-2" />
                 </div>
                 <span className="text-xs font-medium">Recipe</span>
@@ -479,7 +481,7 @@ const MealCard = ({
                     className="flex items-center gap-1.5 text-gray-600 hover:text-blue-600 transition-colors group"
                     aria-label="Swap meal"
                   >
-                    <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-blue-100 transition-colors">
+                    <div className="p-2 rounded-full bg-gray-100 group-hover:bg-blue-100 transition-colors">
                       <RefreshCw className="w-3.5 h-3.5 stroke-2" />
                     </div>
                     <span className="text-xs font-medium">Swap</span>
@@ -493,12 +495,28 @@ const MealCard = ({
                 className="flex items-center gap-1.5 text-gray-600 hover:text-purple-600 transition-colors group"
                 aria-label="Link mood to meal"
               >
-                <div className="p-1.5 rounded-full bg-gray-100 group-hover:bg-purple-100 transition-colors">
+                <div className="p-2 rounded-full bg-gray-100 group-hover:bg-purple-100 transition-colors">
                   <Brain className="w-3.5 h-3.5 stroke-2" />
                 </div>
                 <span className="text-xs font-medium">Mood</span>
               </button>
             </div>
+
+            {/* Quick log shortcut */}
+            {!isCompleted && (
+              <ChangeMealModal
+                currentMeal={meal}
+                mealType={mealType}
+                date={date}
+                snackIndex={isSnack ? snackIndex : undefined}
+                onMealChange={handleMealChange}
+                quickMode
+              >
+                <button className="w-full text-center text-xs text-gray-400 hover:text-gray-600 transition py-1">
+                  Ate something else?
+                </button>
+              </ChangeMealModal>
+            )}
           </div>
         </div>
       )}

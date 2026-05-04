@@ -28,7 +28,7 @@ const DashboardLayout = ({
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { plan } = useAuthStore();
+  const { plan, loading } = useAuthStore();
 
   // Check if we're on Goals page
   const isGoalsPage =
@@ -36,7 +36,7 @@ const DashboardLayout = ({
 
   // Check if plan is missing or expired
   const showPlanBanner = useMemo(() => {
-    if (hidePlanBanner || isGoalsPage) return false;
+    if (hidePlanBanner || isGoalsPage || loading) return false;
 
     // No plan at all
     if (!plan || !plan.weeklyPlan) return true;
@@ -53,7 +53,7 @@ const DashboardLayout = ({
     lastDate.setHours(0, 0, 0, 0);
 
     return lastDate < today;
-  }, [plan, hidePlanBanner, isGoalsPage]);
+  }, [plan, hidePlanBanner, isGoalsPage, loading]);
 
   const handleViewChange = (view: "daily" | "weekly") => {
     if (view === "daily") {
@@ -101,17 +101,17 @@ const DashboardLayout = ({
         <NavBar currentView={currentView} onViewChange={handleViewChange} />
       )}
       {showPlanBanner && (
-        <div className="bg-amber-50 border-b-2 border-amber-400 px-4 py-3">
+        <div className="bg-orange-50 border-b-2 border-orange-400 px-4 py-3">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1">
-              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0" />
               <div>
-                <p className="font-bold text-amber-900 text-sm md:text-base">
+                <p className="font-bold text-orange-900 text-sm md:text-base">
                   {!plan || !plan.weeklyPlan
                     ? "You don't have a meal plan yet"
                     : "Your meal plan has expired"}
                 </p>
-                <p className="text-amber-700 text-xs md:text-sm mt-0.5">
+                <p className="text-orange-700 text-xs md:text-sm mt-0.5">
                   {!plan || !plan.weeklyPlan
                     ? "Generate a meal plan to start tracking your nutrition"
                     : "Generate a new plan to continue tracking your meals"}
@@ -121,7 +121,7 @@ const DashboardLayout = ({
             <Button
               type="button"
               onClick={handleGeneratePlan}
-              className="bg-amber-600 hover:bg-amber-700 text-white text-xs md:text-sm font-semibold px-4 py-2 flex items-center gap-2 flex-shrink-0"
+              className="bg-orange-600 hover:bg-orange-700 text-white text-xs md:text-sm font-semibold px-4 py-2 flex items-center gap-2 flex-shrink-0"
               size="sm"
             >
               <Sparkles className="w-4 h-4" />

@@ -12,11 +12,11 @@ interface MealLoaderProps {
 
 const MealLoader: React.FC<MealLoaderProps> = ({
   customMessages = [
-    "🥗 Gathering fresh ingredients...",
-    "👨‍🍳 Consulting the digital chef...",
-    "🍎 Balancing your nutrients...",
-    "🍳 Seasoning the recipes...",
-    "🍽️ Plating your weekly plan...",
+    "Gathering fresh ingredients...",
+    "Consulting the digital chef...",
+    "Balancing your nutrients...",
+    "Seasoning the recipes...",
+    "Plating your weekly plan...",
   ],
   interval = 2500,
   size = "default",

@@ -1,7 +1,24 @@
 import { useState } from "react";
 import {
-  Smile, Frown, Meh, Zap, Moon, Heart, AlertCircle, Flame,
-  Briefcase, Users, Activity, DollarSign, Bed, Utensils, Dumbbell, Cloud, MessageCircle, MoreHorizontal,
+  Smile,
+  Frown,
+  Meh,
+  Zap,
+  Moon,
+  Heart,
+  AlertCircle,
+  Flame,
+  Angry,
+  Briefcase,
+  Users,
+  Activity,
+  DollarSign,
+  Bed,
+  Utensils,
+  Dumbbell,
+  Cloud,
+  MessageCircle,
+  MoreHorizontal,
   X,
 } from "lucide-react";
 import { useCBTStore } from "@/stores/cbtStore";
@@ -27,7 +44,7 @@ const MOOD_OPTIONS: { value: MoodCategory; label: string; icon: React.ReactNode;
   { value: "stressed", label: "Stressed", icon: <Flame className="w-6 h-6" />, color: "text-red-500 bg-red-50 border-red-200" },
   { value: "anxious", label: "Anxious", icon: <AlertCircle className="w-6 h-6" />, color: "text-purple-500 bg-purple-50 border-purple-200" },
   { value: "sad", label: "Sad", icon: <Frown className="w-6 h-6" />, color: "text-cyan-500 bg-cyan-50 border-cyan-200" },
-  { value: "angry", label: "Angry", icon: <Flame className="w-6 h-6" />, color: "text-rose-500 bg-rose-50 border-rose-200" },
+  { value: "angry", label: "Angry", icon: <Angry className="w-6 h-6" />, color: "text-rose-500 bg-rose-50 border-rose-200" },
 ];
 
 const TRIGGER_OPTIONS: { value: MoodTrigger; label: string; icon: React.ReactNode }[] = [
@@ -186,7 +203,7 @@ export function MoodEntryForm({
         <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
           Back
         </Button>
-        <Button onClick={() => setStep(3)} className="flex-1">
+        <Button onClick={() => setStep(3)} className="flex-1 bg-blue-500 text-white  hover:bg-blue-600 hover:text-white">
           Continue
         </Button>
       </div>
@@ -231,7 +248,7 @@ export function MoodEntryForm({
         <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
           Back
         </Button>
-        <Button onClick={handleSubmit} disabled={loading} className="flex-1">
+        <Button onClick={handleSubmit} disabled={loading} className="bg-blue-500 text-white hover:bg-blue-600 hover:text-white">
           {loading ? "Saving..." : "Log Mood"}
         </Button>
       </div>

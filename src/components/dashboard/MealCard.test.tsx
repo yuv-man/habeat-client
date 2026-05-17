@@ -45,7 +45,7 @@ describe("MealCard", () => {
 
   it("renders meal name correctly", () => {
     render(<MealCard {...defaultProps} />);
-    expect(screen.getByText(mockBreakfast.name)).toBeInTheDocument();
+    expect(screen.getByText("Oatmeal With Berries")).toBeInTheDocument();
   });
 
   it("displays meal time", () => {
@@ -62,25 +62,25 @@ describe("MealCard", () => {
 
   it("renders expand/collapse toggle button", () => {
     render(<MealCard {...defaultProps} />);
-    expect(screen.getByText("Show more")).toBeInTheDocument();
+    // Card auto-expands when mealStatus="current" (default)
+    expect(screen.getByRole("button", { name: "Collapse" })).toBeInTheDocument();
   });
 
   it("expands to show more details when clicked", () => {
-    render(<MealCard {...defaultProps} />);
+    render(<MealCard {...defaultProps} mealStatus="future" />);
 
-    const expandButton = screen.getByText("Show more");
+    const expandButton = screen.getByRole("button", { name: "Expand" });
     fireEvent.click(expandButton);
 
-    expect(screen.getByText("Show less")).toBeInTheDocument();
-    // Should show macros when expanded
+    expect(screen.getByRole("button", { name: "Collapse" })).toBeInTheDocument();
     expect(
       screen.getByText(`Protein: ${mockBreakfast.macros.protein}g`)
     ).toBeInTheDocument();
   });
 
   it("shows mark complete button", () => {
-    render(<MealCard {...defaultProps} />);
-    expect(screen.getByLabelText("Mark as complete")).toBeInTheDocument();
+    render(<MealCard {...defaultProps} mealStatus="future" />);
+    expect(screen.getByRole("button", { name: "Mark as complete" })).toBeInTheDocument();
   });
 
   describe("Snack Card Variant", () => {

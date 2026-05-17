@@ -59,13 +59,13 @@ describe("OAuthCallback", () => {
 
     render(<OAuthCallback />);
 
-    // The loading spinner should be present
-    const spinner = document.querySelector(".animate-spin");
-    expect(spinner).toBeInTheDocument();
+    expect(
+      screen.getByText("Please wait while we complete your sign-in...")
+    ).toBeInTheDocument();
   });
 
   it("navigates to daily-tracker when user has plan", async () => {
-    mockHandleOAuthCallback.mockResolvedValue(undefined);
+    mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
     mockAuthState.user = mockUser;
     mockAuthState.plan = mockPlan;
 
@@ -77,7 +77,7 @@ describe("OAuthCallback", () => {
   });
 
   it("navigates to weekly-overview when user exists but no plan", async () => {
-    mockHandleOAuthCallback.mockResolvedValue(undefined);
+    mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
     mockAuthState.user = mockUser;
     mockAuthState.plan = null;
 
@@ -89,7 +89,7 @@ describe("OAuthCallback", () => {
   });
 
   it("navigates to register when no user", async () => {
-    mockHandleOAuthCallback.mockResolvedValue(undefined);
+    mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
     mockAuthState.user = null;
     mockAuthState.plan = null;
 

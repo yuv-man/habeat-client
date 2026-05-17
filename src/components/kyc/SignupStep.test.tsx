@@ -120,7 +120,7 @@ describe("SignupStep", () => {
 
     expect(screen.getByText("Get Started")).toBeInTheDocument();
     expect(
-      screen.getByText("Create your account to begin")
+      screen.getByText("Habeats: Eat well, live better, skip the guilt.")
     ).toBeInTheDocument();
   });
 

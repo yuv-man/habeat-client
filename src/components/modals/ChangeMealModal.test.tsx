@@ -5,7 +5,6 @@ import ChangeMealModal from "./ChangeMealModal";
 import { mockBreakfast, mockDinner } from "@/test/mocks";
 import { IMeal } from "@/types/interfaces";
 
-// Use vi.hoisted to define mock data before mocks are hoisted
 const { mockFavoriteMeals, mockUser } = vi.hoisted(() => ({
   mockUser: {
     _id: "test_user_123",
@@ -36,24 +35,30 @@ const { mockFavoriteMeals, mockUser } = vi.hoisted(() => ({
   ] as IMeal[],
 }));
 
-// Mock the auth store
+// Mutable auth state for per-test overrides
+const mockFetchFavoriteMeals = vi.fn();
+const mockAuthState = {
+  user: mockUser,
+  plan: { _id: "plan_123" },
+  favoriteMealsData: null as IMeal[] | null,
+  favoriteMealsLoaded: true,
+  fetchFavoriteMeals: mockFetchFavoriteMeals,
+};
+
 vi.mock("@/stores/authStore", () => ({
-  useAuthStore: () => ({
-    user: mockUser,
-    plan: { _id: "plan_123" },
-  }),
+  useAuthStore: () => mockAuthState,
 }));
 
-// Mock the API
+vi.mock("@/stores/cbtStore", () => ({
+  useTodayMoods: vi.fn(() => []),
+}));
+
 vi.mock("@/services/api", () => ({
   userAPI: {
-    getFavoritesByUserId: vi.fn().mockResolvedValue({
-      data: { favoriteMeals: mockFavoriteMeals },
-    }),
     changeMealInPlan: vi.fn().mockResolvedValue({ data: { success: true } }),
     getAIMealSuggestions: vi.fn().mockResolvedValue({
       data: {
-        suggestions: [
+        meals: [
           {
             _id: "ai-1",
             name: "Grilled Chicken Salad",
@@ -79,12 +84,25 @@ vi.mock("@/services/api", () => ({
         ],
       },
     }),
+    getNutritionFromUSDA: vi.fn().mockResolvedValue({ data: null }),
+  },
+  cbtAPI: {
+    getMoodBasedMealRecommendations: vi.fn().mockResolvedValue({ data: null }),
   },
 }));
 
-// Mock the image helper
 vi.mock("@/lib/mealImageHelper", () => ({
   getMealImageVite: () => "mock-image-url.jpg",
+}));
+
+vi.mock("@/components/helper/MealLoader", () => ({
+  default: ({ size }: { size?: string }) => (
+    <div data-testid={`meal-loader${size ? `-${size}` : ""}`} />
+  ),
+}));
+
+vi.mock("@/components/meal/PhotoMealTab", () => ({
+  default: () => <div data-testid="photo-tab">Photo Tab</div>,
 }));
 
 describe("ChangeMealModal", () => {
@@ -100,6 +118,8 @@ describe("ChangeMealModal", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthState.favoriteMealsData = mockFavoriteMeals;
+    mockAuthState.favoriteMealsLoaded = true;
   });
 
   afterEach(() => {
@@ -121,20 +141,18 @@ describe("ChangeMealModal", () => {
       fireEvent.click(screen.getByText("Change Meal"));
 
       expect(
-        screen.getByRole("heading", { name: "Change Meal" })
+        screen.getByRole("heading", { name: "Swap Meal" })
       ).toBeInTheDocument();
     });
 
     it("closes modal when X button is clicked", async () => {
       render(<ChangeMealModal {...defaultProps} />);
 
-      // Open modal
       fireEvent.click(screen.getByText("Change Meal"));
       expect(
-        screen.getByRole("heading", { name: "Change Meal" })
+        screen.getByRole("heading", { name: "Swap Meal" })
       ).toBeInTheDocument();
 
-      // Find and click the close button (X icon)
       const closeButtons = screen.getAllByRole("button");
       const closeButton = closeButtons.find((btn) =>
         btn.querySelector("svg.lucide-x")
@@ -145,7 +163,7 @@ describe("ChangeMealModal", () => {
 
       await waitFor(() => {
         expect(
-          screen.queryByRole("heading", { name: "Change Meal" })
+          screen.queryByRole("heading", { name: "Swap Meal" })
         ).not.toBeInTheDocument();
       });
     });
@@ -154,12 +172,11 @@ describe("ChangeMealModal", () => {
       render(<ChangeMealModal {...defaultProps} />);
 
       fireEvent.click(screen.getByText("Change Meal"));
+      fireEvent.click(screen.getByText("Manual Entry"));
 
-      // Check that the name input has the current meal's name
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       expect(nameInput).toHaveValue(mockBreakfast.name);
 
-      // Check calories
       const caloriesInput = screen.getByDisplayValue(
         mockBreakfast.calories.toString()
       );
@@ -168,37 +185,31 @@ describe("ChangeMealModal", () => {
   });
 
   // ============================================
-  // TAB NAVIGATION TESTS
+  // OPTION SELECTION TESTS
   // ============================================
-  describe("Tab Navigation", () => {
-    it("shows all three tabs", () => {
+  describe("Option Selection", () => {
+    it("shows all option cards", () => {
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
 
-      expect(
-        screen.getByRole("button", { name: "Manual" })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "AI Suggestion" })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Favorites" })
-      ).toBeInTheDocument();
+      expect(screen.getByText("Manual Entry")).toBeInTheDocument();
+      expect(screen.getByText("AI Suggestion")).toBeInTheDocument();
+      expect(screen.getByText("From Favorites")).toBeInTheDocument();
+      expect(screen.getByText("Take Photo")).toBeInTheDocument();
     });
 
-    it("defaults to Manual tab", () => {
+    it("shows option grid by default (no form visible)", () => {
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
 
-      const manualTab = screen.getByRole("button", { name: "Manual" });
-      expect(manualTab).toHaveClass("bg-white");
+      expect(screen.queryByPlaceholderText("E.g., Chicken Salad")).not.toBeInTheDocument();
     });
 
-    it("switches to AI Suggestion tab when clicked", async () => {
+    it("switches to AI Suggestion view when clicked", async () => {
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
 
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      fireEvent.click(screen.getByText("AI Suggestion"));
 
       expect(
         screen.getByPlaceholderText(/High protein, low carb/i)
@@ -206,18 +217,14 @@ describe("ChangeMealModal", () => {
       expect(screen.getByText("Get AI Suggestions")).toBeInTheDocument();
     });
 
-    it("switches to Favorites tab when clicked", async () => {
+    it("switches to Favorites view when clicked", async () => {
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
 
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      fireEvent.click(screen.getByText("From Favorites"));
 
-      // Should show loading or favorites list
       await waitFor(() => {
-        expect(
-          screen.getByText("Favorite Grilled Chicken") ||
-            screen.getByText("No favorite meals yet")
-        ).toBeTruthy();
+        expect(screen.getByText("Favorite Grilled Chicken")).toBeInTheDocument();
       });
     });
   });
@@ -226,9 +233,14 @@ describe("ChangeMealModal", () => {
   // MANUAL TAB TESTS
   // ============================================
   describe("Manual Tab", () => {
+    const openManual = () => {
+      fireEvent.click(screen.getByText("Change Meal"));
+      fireEvent.click(screen.getByText("Manual Entry"));
+    };
+
     it("renders all manual input fields", () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       expect(screen.getByLabelText("Meal Name")).toBeInTheDocument();
       expect(screen.getByLabelText("Calories")).toBeInTheDocument();
@@ -241,7 +253,7 @@ describe("ChangeMealModal", () => {
     it("allows updating meal name", async () => {
       const user = userEvent.setup();
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       await user.clear(nameInput);
@@ -253,7 +265,7 @@ describe("ChangeMealModal", () => {
     it("allows updating calories", async () => {
       const user = userEvent.setup();
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       const caloriesInput = screen.getByDisplayValue(
         mockBreakfast.calories.toString()
@@ -267,7 +279,7 @@ describe("ChangeMealModal", () => {
     it("disables Save button when meal name is empty", async () => {
       const user = userEvent.setup();
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       await user.clear(nameInput);
@@ -278,7 +290,7 @@ describe("ChangeMealModal", () => {
 
     it("enables Save button when meal name is provided", () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       const saveButton = screen.getByRole("button", { name: "Save Meal" });
       expect(saveButton).not.toBeDisabled();
@@ -287,18 +299,15 @@ describe("ChangeMealModal", () => {
     it("calls onMealChange with new meal data when Save is clicked", async () => {
       const user = userEvent.setup();
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
-      // Update name
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       await user.clear(nameInput);
       await user.type(nameInput, "Custom Breakfast");
 
-      // Click save
       const saveButton = screen.getByRole("button", { name: "Save Meal" });
       fireEvent.click(saveButton);
 
-      // Wait for async API call to complete
       await waitFor(() => {
         expect(mockOnMealChange).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -311,14 +320,14 @@ describe("ChangeMealModal", () => {
 
     it("closes modal after saving manual meal", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
+      openManual();
 
       const saveButton = screen.getByRole("button", { name: "Save Meal" });
       fireEvent.click(saveButton);
 
       await waitFor(() => {
         expect(
-          screen.queryByRole("heading", { name: "Change Meal" })
+          screen.queryByRole("heading", { name: "Swap Meal" })
         ).not.toBeInTheDocument();
       });
     });
@@ -328,10 +337,14 @@ describe("ChangeMealModal", () => {
   // AI SUGGESTION TAB TESTS
   // ============================================
   describe("AI Suggestion Tab", () => {
+    const openAI = () => {
+      fireEvent.click(screen.getByText("Change Meal"));
+      fireEvent.click(screen.getByText("AI Suggestion"));
+    };
+
     it("renders AI preference textarea", () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
       expect(
         screen.getByPlaceholderText(/High protein, low carb/i)
@@ -340,8 +353,7 @@ describe("ChangeMealModal", () => {
 
     it("renders Get AI Suggestions button", () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
       expect(screen.getByText("Get AI Suggestions")).toBeInTheDocument();
     });
@@ -349,8 +361,7 @@ describe("ChangeMealModal", () => {
     it("allows entering AI rules", async () => {
       const user = userEvent.setup();
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
       const textarea = screen.getByPlaceholderText(/High protein, low carb/i);
       await user.type(textarea, "Low carb, vegetarian");
@@ -359,27 +370,29 @@ describe("ChangeMealModal", () => {
     });
 
     it("shows loading state when generating suggestions", async () => {
-      vi.useFakeTimers();
+      const { userAPI } = await import("@/services/api");
+      vi.mocked(userAPI.getAIMealSuggestions).mockImplementationOnce(
+        () => new Promise(() => {})
+      );
+
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
-      const suggestButton = screen.getByText("Get AI Suggestions");
-      fireEvent.click(suggestButton);
+      fireEvent.click(screen.getByText("Get AI Suggestions"));
 
-      expect(screen.getByText("Generating...")).toBeInTheDocument();
-
-      vi.useRealTimers();
+      // Loading: button text is gone, loader is shown
+      await waitFor(() => {
+        expect(screen.queryByText("Get AI Suggestions")).not.toBeInTheDocument();
+        expect(screen.getByTestId("meal-loader-small")).toBeInTheDocument();
+      });
     });
 
     it("displays AI suggestions after loading", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
       fireEvent.click(screen.getByText("Get AI Suggestions"));
 
-      // Wait for AI suggestions to load
       await waitFor(() => {
         expect(screen.getByText("Suggested meals:")).toBeInTheDocument();
         expect(screen.getByText("Grilled Chicken Salad")).toBeInTheDocument();
@@ -389,19 +402,16 @@ describe("ChangeMealModal", () => {
 
     it("selects AI suggestion when clicked", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      openAI();
 
       fireEvent.click(screen.getByText("Get AI Suggestions"));
 
-      // Wait for AI suggestions to load
       await waitFor(() => {
         expect(screen.getByText("Grilled Chicken Salad")).toBeInTheDocument();
       });
 
       fireEvent.click(screen.getByText("Grilled Chicken Salad"));
 
-      // Wait for async API call to complete
       await waitFor(() => {
         expect(mockOnMealChange).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -417,35 +427,37 @@ describe("ChangeMealModal", () => {
   // FAVORITES TAB TESTS
   // ============================================
   describe("Favorites Tab", () => {
-    it("fetches favorite meals when tab is opened", async () => {
-      const { userAPI } = await import("@/services/api");
-      render(<ChangeMealModal {...defaultProps} />);
+    const openFavorites = () => {
       fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      fireEvent.click(screen.getByText("From Favorites"));
+    };
+
+    it("fetches favorite meals when tab is opened and not yet loaded", async () => {
+      mockAuthState.favoriteMealsLoaded = false;
+      mockAuthState.favoriteMealsData = null;
+
+      render(<ChangeMealModal {...defaultProps} />);
+      openFavorites();
 
       await waitFor(() => {
-        expect(userAPI.getFavoritesByUserId).toHaveBeenCalledWith(
-          "test_user_123"
-        );
+        expect(mockFetchFavoriteMeals).toHaveBeenCalledWith("test_user_123");
       });
     });
 
     it("shows loading state while fetching favorites", () => {
-      render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      mockAuthState.favoriteMealsLoaded = false;
+      mockAuthState.favoriteMealsData = null;
 
-      // Should show loading state initially
-      expect(screen.getByText("Loading favorites...")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Favorites" })
-      ).toBeInTheDocument();
+      render(<ChangeMealModal {...defaultProps} />);
+      openFavorites();
+
+      expect(screen.queryByText("Favorite Grilled Chicken")).not.toBeInTheDocument();
+      expect(screen.queryByText("No favorite meals yet")).not.toBeInTheDocument();
     });
 
     it("displays favorite meals after loading", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      openFavorites();
 
       await waitFor(() => {
         expect(
@@ -457,8 +469,7 @@ describe("ChangeMealModal", () => {
 
     it("shows meal details in favorites list", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      openFavorites();
 
       await waitFor(() => {
         expect(screen.getByText("400 cal • 35g protein")).toBeInTheDocument();
@@ -468,8 +479,7 @@ describe("ChangeMealModal", () => {
 
     it("selects favorite meal when clicked", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      openFavorites();
 
       await waitFor(() => {
         expect(
@@ -479,7 +489,6 @@ describe("ChangeMealModal", () => {
 
       fireEvent.click(screen.getByText("Favorite Grilled Chicken"));
 
-      // Wait for async API call to complete
       await waitFor(() => {
         expect(mockOnMealChange).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -492,8 +501,7 @@ describe("ChangeMealModal", () => {
 
     it("closes modal after selecting favorite", async () => {
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      openFavorites();
 
       await waitFor(() => {
         expect(
@@ -505,20 +513,17 @@ describe("ChangeMealModal", () => {
 
       await waitFor(() => {
         expect(
-          screen.queryByRole("heading", { name: "Change Meal" })
+          screen.queryByRole("heading", { name: "Swap Meal" })
         ).not.toBeInTheDocument();
       });
     });
 
     it("shows empty state when no favorites", async () => {
-      const { userAPI } = await import("@/services/api");
-      vi.mocked(userAPI.getFavoritesByUserId).mockResolvedValueOnce({
-        data: { favoriteMeals: [] as IMeal[] },
-      } as any);
+      mockAuthState.favoriteMealsData = [];
+      mockAuthState.favoriteMealsLoaded = true;
 
       render(<ChangeMealModal {...defaultProps} />);
-      fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      openFavorites();
 
       await waitFor(() => {
         expect(screen.getByText("No favorite meals yet")).toBeInTheDocument();
@@ -543,8 +548,8 @@ describe("ChangeMealModal", () => {
 
       render(<ChangeMealModal {...propsWithoutMeal} />);
       fireEvent.click(screen.getByText("Add Meal"));
+      fireEvent.click(screen.getByText("Manual Entry"));
 
-      // Should have empty/default values
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       expect(nameInput).toHaveValue("");
     });
@@ -558,6 +563,7 @@ describe("ChangeMealModal", () => {
 
       render(<ChangeMealModal {...dinnerProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
+      fireEvent.click(screen.getByText("Manual Entry"));
 
       const nameInput = screen.getByPlaceholderText("E.g., Chicken Salad");
       expect(nameInput).toHaveValue(mockDinner.name);
@@ -566,11 +572,11 @@ describe("ChangeMealModal", () => {
     it("resets state when modal is reopened", async () => {
       render(<ChangeMealModal {...defaultProps} />);
 
-      // Open and modify
+      // Open and navigate to AI tab
       fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "AI Suggestion" }));
+      fireEvent.click(screen.getByText("AI Suggestion"));
 
-      // Close
+      // Close modal
       const closeButtons = screen.getAllByRole("button");
       const closeButton = closeButtons.find((btn) =>
         btn.querySelector("svg.lucide-x")
@@ -581,27 +587,25 @@ describe("ChangeMealModal", () => {
 
       await waitFor(() => {
         expect(
-          screen.queryByRole("heading", { name: "Change Meal" })
+          screen.queryByRole("heading", { name: "Swap Meal" })
         ).not.toBeInTheDocument();
       });
 
-      // Reopen
+      // Reopen — should be back to option grid, not AI tab
       fireEvent.click(screen.getByText("Change Meal"));
 
-      // Should be back to Manual tab
-      const manualTab = screen.getByRole("button", { name: "Manual" });
-      expect(manualTab).toHaveClass("bg-white");
+      expect(screen.getByText("Manual Entry")).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText(/High protein, low carb/i)).not.toBeInTheDocument();
     });
 
-    it("handles API error gracefully for favorites", async () => {
-      const { userAPI } = await import("@/services/api");
-      vi.mocked(userAPI.getFavoritesByUserId).mockRejectedValueOnce(
-        new Error("Network error")
-      );
+    it("handles error state when favorites cannot be loaded", async () => {
+      // Simulate post-error state: loaded but empty
+      mockAuthState.favoriteMealsData = [];
+      mockAuthState.favoriteMealsLoaded = true;
 
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
-      fireEvent.click(screen.getByRole("button", { name: "Favorites" }));
+      fireEvent.click(screen.getByText("From Favorites"));
 
       await waitFor(() => {
         expect(screen.getByText("No favorite meals yet")).toBeInTheDocument();
@@ -616,6 +620,7 @@ describe("ChangeMealModal", () => {
     it("has accessible labels for all inputs", () => {
       render(<ChangeMealModal {...defaultProps} />);
       fireEvent.click(screen.getByText("Change Meal"));
+      fireEvent.click(screen.getByText("Manual Entry"));
 
       expect(screen.getByLabelText("Meal Name")).toBeInTheDocument();
       expect(screen.getByLabelText("Calories")).toBeInTheDocument();
@@ -630,7 +635,7 @@ describe("ChangeMealModal", () => {
       fireEvent.click(screen.getByText("Change Meal"));
 
       expect(
-        screen.getByRole("heading", { name: "Change Meal" })
+        screen.getByRole("heading", { name: "Swap Meal" })
       ).toBeInTheDocument();
     });
   });

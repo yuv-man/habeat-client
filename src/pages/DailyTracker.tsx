@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/authStore";
 import DailyMealScreen from "@/components/dashboard/DailyMealScreen";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
+import WatchStatusBadge from "@/components/watch/WatchStatusBadge";
 
 const DailyTracker = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const DailyTracker = () => {
 
   return (
     <DashboardLayout currentView="daily">
+      <WatchStatusBadge />
       <DailyMealScreen />
     </DashboardLayout>
   );

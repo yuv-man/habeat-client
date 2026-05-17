@@ -8,6 +8,8 @@ import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { clearExpiredCacheSync } from "@/lib/cache";
 import BackNavigationHandler from "@/components/navigation/BackNavigationHandler";
+import WatchPermissionModal from "@/components/watch/WatchPermissionModal";
+import { useWatchStore } from "@/stores/watchStore";
 
 // Eagerly loaded pages (critical path)
 import Index from "./pages/Index";
@@ -46,6 +48,7 @@ const App = () => {
   // Clear expired cache on app start for better performance
   useEffect(() => {
     clearExpiredCacheSync();
+    useWatchStore.getState().initialize();
   }, []);
 
   return (
@@ -54,6 +57,7 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <WatchPermissionModal />
           <BrowserRouter>
             <BackNavigationHandler />
             <Suspense fallback={<MealLoader />}>

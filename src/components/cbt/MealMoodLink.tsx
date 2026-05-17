@@ -5,6 +5,8 @@ import { MoodLevel, MoodCategory, IMealMoodCorrelation, IMoodEntry } from "@/typ
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { MOOD_IMAGES } from "./MoodTracker";
+import { useWatchStore } from "@/stores/watchStore";
+import { WatchSnapshot } from "@/services/watch/types";
 
 interface MealMoodLinkProps {
   mealId: string;
@@ -36,7 +38,8 @@ const EMOTIONAL_CATEGORIES = ["stressed", "anxious", "sad", "angry"];
 function calcClientScore(
   moodCategory: MoodCategory | null,
   hungerLevel: MoodLevel | null,
-  mealType: string
+  mealType: string,
+  snapshot: WatchSnapshot | null = null
 ): number {
   let score = 0;
   if (hungerLevel === 1) score += 0.40;
@@ -49,6 +52,23 @@ function calcClientScore(
 
   const hour = new Date().getHours();
   if (mealType === "snacks" && hour >= 21) score += 0.10;
+
+  if (snapshot) {
+    if (snapshot.stressLevel === 'high') score += 0.20;
+    else if (snapshot.stressLevel === 'moderate') score += 0.10;
+
+    if (snapshot.heartRate !== undefined) {
+      const elevated =
+        snapshot.heartRate > 100 ||
+        (snapshot.restingHeartRate !== undefined && snapshot.heartRate > snapshot.restingHeartRate * 1.15);
+      if (elevated) score += 0.10;
+    }
+
+    if (snapshot.sleepQuality === 'poor') score += 0.10;
+    else if (snapshot.sleepQuality === 'fair') score += 0.05;
+
+    if (snapshot.stepCount !== undefined && snapshot.stepCount < 3000) score += 0.05;
+  }
 
   return Math.min(1.0, score);
 }
@@ -83,6 +103,7 @@ export function MealMoodLink({
   onMoodLinked,
 }: MealMoodLinkProps) {
   const { linkMoodToMeal, loading } = useCBTStore();
+  const watchSnapshot = useWatchStore((s) => s.snapshot);
   const [isExpanded, setIsExpanded] = useState(false);
   const [phase, setPhase] = useState<"before" | "after">("before");
   const [moodBefore, setMoodBefore] = useState<MoodCategory | null>(null);
@@ -97,7 +118,7 @@ export function MealMoodLink({
     !nudgeDismissed &&
     phase === "before" &&
     (moodBefore !== null || hungerLevel !== null) &&
-    calcClientScore(moodBefore, hungerLevel, mealType) > 0.6;
+    calcClientScore(moodBefore, hungerLevel, mealType, watchSnapshot) > 0.6;
 
   const handleLink = async () => {
     const now = new Date();

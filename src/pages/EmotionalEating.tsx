@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { EmotionalEatingInsights } from "@/components/cbt/EmotionalEatingInsights";
 import { CBTExercises } from "@/components/cbt/CBTExercises";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import WatchDataCard from "@/components/watch/WatchDataCard";
 
 const EmotionalEating = () => {
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ const EmotionalEating = () => {
       <div className="max-w-lg mx-auto px-4 py-6">
         {activeTab === "insights" && (
           <div className="space-y-4">
+            <WatchDataCard />
             {/* Period selector */}
             <div className="flex gap-2">
               <button

@@ -60,6 +60,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Habeat needs camera access to take photos of your meals for nutrition tracking.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Habeat reads heart rate, HRV, sleep, and activity data to understand how your body state relates to your eating patterns.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Habeat does not write to Apple Health.</string>
 	<key>GIDClientID</key>
 	<string>841911005748-ml037ut5apt36r01gciqm1b208a9dh7v.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>

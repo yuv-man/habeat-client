@@ -156,6 +156,16 @@ export function MealMoodLink({
       wasEmotionalEating: isEmotionalEating,
       hungerLevelBefore: hungerLevel || undefined,
       satisfactionAfter: satisfaction || undefined,
+      biometrics: watchSnapshot
+        ? {
+            heartRate: watchSnapshot.heartRate,
+            restingHeartRate: watchSnapshot.restingHeartRate,
+            stressLevel: watchSnapshot.stressLevel,
+            sleepHours: watchSnapshot.sleepHours,
+            sleepQuality: watchSnapshot.sleepQuality,
+            stepCount: watchSnapshot.stepCount,
+          }
+        : undefined,
     };
 
     await linkMoodToMeal(correlation);

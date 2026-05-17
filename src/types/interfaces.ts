@@ -859,6 +859,15 @@ export interface ICBTExerciseCompletion {
 }
 
 // Meal-Mood correlation types
+export interface IBiometricSnapshot {
+  heartRate?: number;
+  restingHeartRate?: number;
+  stressLevel?: 'low' | 'moderate' | 'high';
+  sleepHours?: number;
+  sleepQuality?: 'poor' | 'fair' | 'good';
+  stepCount?: number;
+}
+
 export interface IMealMoodCorrelation {
   _id?: string;
   userId: string;
@@ -872,6 +881,7 @@ export interface IMealMoodCorrelation {
   hungerLevelBefore?: MoodLevel; // 1=not hungry, 5=very hungry
   satisfactionAfter?: MoodLevel;
   notes?: string;
+  biometrics?: IBiometricSnapshot;
   createdAt?: string;
 }
 

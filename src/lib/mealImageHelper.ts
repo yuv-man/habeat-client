@@ -133,6 +133,8 @@ const availableImages = [
   "philly-cheese-steak",
   "beef-steak-in-baguette",
   "japanese-katsu-chicken-bowl",
+  "japanese-gyoza",
+  "salmon-avocado-toast"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -251,6 +253,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "scrambled-eggs-with-spinach",
     "veggie-omelette",
     "avocado-toast-with-poached-egg",
+    "salmon-avocado-toast",
   ],
   eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
   scrambled: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
@@ -280,11 +283,13 @@ const keywordMappings: { [key: string]: string[] } = {
     "scrambled-eggs-and-toast",
     "peanut-butter-toast-with-banana",
     "avocado-toast-with-poached-egg",
+    "salmon-avocado-toast",
   ],
   avocado: [
     "avocado-toast-with-poached-egg",
     "quinoa-salad-with-avocado",
     "avocado-chicken-wrap",
+    "salmon-avocado-toast",
   ],
 
   // Pasta
@@ -364,7 +369,7 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   ramen: ["ramen-bowl"],
   sushi: ["sushi-bowl", "sushi-rolls"],
-  dumplings: ["chinese-dumplings"],
+  dumplings: ["chinese-dumplings", "japanese-gyoza"],
   spring: ["vietnamese-spring-rolls"],
 
   // Mexican

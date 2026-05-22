@@ -9,6 +9,7 @@ export interface IUser {
   weight: number;
   gender: string;
   age: number;
+  role?: "user" | "admin";
   subscriptionTier: "free" | "plus" | "premium";
   path: string;
   bmr: number;

@@ -1,7 +1,11 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
-import { hasFeatureAccess, type FeatureKey } from "@/lib/subscription";
+import { type FeatureKey } from "@/lib/subscription";
+import {
+  hasFeatureAccessForUser,
+  requireFeatureOrRedirect,
+} from "@/lib/subscriptionAccess";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 
@@ -24,8 +28,7 @@ export function FeatureGate({
 }: FeatureGateProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const userTier = user?.subscriptionTier || "free";
-  const hasAccess = hasFeatureAccess(userTier, feature);
+  const hasAccess = hasFeatureAccessForUser(user, feature);
 
   if (hasAccess) {
     return <>{children}</>;
@@ -39,7 +42,7 @@ export function FeatureGate({
     return (
       <Button
         variant="outline"
-        onClick={() => navigate("/subscription")}
+        onClick={() => requireFeatureOrRedirect(user, feature, navigate)}
         className="w-full"
       >
         <Lock className="mr-2 h-4 w-4" />
@@ -81,8 +84,7 @@ export function FeatureButton({
 }: FeatureButtonProps) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const userTier = user?.subscriptionTier || "free";
-  const hasAccess = hasFeatureAccess(userTier, feature);
+  const hasAccess = hasFeatureAccessForUser(user, feature);
 
   if (!hasAccess) {
     return (
@@ -90,7 +92,7 @@ export function FeatureButton({
         variant="outline"
         size={size}
         className={className}
-        onClick={() => navigate("/subscription")}
+        onClick={() => requireFeatureOrRedirect(user, feature, navigate)}
       >
         <Lock className="mr-2 h-4 w-4" />
         Upgrade to unlock
@@ -122,8 +124,7 @@ interface FeatureCheckProps {
  */
 export function FeatureCheck({ feature, children }: FeatureCheckProps) {
   const { user } = useAuthStore();
-  const userTier = user?.subscriptionTier || "free";
-  const hasAccess = hasFeatureAccess(userTier, feature);
+  const hasAccess = hasFeatureAccessForUser(user, feature);
 
   return <>{children(hasAccess)}</>;
 }

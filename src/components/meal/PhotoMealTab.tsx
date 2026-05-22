@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { Camera, RefreshCw, Check, Edit2, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Camera, RefreshCw, Check, Edit2, AlertCircle, Lock } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { userAPI, RecognizedMeal, USDANutrition } from "@/services/api";
 import { takePhoto } from "@/services/cameraService";
 import MealLoader from "@/components/helper/MealLoader";
+import { useAuthStore } from "@/stores/authStore";
+import { Button } from "@/components/ui/button";
+import {
+  hasFeatureAccessForUser,
+  handleSubscriptionApiError,
+  requireFeatureOrRedirect,
+} from "@/lib/subscriptionAccess";
 
 interface PhotoMealTabProps {
   mealType: string;
@@ -25,6 +33,8 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
   onMealSelected,
   isSaving,
 }) => {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [state, setState] = useState<PhotoState>("idle");
   const [photoBase64, setPhotoBase64] = useState<string>("");
   const [recognizedMeal, setRecognizedMeal] = useState<RecognizedMeal | null>(null);
@@ -34,6 +44,17 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
   const [useAiEstimates, setUseAiEstimates] = useState<boolean>(false);
 
   const handleTakePhoto = async () => {
+    if (
+      !requireFeatureOrRedirect(
+        user,
+        "photoRecognition",
+        navigate,
+        "Photo meal recognition"
+      )
+    ) {
+      return;
+    }
+
     setState("capturing");
     setError("");
 
@@ -57,7 +78,10 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
         setState("recognized");
       }
     } catch (err: any) {
-      console.error("Photo capture/recognition error:", err);
+      if (handleSubscriptionApiError(err, navigate)) {
+        setState("idle");
+        return;
+      }
       setState("error");
 
       if (err.message?.toLowerCase().includes("permission")) {
@@ -139,6 +163,23 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
 
     await onMealSelected(newMeal);
   };
+
+  if (!hasFeatureAccessForUser(user, "photoRecognition")) {
+    return (
+      <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
+        <Lock className="w-10 h-10 text-amber-600" />
+        <p className="text-sm text-gray-600 max-w-xs">
+          Photo meal recognition is a Premium feature. Upgrade to snap and log meals from photos.
+        </p>
+        <Button
+          variant="outline"
+          onClick={() => requireFeatureOrRedirect(user, "photoRecognition", navigate, "Photo meal recognition")}
+        >
+          View subscription plans
+        </Button>
+      </div>
+    );
+  }
 
   const handleReset = () => {
     setState("idle");

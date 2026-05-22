@@ -1,5 +1,6 @@
 import { useState, useEffect, ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import {
   X,
   Sparkles,
@@ -9,6 +10,7 @@ import {
   ArrowLeft,
   Edit,
   Brain,
+  Lock,
 } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
@@ -20,6 +22,14 @@ import { formatMealName } from "@/lib/formatters";
 import { toast } from "sonner";
 import MealLoader from "@/components/helper/MealLoader";
 import PhotoMealTab from "@/components/meal/PhotoMealTab";
+import type { FeatureKey } from "@/lib/subscription";
+import {
+  hasFeatureAccessForUser,
+  requireFeatureOrRedirect,
+  handleSubscriptionApiError,
+  getAiMealSuggestionLimit,
+  notifySubscriptionRequired,
+} from "@/lib/subscriptionAccess";
 
 interface ChangeMealModalProps {
   children: ReactNode;
@@ -42,6 +52,7 @@ const ChangeMealModal = ({
   onMealChange,
   quickMode = false,
 }: ChangeMealModalProps) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(null);
   const [showAllOptions, setShowAllOptions] = useState(false);
@@ -93,10 +104,37 @@ const ChangeMealModal = ({
     }
   }, [activeTab, user?._id, favoriteMealsLoaded, fetchFavoritesFromStore]);
 
+  const tabFeatures: Partial<Record<Exclude<TabType, null>, FeatureKey>> = {
+    ai: "aiMealSuggestions",
+    photo: "photoRecognition",
+  };
+
+  const handleSelectTab = (tab: TabType) => {
+    if (!tab) return;
+    const feature = tabFeatures[tab];
+    if (
+      feature &&
+      !requireFeatureOrRedirect(
+        user,
+        feature,
+        navigate,
+        tab === "ai" ? "AI meal suggestions" : "Photo meal recognition"
+      )
+    ) {
+      return;
+    }
+    setActiveTab(tab);
+  };
+
   // Fetch mood-based recommendations when AI tab is opened and user has a mood logged
   useEffect(() => {
     const fetchMoodRecommendations = async () => {
-      if (activeTab === "ai" && latestMood && useMoodAware) {
+      if (
+        activeTab === "ai" &&
+        latestMood &&
+        useMoodAware &&
+        hasFeatureAccessForUser(user, "aiMealSuggestions")
+      ) {
         setIsLoadingMoodRecs(true);
         try {
           const response = await cbtAPI.getMoodBasedMealRecommendations(
@@ -107,7 +145,10 @@ const ChangeMealModal = ({
             setMoodRecommendations(response.data);
           }
         } catch (error) {
-          console.error("Failed to fetch mood recommendations:", error);
+          if (handleSubscriptionApiError(error, navigate)) {
+            return;
+          }
+          toast.error("Could not load mood-based food tips. Try again later.");
         } finally {
           setIsLoadingMoodRecs(false);
         }
@@ -115,7 +156,7 @@ const ChangeMealModal = ({
     };
 
     fetchMoodRecommendations();
-  }, [activeTab, latestMood, useMoodAware]);
+  }, [activeTab, latestMood, useMoodAware, user, navigate]);
 
   const handleOpen = () => {
     setIsOpen(true);
@@ -207,6 +248,16 @@ const ChangeMealModal = ({
       return;
     }
 
+    const suggestionLimit = getAiMealSuggestionLimit(user);
+    if (!suggestionLimit.allowed) {
+      setAiError(suggestionLimit.message || "Upgrade to unlock AI suggestions");
+      notifySubscriptionRequired(
+        suggestionLimit.message || "Upgrade to unlock AI suggestions",
+        navigate
+      );
+      return;
+    }
+
     setIsLoadingAI(true);
     setAiError(null);
     setAiSuggestions([]);
@@ -248,7 +299,13 @@ const ChangeMealModal = ({
       const suggestions = response.data?.meals || [];
       if (suggestions.length === 0) {
         setAiError("No suggestions found. Try different preferences.");
+        toast.message("No AI suggestions matched your criteria. Try adjusting preferences.");
       } else {
+        if (suggestions.length < suggestionLimit.max) {
+          toast.info(
+            `Showing ${suggestions.length} suggestion${suggestions.length === 1 ? "" : "s"} (your plan includes up to ${suggestionLimit.max}).`
+          );
+        }
         const enrichmentResults = await Promise.allSettled(
           suggestions.map((meal) => userAPI.getNutritionFromUSDA(meal.name))
         );
@@ -266,10 +323,14 @@ const ChangeMealModal = ({
         setAiSuggestionSources(sources);
       }
     } catch (err: any) {
-      console.error("AI suggestion error:", err);
+      if (handleSubscriptionApiError(err, navigate)) {
+        setAiError(err.message);
+        return;
+      }
       setAiError(
         err.message || "Failed to get AI suggestions. Please try again.",
       );
+      toast.error(err.message || "Failed to get AI suggestions");
     } finally {
       setIsLoadingAI(false);
     }
@@ -431,7 +492,7 @@ const ChangeMealModal = ({
             {!activeTab && quickMode && !showAllOptions && (
               <div className="p-6 space-y-3">
                 <button
-                  onClick={() => setActiveTab("manual")}
+                  onClick={() => handleSelectTab("manual")}
                   disabled={isSaving}
                   className="w-full p-4 border-2 border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -442,15 +503,32 @@ const ChangeMealModal = ({
                   <p className="text-xs opacity-75">Enter what you ate — nutrition filled in automatically</p>
                 </button>
                 <button
-                  onClick={() => setActiveTab("photo")}
+                  onClick={() => handleSelectTab("photo")}
                   disabled={isSaving}
-                  className="w-full p-4 border-2 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full p-4 border-2 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed ${
+                    hasFeatureAccessForUser(user, "photoRecognition")
+                      ? "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      : "border-gray-200 bg-gray-50 text-gray-500"
+                  }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Camera className="w-5 h-5" />
+                    {hasFeatureAccessForUser(user, "photoRecognition") ? (
+                      <Camera className="w-5 h-5" />
+                    ) : (
+                      <Lock className="w-5 h-5" />
+                    )}
                     <span className="font-semibold text-sm">Take a Photo</span>
+                    {!hasFeatureAccessForUser(user, "photoRecognition") && (
+                      <span className="text-xs font-medium text-amber-700">
+                        Premium
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs opacity-75">Recognize meal from photo</p>
+                  <p className="text-xs opacity-75">
+                    {hasFeatureAccessForUser(user, "photoRecognition")
+                      ? "Recognize meal from photo"
+                      : "Upgrade to recognize meals from photos"}
+                  </p>
                 </button>
               </div>
             )}
@@ -461,6 +539,10 @@ const ChangeMealModal = ({
                 <div className="grid grid-cols-2 gap-3">
                   {swapOptions.map((option) => {
                     const Icon = option.icon;
+                    const feature = tabFeatures[option.id as Exclude<TabType, null>];
+                    const locked = feature
+                      ? !hasFeatureAccessForUser(user, feature)
+                      : false;
                     const colorClasses = {
                       purple:
                         "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
@@ -469,21 +551,36 @@ const ChangeMealModal = ({
                       gray: "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100",
                     };
 
+                    const colors = locked
+                      ? "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                      : colorClasses[option.color as keyof typeof colorClasses];
+
                     return (
                       <button
                         key={option.id}
-                        onClick={() => setActiveTab(option.id)}
+                        onClick={() => handleSelectTab(option.id)}
                         disabled={isSaving}
-                        className={`p-4 border-2 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed ${colorClasses[option.color as keyof typeof colorClasses]}`}
+                        className={`p-4 border-2 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed ${colors}`}
                       >
                         <div className="flex items-center gap-2 mb-2">
-                          <Icon className="w-5 h-5" />
+                          {locked ? (
+                            <Lock className="w-5 h-5" />
+                          ) : (
+                            <Icon className="w-5 h-5" />
+                          )}
                           <span className="font-semibold text-sm">
                             {option.label}
                           </span>
+                          {locked && (
+                            <span className="text-xs font-medium text-amber-700">
+                              {feature === "photoRecognition" ? "Premium" : "Plus"}
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs opacity-75">
-                          {option.description}
+                          {locked
+                            ? `Upgrade to unlock ${option.label.toLowerCase()}`
+                            : option.description}
                         </p>
                       </button>
                     );
@@ -820,9 +917,19 @@ const ChangeMealModal = ({
                       />
                     </div>
 
+                    {hasFeatureAccessForUser(user, "aiMealSuggestions") && (
+                      <p className="text-xs text-purple-600 bg-purple-50 border border-purple-100 rounded-lg px-3 py-2">
+                        {getAiMealSuggestionLimit(user).message}
+                      </p>
+                    )}
+
                     <button
                       onClick={handleAISuggest}
-                      disabled={isLoadingAI || isSaving}
+                      disabled={
+                        isLoadingAI ||
+                        isSaving ||
+                        !hasFeatureAccessForUser(user, "aiMealSuggestions")
+                      }
                       className="w-full py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-semibold rounded-lg transition flex items-center justify-center gap-2"
                     >
                       {isLoadingAI ? (

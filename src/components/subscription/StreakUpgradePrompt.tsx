@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useStreak } from "@/stores/engagementStore";
-import { shouldShowStreakUpgradePrompt } from "@/lib/subscription";
+import { shouldShowStreakUpgradePromptForUser } from "@/lib/subscriptionAccess";
 import {
   Dialog,
   DialogContent,
@@ -21,16 +21,14 @@ export function StreakUpgradePrompt() {
   const currentStreak = useStreak();
   const [isOpen, setIsOpen] = useState(false);
 
-  const userTier = user?.subscriptionTier || "free";
-
   useEffect(() => {
     // Check if we should show the prompt
     const hasSeenPrompt = localStorage.getItem(STREAK_PROMPT_KEY) === "true";
 
-    if (shouldShowStreakUpgradePrompt(userTier, currentStreak, hasSeenPrompt)) {
+    if (shouldShowStreakUpgradePromptForUser(user, currentStreak, hasSeenPrompt)) {
       setIsOpen(true);
     }
-  }, [userTier, currentStreak]);
+  }, [user, currentStreak]);
 
   const handleClose = () => {
     setIsOpen(false);

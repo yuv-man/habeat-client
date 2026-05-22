@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import MealLoader from "@/components/helper/MealLoader";
 import { PLAN_TEMPLATES } from "@/components/helper/planTypes";
 import { useAuthStore } from "@/stores/authStore";
-import { canGenerateNewPlan } from "@/lib/subscription";
+import { canGenerateNewPlanForUser } from "@/lib/subscriptionAccess";
 import { useNavigate } from "react-router-dom";
 
 interface PlanSelectorProps {
@@ -33,11 +33,10 @@ export default function PlanSelector({
   const { user, plan } = useAuthStore();
   const navigate = useNavigate();
 
-  const userTier = user?.subscriptionTier || "free";
   const currentPlanCount = plan ? 1 : 0; // Simplified - you may want to track this in backend
 
   // Check if user can generate a new plan
-  const planCheck = canGenerateNewPlan(userTier, currentPlanCount);
+  const planCheck = canGenerateNewPlanForUser(user, currentPlanCount);
   const isLocked = !isRegeneration && !planCheck.canGenerate;
 
   const handleConfirm = () => {

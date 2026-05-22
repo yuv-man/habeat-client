@@ -10,7 +10,11 @@ export type FeatureKey =
   | "streakContinuation"
   | "blendedPlans"
   | "personalizedPortions"
-  | "weeklyInsights";
+  | "weeklyInsights"
+  | "photoRecognition"
+  | "aiMealSuggestions";
+
+export const AI_MEAL_SUGGESTION_COUNT = 3;
 
 export interface TierDefinition {
   id: SubscriptionTier;
@@ -39,13 +43,19 @@ export const TIERS: TierDefinition[] = [
       "Full weekly planning",
       "Grocery list",
       "Streak continuation",
+      "AI meal suggestions (3 per request)",
     ],
   },
   {
     id: "premium",
     name: "Premium",
     price: 14.99,
-    features: ["Blended plans", "Personalized portions", "Weekly insights"],
+    features: [
+      "Blended plans",
+      "Personalized portions",
+      "Weekly insights",
+      "Photo meal recognition",
+    ],
   },
 ];
 
@@ -60,6 +70,8 @@ const TIER_FEATURES: Record<FeatureKey, SubscriptionTier> = {
   blendedPlans: "premium",
   personalizedPortions: "premium",
   weeklyInsights: "premium",
+  photoRecognition: "premium",
+  aiMealSuggestions: "plus",
 };
 
 const TIER_RANK: Record<SubscriptionTier, number> = {
@@ -67,6 +79,24 @@ const TIER_RANK: Record<SubscriptionTier, number> = {
   plus: 1,
   premium: 2,
 };
+
+export function isAdminUser(
+  user?: { role?: string } | null
+): boolean {
+  return user?.role === "admin";
+}
+
+/**
+ * Admins receive premium-tier access for all feature checks.
+ */
+export function getEffectiveTier(
+  user?: { subscriptionTier?: SubscriptionTier; role?: string } | null
+): SubscriptionTier {
+  if (isAdminUser(user)) {
+    return "premium";
+  }
+  return user?.subscriptionTier || "free";
+}
 
 /**
  * Check if a user's subscription tier grants access to a feature.
@@ -100,56 +130,33 @@ export const FEATURE_DESCRIPTIONS: Record<FeatureKey, string> = {
   blendedPlans: "Create custom blended meal plans",
   personalizedPortions: "Get personalized portion recommendations",
   weeklyInsights: "Receive detailed weekly nutrition insights",
+  photoRecognition: "Recognize meals from photos with AI",
+  aiMealSuggestions:
+    "Get up to 3 AI-powered meal suggestions when swapping meals",
 };
 
-/**
- * Check if user is in development or admin mode (everything unlocked)
- */
-export function isDevOrAdmin(): boolean {
-  // Check if in development mode
-  const isDev =
-    import.meta.env.MODE === "development" ||
-    import.meta.env.VITE_MODE === "development";
-
-  // Check if test frontend mode is enabled
-  const isTestMode = import.meta.env.VITE_TEST_FRONTEND === "true";
-
-  // Check if admin flag is set (you can add admin check from user object here)
-  // const isAdmin = user?.role === "admin"; // Add this when you have admin role
-
-  return isDev || isTestMode;
-}
-
-/**
- * Check if user has access to a feature, considering dev/admin bypass
- */
+/** @deprecated Use hasFeatureAccessForUser from subscriptionAccess.ts */
 export function hasFeatureAccessWithBypass(
   userTier: SubscriptionTier,
-  feature: FeatureKey
+  feature: FeatureKey,
+  user?: { role?: string } | null
 ): boolean {
-  // Dev/Admin bypass - everything is unlocked
-  if (isDevOrAdmin()) {
+  if (isAdminUser(user)) {
     return true;
   }
-
-  // Normal feature access check
   return hasFeatureAccess(userTier, feature);
 }
 
-/**
- * Get count of plans user has generated
- * This should be called with actual plan count from backend
- */
+/** @deprecated Use canGenerateNewPlanForUser from subscriptionAccess.ts */
 export function canGenerateNewPlan(
   userTier: SubscriptionTier,
-  currentPlanCount: number
+  currentPlanCount: number,
+  user?: { role?: string } | null
 ): { canGenerate: boolean; reason?: string; requiresUpgrade: boolean } {
-  // Dev/Admin bypass
-  if (isDevOrAdmin()) {
+  if (isAdminUser(user)) {
     return { canGenerate: true, requiresUpgrade: false };
   }
 
-  // Free users can only have 1 plan
   if (userTier === "free" && currentPlanCount >= 1) {
     return {
       canGenerate: false,
@@ -159,28 +166,18 @@ export function canGenerateNewPlan(
     };
   }
 
-  // Plus and Premium users have unlimited plans
   return { canGenerate: true, requiresUpgrade: false };
 }
 
-/**
- * Check if user should see upgrade prompt after 5-day streak
- */
+/** @deprecated Use shouldShowStreakUpgradePromptForUser from subscriptionAccess.ts */
 export function shouldShowStreakUpgradePrompt(
   userTier: SubscriptionTier,
   currentStreak: number,
-  hasSeenStreakPrompt: boolean
+  hasSeenStreakPrompt: boolean,
+  user?: { role?: string } | null
 ): boolean {
-  // Dev/Admin bypass
-  if (isDevOrAdmin()) {
+  if (isAdminUser(user) || userTier !== "free") {
     return false;
   }
-
-  // Only show for free users
-  if (userTier !== "free") {
-    return false;
-  }
-
-  // Show if streak is 5 or more and hasn't been seen
   return currentStreak >= 5 && !hasSeenStreakPrompt;
 }

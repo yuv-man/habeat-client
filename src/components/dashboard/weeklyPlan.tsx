@@ -33,6 +33,7 @@ import AddSnackModal from "@/components/modals/AddSnackModal";
 import PlanSelector from "./PlanSelector";
 import { formatMealName } from "@/lib/formatters";
 import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 // Components
 const MacroCard = ({
@@ -769,6 +770,9 @@ export default function WeeklyMealPlan() {
       );
       setShowPlanSelector(false);
     } catch (error) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        return;
+      }
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGenerating(false);

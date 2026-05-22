@@ -18,6 +18,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
 import { GOAL_TYPES } from "@/lib/goalTypes";
 import type { Milestone, Goal } from "@/components/goals/Goals";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 interface MilestoneInput {
   id: string;
@@ -154,6 +155,9 @@ const CreateGoalPage = () => {
         });
       }
     } catch (error) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        return;
+      }
       console.error("Failed to generate goal:", error);
       // Generate fallback goal
       const fallbackMilestones = [

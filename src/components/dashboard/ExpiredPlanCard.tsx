@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarDays, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/authStore";
 import PlanSelector from "./PlanSelector";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 interface ExpiredPlanCardProps {
   expiredDate?: string | null;
@@ -13,6 +15,7 @@ export function ExpiredPlanCard({
   expiredDate,
   className,
 }: ExpiredPlanCardProps) {
+  const navigate = useNavigate();
   const { user, generateMealPlan } = useAuthStore();
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,6 +36,9 @@ export function ExpiredPlanCard({
       );
       setShowPlanSelector(false);
     } catch (error) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        return;
+      }
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGenerating(false);

@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import PlanSelector from "@/components/dashboard/PlanSelector";
 import targetImg from "@/assets/images/goals.webp";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 export interface Milestone {
   id: string;
@@ -131,6 +132,9 @@ const Goals = ({
       );
       setShowPlanSelector(false);
     } catch (error) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        return;
+      }
       console.error("Failed to generate meal plan:", error);
       toast({
         title: "Error",

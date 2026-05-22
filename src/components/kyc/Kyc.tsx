@@ -10,6 +10,7 @@ import FitnessStep from "./FitnessStep";
 import PreferencesStep from "./PreferencesStep";
 import CompleteStep from "./CompleteStep";
 import { AuthData, KYCData, CustomInputs } from "./types";
+import type { IUser } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI } from "@/services/api";
 import {
@@ -17,6 +18,7 @@ import {
   calculateTDEE,
   calculateIdealWeight,
 } from "@/lib/calculations";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 const STORAGE_KEYS = {
   AUTH_DATA: "habeat_auth_data",
@@ -24,6 +26,9 @@ const STORAGE_KEYS = {
   CUSTOM_INPUTS: "habeat_custom_inputs",
   CURRENT_STEP: "habeat_current_step",
 };
+
+const getErrorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
 
 export default function KYCFlow() {
   const navigate = useNavigate();
@@ -163,11 +168,11 @@ export default function KYCFlow() {
       // Create the account immediately with just name/email/password
       await authStore.signup(authData.email, authData.password, {
         name: authData.name,
-      } as any);
+      } as IUser);
       setAuthData((prev) => ({ ...prev, authMethod: "email" }));
       setStep("diet");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Failed to sign up. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -184,8 +189,8 @@ export default function KYCFlow() {
       // Use backend OAuth flow - this will redirect to Google
       await authStore.oauthSignup("google");
       // Note: The redirect happens in oauthSignup, so code after this won't execute
-    } catch (err: any) {
-      setError(err.message || "Google signup failed. Please try again.");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, "Google signup failed. Please try again."));
       setLoading(false);
     }
   };
@@ -260,7 +265,7 @@ export default function KYCFlow() {
       };
 
       // Prepare user data for signup
-      const userData: any = {
+      const userData: IUser = {
         name: authData.name,
         email: authData.email,
         password: authData.password,
@@ -337,9 +342,13 @@ export default function KYCFlow() {
 
       console.log("Signup successful, setting step to complete");
       setStep("complete");
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (handleSubscriptionApiError(err, navigate)) {
+        setError("");
+        return;
+      }
       console.error("Signup error:", err);
-      setError(err.message || "Failed to complete registration");
+      setError(getErrorMessage(err, "Failed to complete registration"));
     } finally {
       setLoading(false);
     }

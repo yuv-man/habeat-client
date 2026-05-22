@@ -25,7 +25,7 @@ export function hasFeatureAccessForUser(
 }
 
 export function isSubscriptionApiError(message: string): boolean {
-  return /subscription|upgrade your plan/i.test(message);
+  return /subscription|upgrade your plan|plan limit|limit reached|reached (?:your|the) .*limit|free users can only/i.test(message);
 }
 
 export function notifySubscriptionRequired(

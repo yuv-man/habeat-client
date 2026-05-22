@@ -28,6 +28,9 @@ type PhotoState =
   | "reviewing"
   | "error";
 
+const getErrorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
+
 const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
   mealType,
   onMealSelected,
@@ -77,19 +80,23 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
         setEditedName(result.mealName);
         setState("recognized");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (handleSubscriptionApiError(err, navigate)) {
         setState("idle");
         return;
       }
       setState("error");
+      const errorMessage = getErrorMessage(
+        err,
+        "Failed to capture or analyze photo. Please try again."
+      );
 
-      if (err.message?.toLowerCase().includes("permission")) {
+      if (errorMessage.toLowerCase().includes("permission")) {
         setError("Camera permission denied. Please enable camera access in your device settings.");
-      } else if (err.message?.toLowerCase().includes("cancel")) {
+      } else if (errorMessage.toLowerCase().includes("cancel")) {
         setState("idle");
       } else {
-        setError(err.message || "Failed to capture or analyze photo. Please try again.");
+        setError(errorMessage);
       }
     }
   };
@@ -120,9 +127,9 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
           setState("recognized");
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("USDA nutrition error:", err);
-      setError(err.message || "Failed to get nutrition data.");
+      setError(getErrorMessage(err, "Failed to get nutrition data."));
       setState("recognized");
     }
   };

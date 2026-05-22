@@ -10,6 +10,7 @@ import { ChatPanel } from "@/components/chat";
 import PlanSelector from "@/components/dashboard/PlanSelector";
 import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradePrompt";
 import { MoodCheckInPrompt } from "@/components/cbt";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -83,6 +84,9 @@ const DashboardLayout = ({
       );
       setShowPlanSelector(false);
     } catch (error) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        return;
+      }
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGeneratingPlan(false);

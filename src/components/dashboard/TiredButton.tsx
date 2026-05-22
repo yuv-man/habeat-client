@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
@@ -7,6 +8,7 @@ import { userAPI } from "@/services/api";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
 import Fatigue from "@/assets/quick_food.webp";
+import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 interface TiredButtonProps {
   meal: IMeal;
@@ -23,6 +25,7 @@ const TiredButton = ({
   onMealChange,
   className = "",
 }: TiredButtonProps) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const { user, plan } = useAuthStore();
 
@@ -68,7 +71,11 @@ const TiredButton = ({
       } else {
         throw new Error("Failed to get rescue meal");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      if (handleSubscriptionApiError(error, navigate)) {
+        toast.dismiss(toastId);
+        return;
+      }
       console.error("Rescue meal error:", error);
       toast.error("Couldn't find a quick meal", {
         id: toastId,

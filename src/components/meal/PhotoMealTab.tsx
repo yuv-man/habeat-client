@@ -116,7 +116,7 @@ const PhotoMealTab: React.FC<PhotoMealTabProps> = ({
           setError("No USDA data found. You can use AI estimates instead.");
           setState("recognized");
         } else {
-          setError(response.message || "No nutrition data found. Try a different meal name.");
+          setError("No nutrition data found. Try a different meal name.");
           setState("recognized");
         }
       }

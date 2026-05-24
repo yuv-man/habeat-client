@@ -655,6 +655,26 @@ const Settings = () => {
             </div>
           </div>
 
+          {/* Sensory & Routine Profile */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">Sensory & Routine Profile</h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {user.sensoryProfile?.enabled
+                    ? 'Profile set up — tap to edit'
+                    : 'Personalise meals based on your sensory preferences'}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/sensory-profile')}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition"
+              >
+                {user.sensoryProfile?.enabled ? 'Edit' : 'Set up'}
+              </button>
+            </div>
+          </div>
+
           {/* Save Buttons - Now before logout */}
           <div className="flex justify-end gap-2 pt-1">
             <Button

@@ -1,3 +1,19 @@
+export type TextureKey = 'mushy' | 'crunchy' | 'chewy' | 'slimy' | 'grainy' | 'gooey'
+export type SmellKey = 'pungent' | 'fermented' | 'spicy' | 'fishy'
+
+export interface ISensoryProfile {
+  enabled: boolean
+  safeFoods: string[]
+  avoidedFoods: string[]
+  avoidedTextures: TextureKey[]
+  avoidedSmells: SmellKey[]
+  temperaturePreference: 'warm' | 'cold' | 'room_temp' | 'any'
+  repetitionMode: 'low' | 'medium' | 'high'
+  foodChaining: boolean
+  routineLock: boolean
+  interoceptionCheckIns: boolean
+}
+
 export interface IUser {
   _id?: string;
   name: string;
@@ -23,6 +39,7 @@ export interface IUser {
   profilePicture?: string; // Base64 encoded profile picture or URL
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
+  sensoryProfile?: ISensoryProfile | null;
 }
 
 export interface IMeal {

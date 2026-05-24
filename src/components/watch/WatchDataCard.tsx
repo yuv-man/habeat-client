@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useWatchStore } from '@/stores/watchStore'
 import { WatchSnapshot } from '@/services/watch/types'
 import { cn } from '@/lib/utils'
+import { Activity } from 'lucide-react'
 
 function StatCell({ label, value, flagged }: { label: string; value: string; flagged?: 'amber' | 'red' }) {
   return (
@@ -48,7 +49,31 @@ function formatSteps(n: number): string {
 }
 
 export default function WatchDataCard() {
-  const { snapshot, status } = useWatchStore()
+  const { snapshot, status, grant } = useWatchStore()
+
+  if (status === 'unavailable') return null
+
+  if (status === 'denied') {
+    return (
+      <Card className="mb-4">
+        <CardContent className="pt-4 pb-3 flex items-center gap-3">
+          <Activity className="w-5 h-5 text-muted-foreground shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Health data not connected</p>
+            <p className="text-xs text-muted-foreground">
+              Heart rate, sleep &amp; activity improve your mindful eating score
+            </p>
+          </div>
+          <button
+            onClick={grant}
+            className="text-xs text-primary font-semibold shrink-0"
+          >
+            Connect
+          </button>
+        </CardContent>
+      </Card>
+    )
+  }
 
   if (status !== 'granted' || !snapshot) return null
 

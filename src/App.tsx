@@ -37,6 +37,8 @@ const SubscriptionCancel = lazy(() => import("./pages/SubscriptionCancel"));
 const Mindfulness = lazy(() => import("./pages/Mindfulness"));
 const MoodHistory = lazy(() => import("./pages/MoodHistory"));
 const EmotionalEating = lazy(() => import("./pages/EmotionalEating"));
+// Sensory & Routine Profile
+const SensoryProfile = lazy(() => import("./pages/SensoryProfile"));
 // Social pages
 const Social = lazy(() => import("./pages/Social"));
 const Discover = lazy(() => import("./pages/Discover"));
@@ -96,6 +98,8 @@ const App = () => {
                 <Route path="/mindfulness" element={<Mindfulness />} />
                 <Route path="/mindfulness/mood" element={<MoodHistory />} />
                 <Route path="/mindfulness/emotional-eating" element={<EmotionalEating />} />
+                {/* Sensory & Routine Profile */}
+                <Route path="/sensory-profile" element={<SensoryProfile />} />
                 {/* Social/Community Routes */}
                 <Route path="/social" element={<Social />} />
                 <Route path="/community" element={<Social />} />

@@ -88,6 +88,7 @@ export function EmotionalEatingInsights({
   const mindfulScore = insight.mindfulEatingScore ?? (100 - Math.round(insight.emotionalEatingPercentage ?? 0));
   const isHigh = mindfulScore >= 75;
   const isMedium = mindfulScore >= 50;
+  const isLow = mindfulScore < 25;
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -140,6 +141,11 @@ export function EmotionalEatingInsights({
                   <TrendingUp className="w-4 h-4 text-yellow-200" />
                   <span className="text-sm">You're building awareness</span>
                 </>
+              ) : isLow ? (
+                <>
+                  <TrendingDown className="w-4 h-4 text-red-300" />
+                  <span className="text-sm">Many meals linked to emotional triggers</span>
+                </>
               ) : (
                 <>
                   <TrendingDown className="w-4 h-4 text-red-300" />
@@ -147,6 +153,35 @@ export function EmotionalEatingInsights({
                 </>
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Score explanation */}
+      <div className="p-4 rounded-xl bg-white border border-gray-200">
+        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          What this score measures
+        </h4>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-gray-600">
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+            Hunger level before eating
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+            Emotional state &amp; mood
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+            Time of day &amp; meal type
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+            How you felt after eating
+          </div>
+          <div className="flex items-center gap-1.5 col-span-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+            Biometrics — heart rate, sleep &amp; stress (when health data is connected)
           </div>
         </div>
       </div>

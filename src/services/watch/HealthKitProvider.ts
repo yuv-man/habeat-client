@@ -21,8 +21,8 @@ export class HealthKitProvider implements WatchDataProvider {
 
   async requestPermissions(): Promise<boolean> {
     try {
-      await Health.requestHealthPermissions({ permissions: [...PERMISSIONS] })
-      return true
+      const { permissions } = await Health.requestHealthPermissions({ permissions: [...PERMISSIONS] })
+      return PERMISSIONS.every((permission) => permissions[permission])
     } catch {
       return false
     }

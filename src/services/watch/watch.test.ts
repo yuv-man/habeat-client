@@ -1,5 +1,34 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Health } from "@flomentumsolutions/capacitor-health-extended";
+import type { PermissionResponse } from "@flomentumsolutions/capacitor-health-extended";
+import { HealthConnectProvider } from "./HealthConnectProvider";
 import { deriveStressLevel, deriveSleepQuality } from "./types";
+
+vi.mock("@flomentumsolutions/capacitor-health-extended", () => ({
+  Health: {
+    requestHealthPermissions: vi.fn(),
+  },
+}));
+
+const REQUIRED_PERMISSIONS = [
+  "READ_HEART_RATE",
+  "READ_RESTING_HEART_RATE",
+  "READ_HRV",
+  "READ_SLEEP",
+  "READ_STEPS",
+] as const;
+
+function permissionsResponse(granted: boolean): PermissionResponse {
+  return {
+    permissions: Object.fromEntries(
+      REQUIRED_PERMISSIONS.map((permission) => [permission, granted]),
+    ) as PermissionResponse["permissions"],
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("deriveStressLevel", () => {
   it("returns 'high' for HRV below 20ms", () => {
@@ -38,5 +67,21 @@ describe("deriveSleepQuality", () => {
     expect(deriveSleepQuality(7.1)).toBe("good");
     expect(deriveSleepQuality(8)).toBe("good");
     expect(deriveSleepQuality(10)).toBe("good");
+  });
+});
+
+describe("HealthConnectProvider", () => {
+  it("returns granted only when Health Connect grants every requested permission", async () => {
+    vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissionsResponse(true));
+
+    await expect(new HealthConnectProvider().requestPermissions()).resolves.toBe(true);
+  });
+
+  it("returns denied when Health Connect denies any requested permission", async () => {
+    const permissions = permissionsResponse(true);
+    permissions.permissions.READ_SLEEP = false;
+    vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissions);
+
+    await expect(new HealthConnectProvider().requestPermissions()).resolves.toBe(false);
   });
 });

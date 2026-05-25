@@ -22,11 +22,13 @@ import {
   Check,
   Camera,
   User,
+  Activity,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useToast } from "@/components/ui/use-toast";
 import MealLoader from "@/components/helper/MealLoader";
 import { NotificationSettings } from "@/components/settings";
+import { useWatchStore } from "@/stores/watchStore";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -41,6 +43,7 @@ const Settings = () => {
     mealTimes: storeMealTimes,
     setMealTimes: setStoreMealTimes,
   } = useAuthStore();
+  const { status: watchStatus, grant: grantWatch, deny: denyWatch } = useWatchStore();
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -705,6 +708,48 @@ const Settings = () => {
               )}
             </Button>
           </div>
+
+          {/* Health Data */}
+          {watchStatus !== 'unavailable' && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Health Data</h2>
+              <div className="flex items-center gap-3">
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                  watchStatus === 'granted' ? 'bg-green-100' : 'bg-gray-100'
+                }`}>
+                  <Activity className={`w-4 h-4 ${watchStatus === 'granted' ? 'text-green-600' : 'text-gray-400'}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-800">
+                    {watchStatus === 'granted' ? 'Connected' : 'Not connected'}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {watchStatus === 'granted'
+                      ? 'Heart rate, sleep & activity are factored into your insights'
+                      : 'Connect to improve emotional eating insights with biometric signals'}
+                  </p>
+                </div>
+                {watchStatus === 'granted' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={denyWatch}
+                    className="h-8 text-xs shrink-0"
+                  >
+                    Disconnect
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={grantWatch}
+                    className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600"
+                  >
+                    Connect
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Account Section - Now at the end */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">

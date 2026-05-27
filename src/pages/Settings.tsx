@@ -528,6 +528,64 @@ const Settings = () => {
           {/* Notification Settings */}
           <NotificationSettings />
 
+          {/* App Features */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900 px-4 pt-4 pb-3">App Features</h2>
+
+            {/* Health Data */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                watchStatus === 'granted' ? 'bg-green-100' : 'bg-gray-100'
+              }`}>
+                <Activity className={`w-4 h-4 ${watchStatus === 'granted' ? 'text-green-600' : 'text-gray-400'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800">Health Data</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {watchStatus === 'granted'
+                    ? 'Heart rate, sleep & activity connected'
+                    : watchStatus === 'unavailable'
+                    ? 'Available on the mobile app'
+                    : 'Connect to improve eating insights'}
+                </p>
+              </div>
+              {watchStatus === 'granted' ? (
+                <Button variant="outline" size="sm" onClick={denyWatch} className="h-8 text-xs shrink-0">
+                  Disconnect
+                </Button>
+              ) : watchStatus === 'unavailable' ? (
+                <span className="text-xs text-gray-400 shrink-0">Mobile only</span>
+              ) : (
+                <Button size="sm" onClick={grantWatch} className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600">
+                  Connect
+                </Button>
+              )}
+            </div>
+
+            {/* Sensory & Routine Profile */}
+            <div className="flex items-center gap-3 px-4 py-3">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                user.sensoryProfile?.enabled ? 'bg-purple-100' : 'bg-gray-100'
+              }`}>
+                <span className={`text-base ${user.sensoryProfile?.enabled ? '' : 'grayscale opacity-50'}`}>🌿</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-800">Sensory & Routine Profile</p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {user.sensoryProfile?.enabled
+                    ? 'Active — meals are filtered to your preferences'
+                    : 'Personalise meals by texture, routine & safe foods'}
+                </p>
+              </div>
+              <button
+                onClick={() => navigate('/sensory-profile')}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition shrink-0"
+              >
+                {user.sensoryProfile?.enabled ? 'Edit' : 'Set up'}
+              </button>
+            </div>
+          </div>
+
           {/* Preferences Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
@@ -658,26 +716,6 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Sensory & Routine Profile */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-gray-900">Sensory & Routine Profile</h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {user.sensoryProfile?.enabled
-                    ? 'Profile set up — tap to edit'
-                    : 'Personalise meals based on your sensory preferences'}
-                </p>
-              </div>
-              <button
-                onClick={() => navigate('/sensory-profile')}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-green-50 text-green-700 text-xs font-medium hover:bg-green-100 transition"
-              >
-                {user.sensoryProfile?.enabled ? 'Edit' : 'Set up'}
-              </button>
-            </div>
-          </div>
-
           {/* Save Buttons - Now before logout */}
           <div className="flex justify-end gap-2 pt-1">
             <Button
@@ -708,48 +746,6 @@ const Settings = () => {
               )}
             </Button>
           </div>
-
-          {/* Health Data */}
-          {watchStatus !== 'unavailable' && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">Health Data</h2>
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  watchStatus === 'granted' ? 'bg-green-100' : 'bg-gray-100'
-                }`}>
-                  <Activity className={`w-4 h-4 ${watchStatus === 'granted' ? 'text-green-600' : 'text-gray-400'}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">
-                    {watchStatus === 'granted' ? 'Connected' : 'Not connected'}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {watchStatus === 'granted'
-                      ? 'Heart rate, sleep & activity are factored into your insights'
-                      : 'Connect to improve emotional eating insights with biometric signals'}
-                  </p>
-                </div>
-                {watchStatus === 'granted' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={denyWatch}
-                    className="h-8 text-xs shrink-0"
-                  >
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={grantWatch}
-                    className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600"
-                  >
-                    Connect
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Account Section - Now at the end */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">

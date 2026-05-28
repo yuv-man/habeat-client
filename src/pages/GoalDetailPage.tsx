@@ -64,31 +64,24 @@ const GoalDetailPage = () => {
 
   const calculateProgress = (milestones: Milestone[]) => {
     if (!milestones || milestones.length === 0) return 0;
-    const completedCount = milestones.filter((m) => m.completed).length;
-    return Math.round((completedCount / milestones.length) * 100);
+    const completed = milestones.filter((m) => m.completed);
+    if (completed.length === 0) return 0;
+    return Math.max(...completed.map((m) => m.targetValue));
   };
 
   const handleAddMilestone = () => {
     if (!goal || !newMilestone.title.trim()) return;
 
     const currentMilestones = goal.milestones || [];
-    const newMilestoneCount = currentMilestones.length + 1;
 
     const milestone: Milestone = {
       id: `m${Date.now()}`,
       title: newMilestone.title.trim(),
-      targetValue: 0, // Will be recalculated below
+      targetValue: 100,
       completed: false,
     };
 
-    // Recalculate percentages for all milestones to ensure they're sequential
-    // Each milestone represents a step: 1st = 33%, 2nd = 67%, 3rd = 100% (for 3 milestones)
-    const updatedMilestones = [...currentMilestones, milestone].map(
-      (m, index) => ({
-        ...m,
-        targetValue: Math.round(((index + 1) / newMilestoneCount) * 100),
-      })
-    );
+    const updatedMilestones = [...currentMilestones, milestone];
 
     setGoal({ ...goal, milestones: updatedMilestones });
     updateGoal(goal.id, { milestones: updatedMilestones } as any);
@@ -163,21 +156,12 @@ const GoalDetailPage = () => {
     const milestones = goal.milestones || [];
     const updatedMilestones = milestones.filter((m) => m.id !== milestoneId);
 
-    // Recalculate percentages for remaining milestones
-    const recalculatedMilestones = updatedMilestones.map((m, index) => ({
-      ...m,
-      targetValue:
-        updatedMilestones.length > 0
-          ? Math.round(((index + 1) / updatedMilestones.length) * 100)
-          : 0,
-    }));
-
     setGoal({
       ...goal,
-      milestones: recalculatedMilestones,
-      current: calculateProgress(recalculatedMilestones),
+      milestones: updatedMilestones,
+      current: calculateProgress(updatedMilestones),
     });
-    updateGoal(goal.id, { milestones: recalculatedMilestones } as any);
+    updateGoal(goal.id, { milestones: updatedMilestones } as any);
   };
 
   const handleSaveNote = async () => {

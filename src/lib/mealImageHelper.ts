@@ -134,7 +134,11 @@ const availableImages = [
   "beef-steak-in-baguette",
   "japanese-katsu-chicken-bowl",
   "japanese-gyoza",
-  "salmon-and-avocado-toast"
+  "salmon-and-avocado-toast",
+  "fish-buns",
+  "vermicelli-salad",
+  "calzone",
+  "duck-breast-with-mushed-potatoes",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -178,6 +182,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "couscous-salad",
     "quinoa-salad-with-avocado",
     "fruit-salad",
+    "vermicelli-salad",
   ],
   caesar: ["caesar-salad"],
   quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
@@ -228,6 +233,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "grilled-salmon-quinoa-salad-with-avocado",
   ],
   fish: [
+    "fish-buns",
     "grilled-whole-fish",
     "spicy-red-tuna-poke-bowl",
     "fish-tacos",
@@ -246,6 +252,7 @@ const keywordMappings: { [key: string]: string[] } = {
   cod: [
     "baked-cod-with-quinoa",
     "baked-cod-with-sweet-potato-wedges-and-green-beans",
+    "fish-buns",
   ],
   // Eggs
   egg: [
@@ -331,6 +338,7 @@ const keywordMappings: { [key: string]: string[] } = {
   aglio: ["spaghetti-aglio-e-olio"],
   olio: ["spaghetti-aglio-e-olio"],
 
+
   // Rice dishes
   rice: [
     "spicy-red-tuna-poke-bowl",
@@ -344,7 +352,8 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
-  fried: ["chicken-fried-rice"],
+  fried: ["chicken-fried-rice", "fish-buns"],
+  buns: ["fish-buns"],
 
   // Asian dishes
   pad: ["pad-thai", "shrimps-pad-thai"],
@@ -353,6 +362,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "shrimps-pad-thai",
     "thai-green-curry",
     "chicken-pad-see-ew",
+    "vermicelli-salad",
   ],
   noodles: [
     "tofu-and-rice-noodles",
@@ -360,6 +370,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "stirfried-noodles",
     "chicken-pad-see-ew",
     "red-tuna-with-mixed-greens-noodles",
+    "vermicelli-salad",
   ],
   stir: [
     "stirfried-noodles",
@@ -369,7 +380,7 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   ramen: ["ramen-bowl"],
   sushi: ["sushi-bowl", "sushi-rolls"],
-  dumplings: ["chinese-dumplings", "japanese-gyoza"],
+  dumplings: ["chinese-dumplings", "japanese-gyoza", "fish-buns"],
   spring: ["vietnamese-spring-rolls"],
 
   // Mexican
@@ -410,7 +421,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "japanese-katsu-chicken-bowl",
   ],
   ribs: ["spare-ribs"],
-  duck: ["duck-leg-with-mush-potatos"],
+  duck: ["duck-leg-with-mush-potatos", "duck-breast-with-mushed-potatoes"],
   turkey: [
     "turkey-sandwich",
     "turkey-stirfry",
@@ -425,13 +436,15 @@ const keywordMappings: { [key: string]: string[] } = {
     "veggie-omelette",
     "veggie-stir-fry",
     "grilled-vegetable-wrap",
+    "vermicelli-salad",
   ],
-  vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry"],
+  vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry", "vermicelli-salad"],
   falafel: ["falafel", "falafel-and-hummus"],
   tofu: ["tofu-and-rice-noodles"],
 
   // Other dishes
-  pizza: ["pizza"],
+  pizza: ["pizza", "calzone"],
+  calzone: ["calzone"],
   shakshuka: ["shakshuka"],
   shepherds: ["sheperds-pie"],
   pie: ["sheperds-pie"],
@@ -446,6 +459,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "steak-with-mashed-potatoes",
     "duck-leg-with-mush-potatos",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
+    "duck-breast-with-mushed-potatoes",
   ],
   fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries"],
 

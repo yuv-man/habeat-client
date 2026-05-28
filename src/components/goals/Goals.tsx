@@ -185,8 +185,9 @@ const Goals = ({
 
   const calculateProgressFromMilestones = (milestones?: Milestone[]) => {
     if (!milestones || milestones.length === 0) return 0;
-    const completedCount = milestones.filter((m) => m.completed).length;
-    return Math.round((completedCount / milestones.length) * 100);
+    const completed = milestones.filter((m) => m.completed);
+    if (completed.length === 0) return 0;
+    return Math.max(...completed.map((m) => m.targetValue));
   };
 
   const getProgressPercentage = (goal: Goal) => {

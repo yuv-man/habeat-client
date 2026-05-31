@@ -41,6 +41,26 @@ const mealGenerationClient = axios.create({
   timeout: config.mealGenerationTimeout,
 });
 
+// Redirect to login when a stored token is rejected (expired/invalid).
+// Compare the token used in the failed request against the current stored token —
+// if they differ, a fresh login already happened while the request was in-flight,
+// so we must NOT redirect (that would log the user out of a brand-new session).
+const onAuthError = (error: unknown) => {
+  if (axios.isAxiosError(error) && error.response?.status === 401) {
+    const storedToken = localStorage.getItem("token");
+    const authHeader = error.config?.headers?.Authorization as string | undefined;
+    const requestToken = authHeader?.replace("Bearer ", "");
+    if (storedToken && requestToken && storedToken === requestToken) {
+      localStorage.removeItem("token");
+      window.location.href = "/register";
+    }
+  }
+  return Promise.reject(error);
+};
+
+userClient.interceptors.response.use((r) => r, onAuthError);
+mealGenerationClient.interceptors.response.use((r) => r, onAuthError);
+
 // Helper function to get token from localStorage
 const getAuthToken = (): string | null => {
   return localStorage.getItem("token");
@@ -322,20 +342,13 @@ const mobileGoogleAuth = async (
 // Web Google Auth - sends idToken directly (for web browser)
 const webGoogleAuth = async (
   action: "signin" | "signup",
-  userId: string,
+  _userId: string,
   idToken: string
 ): Promise<{ data: { token: string; user: IUser; plan?: IPlan } }> => {
   try {
-    // For signup, userId is not required and should not be sent
-    // For signin, userId is optional (backend handles both cases)
     const payload: { accessToken: string; userId?: string; userData?: any } = {
       accessToken: idToken,
     };
-
-    // Only include userId if provided and it's signin
-    if (userId && action === "signin") {
-      payload.userId = userId;
-    }
 
     console.log(
       `[webGoogleAuth] Calling /auth/google/web/${action} with payload:`,

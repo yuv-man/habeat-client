@@ -44,13 +44,37 @@ const OAuthCallback = () => {
           throw new Error("No OAuth provider specified");
         }
 
-        // Handle the OAuth callback with action
-        const { isNewUser } = await handleOAuthCallback(
-          provider,
-          action,
-          userId || undefined,
-          accessToken || undefined
-        );
+        // Handle the OAuth callback with action.
+        // If signup fails because the account already exists, retry as signin.
+        let isNewUser = false;
+        try {
+          ({ isNewUser } = await handleOAuthCallback(
+            provider,
+            action,
+            userId || undefined,
+            accessToken || undefined
+          ));
+        } catch (callbackError) {
+          const msg =
+            callbackError instanceof Error
+              ? callbackError.message.toLowerCase()
+              : "";
+          const isAlreadyExists =
+            msg.includes("already") ||
+            msg.includes("exists") ||
+            msg.includes("registered") ||
+            msg.includes("taken");
+          if (action === "signup" && isAlreadyExists) {
+            ({ isNewUser } = await handleOAuthCallback(
+              provider,
+              "signin",
+              userId || undefined,
+              accessToken || undefined
+            ));
+          } else {
+            throw callbackError;
+          }
+        }
 
         // Clean up any pending KYC state left before the OAuth redirect
         localStorage.removeItem(KYC_STORAGE_KEY);

@@ -118,8 +118,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         onSuccess?.();
       } catch (error: any) {
         console.error("Error refreshing user data:", error);
-        // Only logout if it's an auth error (401), not for network errors
-        if (error?.response?.status === 401 || error?.message?.includes("401")) {
+        // Only logout if this token is still the active one — a successful login
+        // may have replaced it while this background request was in-flight.
+        const is401 = error?.response?.status === 401 || error?.message?.includes("401");
+        if (is401 && token === get().token) {
           get().logout();
         }
         // For other errors, keep using cached data
@@ -141,8 +143,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       onSuccess?.();
     } catch (error: any) {
       console.error("Error fetching user:", error);
-      // Only logout if it's an auth error (401), not for network errors
-      if (error?.response?.status === 401 || error?.message?.includes("401")) {
+      // Only logout if this token is still the active one — a successful login
+      // may have replaced it while this request was in-flight.
+      const is401 = error?.response?.status === 401 || error?.message?.includes("401");
+      if (is401 && token === get().token) {
         get().logout();
       }
       // For other errors, try to load from cache if available

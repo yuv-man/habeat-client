@@ -1,8 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthData } from "./types";
 import GoogleIcon from "@/assets/icons/google";
 import MealLoader from "@/components/helper/MealLoader";
 import { SLOGAN_EAT_WELL } from "@/lib/copy";
+import foodBg from "@/assets/food-bg.webp";
 
 interface SignupStepProps {
   authData: AuthData;
@@ -21,6 +23,8 @@ export default function SignupStep({
   onSignupEmail,
   onGoogleSignup,
 }: SignupStepProps) {
+  const navigate = useNavigate();
+
   // Let the parent (Kyc.tsx) handle Google OAuth initialization and triggering
   // This prevents duplicate initialization that causes credential to be ignored
   const handleGoogleClick = () => {
@@ -34,6 +38,7 @@ export default function SignupStep({
     >
       <div className="w-full max-w-md">
         <div className="text-center mb-6">
+          <img src={foodBg} alt="Habeats" className="w-48 h-auto mx-auto mb-2" />
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Get Started</h1>
           <p className="text-gray-600 text-sm max-w-sm mx-auto">{SLOGAN_EAT_WELL}</p>
         </div>
@@ -101,6 +106,18 @@ export default function SignupStep({
               ) : (
                 "Sign Up"
               )}
+            </button>
+          </div>
+
+          <div className="mt-6 text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              disabled={loading}
+              className="font-semibold text-green-600 hover:text-green-700 disabled:opacity-50"
+            >
+              Sign in
             </button>
           </div>
         </div>

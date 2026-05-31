@@ -350,6 +350,7 @@ export interface AuthActions {
   fetchUser: (token: string, onSuccess?: () => void) => Promise<void>;
   oauthSignin: (provider: string, userId?: string) => Promise<void>;
   oauthSignup: (provider: string, userId?: string) => Promise<void>;
+  googleAuth: (action: "signin" | "signup") => Promise<void>;
   handleOAuthCallback: (
     provider: string,
     action: "signin" | "signup",

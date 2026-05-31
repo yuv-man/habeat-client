@@ -12,6 +12,7 @@ import CompleteStep from "./CompleteStep";
 import { AuthData, KYCData, CustomInputs } from "./types";
 import type { IUser } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
+import { useToast } from "@/hooks/use-toast";
 import { userAPI } from "@/services/api";
 import {
   calculateBMR,
@@ -33,6 +34,7 @@ const getErrorMessage = (err: unknown, fallback: string) =>
 export default function KYCFlow() {
   const navigate = useNavigate();
   const authStore = useAuthStore();
+  const { toast } = useToast();
   const [step, setStep] = useState("signup");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -182,15 +184,41 @@ export default function KYCFlow() {
     setError("");
     setLoading(true);
     try {
-      // Save current state to localStorage before redirecting
-      // This will be restored after OAuth callback
-      localStorage.setItem(STORAGE_KEYS.CURRENT_STEP, "google_oauth_pending");
+      await authStore.googleAuth("signup");
+      const currentUser = useAuthStore.getState().user;
+      const currentPlan = useAuthStore.getState().plan;
 
-      // Use backend OAuth flow - this will redirect to Google
-      await authStore.oauthSignup("google");
-      // Note: The redirect happens in oauthSignup, so code after this won't execute
+      if (currentUser && currentPlan) {
+        navigate("/daily-tracker");
+        return;
+      }
+
+      if (currentUser) {
+        setAuthData((prev) => ({
+          ...prev,
+          name: currentUser.name || "",
+          email: currentUser.email || "",
+          authMethod: "google",
+        }));
+        setStep("diet");
+      }
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Google signup failed. Please try again."));
+      const message = getErrorMessage(err, "Google signup failed. Please try again.");
+      const accountExists =
+        /already|exists|registered|sign in instead/i.test(message);
+
+      if (accountExists) {
+        toast({
+          title: "Account already exists",
+          description: "This email is already registered. Please sign in instead.",
+          variant: "destructive",
+        });
+        navigate("/", { replace: true });
+        return;
+      }
+
+      setError(message);
+    } finally {
       setLoading(false);
     }
   };

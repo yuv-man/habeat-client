@@ -16,25 +16,26 @@ interface UseNotificationsReturn {
   checkAndScheduleMealReminders: () => Promise<void>;
 }
 
-// Notification IDs by type for management
-const NOTIFICATION_IDS = {
-  breakfast: 1001,
-  lunch: 1002,
-  dinner: 1003,
-  snacks: 1004,
-  streakWarning: 2001,
-  dailySummary: 3001,
-  weeklySummary: 3002,
-  motivational: 4001,
-  // CBT notification IDs
-  moodCheckInMorning: 5001,
-  moodCheckInAfternoon: 5002,
-  moodCheckInEvening: 5003,
-  thoughtPrompt: 5004,
-  exerciseReminder: 5005,
-  emotionalEatingAlert: 5006,
-  cbtStreakWarning: 5007,
+// Base IDs for each notification type — each type reserves 7 slots (one per day)
+const NOTIFICATION_ID_BASES = {
+  breakfast: 1000,
+  lunch: 1010,
+  dinner: 1020,
+  snacks: 1030,
+  streakWarning: 2000,
+  dailySummary: 3000,
+  weeklySummary: 3010,
+  motivational: 4000,
+  moodCheckInMorning: 5000,
+  moodCheckInAfternoon: 5010,
+  moodCheckInEvening: 5020,
+  thoughtPrompt: 5030,
+  exerciseReminder: 5040,
+  emotionalEatingAlert: 5050,
+  cbtStreakWarning: 5060,
 };
+
+const DAYS_TO_SCHEDULE = 7;
 
 export function useNotifications(): UseNotificationsReturn {
   const [preferences, setPreferences] = useState<INotificationPreferences | null>(null);
@@ -160,7 +161,9 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, [isNative]);
 
-  // Schedule notifications based on preferences
+  // Schedule notifications based on preferences.
+  // Schedules DAYS_TO_SCHEDULE individual one-time notifications per type
+  // instead of using repeats+every which drifts by the UTC offset each day.
   const scheduleNotificationsFromPreferences = async (
     prefs: INotificationPreferences
   ) => {
@@ -171,17 +174,36 @@ export function useNotifications(): UseNotificationsReturn {
     const notifications: LocalNotificationSchema[] = [];
     const now = new Date();
 
-    // Helper to get next occurrence of a time
-    const getNextTime = (timeStr: string): Date => {
+    // Returns DAYS_TO_SCHEDULE Date objects for the given "HH:MM" local time,
+    // starting from the next occurrence (today if not passed, tomorrow if passed).
+    const getDailyDates = (timeStr: string): Date[] => {
       const [hours, minutes] = timeStr.split(":").map(Number);
-      const date = new Date(now);
-      date.setHours(hours, minutes, 0, 0);
-
-      // If time has passed today, schedule for tomorrow
-      if (date <= now) {
-        date.setDate(date.getDate() + 1);
+      const base = new Date(now);
+      base.setHours(hours, minutes, 0, 0);
+      if (base <= now) {
+        base.setDate(base.getDate() + 1);
       }
-      return date;
+      return Array.from({ length: DAYS_TO_SCHEDULE }, (_, i) => {
+        const d = new Date(base);
+        d.setDate(d.getDate() + i);
+        return d;
+      });
+    };
+
+    const pushDailyNotifications = (
+      baseId: number,
+      title: string,
+      body: string,
+      timeStr: string
+    ) => {
+      getDailyDates(timeStr).forEach((fireAt, i) => {
+        notifications.push({
+          id: baseId + i,
+          title,
+          body,
+          schedule: { at: fireAt },
+        });
+      });
     };
 
     // Meal reminders
@@ -192,141 +214,93 @@ export function useNotifications(): UseNotificationsReturn {
         "dinner",
         "snacks",
       ];
-
       for (const mealType of mealTypes) {
         const mealPref = prefs.mealReminders[mealType];
         if (mealPref.enabled) {
-          const scheduleAt = getNextTime(mealPref.time);
-          notifications.push({
-            id: NOTIFICATION_IDS[mealType],
-            title: getMealReminderTitle(mealType),
-            body: getMealReminderBody(mealType),
-            schedule: {
-              at: scheduleAt,
-              repeats: true,
-              every: "day" as any,
-            },
-          });
+          pushDailyNotifications(
+            NOTIFICATION_ID_BASES[mealType],
+            getMealReminderTitle(mealType),
+            getMealReminderBody(mealType),
+            mealPref.time
+          );
         }
       }
     }
 
     // Streak warning
     if (prefs.streakAlerts.enabled) {
-      const scheduleAt = getNextTime(prefs.streakAlerts.warningTime);
-      notifications.push({
-        id: NOTIFICATION_IDS.streakWarning,
-        title: "Don't break your streak!",
-        body: "Log a meal today to keep your streak alive",
-        schedule: {
-          at: scheduleAt,
-          repeats: true,
-          every: "day" as any,
-        },
-      });
+      pushDailyNotifications(
+        NOTIFICATION_ID_BASES.streakWarning,
+        "Don't break your streak!",
+        "Log a meal today to keep your streak alive",
+        prefs.streakAlerts.warningTime
+      );
     }
 
     // Daily summary
     if (prefs.dailySummary.enabled) {
-      const scheduleAt = getNextTime(prefs.dailySummary.time);
-      notifications.push({
-        id: NOTIFICATION_IDS.dailySummary,
-        title: "Daily Summary",
-        body: "See how you did today!",
-        schedule: {
-          at: scheduleAt,
-          repeats: true,
-          every: "day" as any,
-        },
-      });
+      pushDailyNotifications(
+        NOTIFICATION_ID_BASES.dailySummary,
+        "Daily Summary",
+        "See how you did today!",
+        prefs.dailySummary.time
+      );
     }
 
     // CBT Reminders
     if (prefs.cbtReminders?.enabled) {
-      // Mood check-in reminders
       if (prefs.cbtReminders.moodCheckIn?.enabled) {
         const frequency = prefs.cbtReminders.moodCheckIn.frequency;
 
         if (frequency === "morning_evening") {
-          // Morning check-in at 9am
-          const morningTime = getNextTime("09:00");
-          notifications.push({
-            id: NOTIFICATION_IDS.moodCheckInMorning,
-            title: "Good morning! How are you feeling?",
-            body: "Take a moment to check in with your mood",
-            schedule: {
-              at: morningTime,
-              repeats: true,
-              every: "day" as any,
-            },
-          });
-          // Evening check-in at 8pm
-          const eveningTime = getNextTime("20:00");
-          notifications.push({
-            id: NOTIFICATION_IDS.moodCheckInEvening,
-            title: "Evening check-in",
-            body: "How has your mood been today?",
-            schedule: {
-              at: eveningTime,
-              repeats: true,
-              every: "day" as any,
-            },
-          });
+          pushDailyNotifications(
+            NOTIFICATION_ID_BASES.moodCheckInMorning,
+            "Good morning! How are you feeling?",
+            "Take a moment to check in with your mood",
+            "09:00"
+          );
+          pushDailyNotifications(
+            NOTIFICATION_ID_BASES.moodCheckInEvening,
+            "Evening check-in",
+            "How has your mood been today?",
+            "20:00"
+          );
         } else if (frequency === "3_times_daily" && prefs.cbtReminders.moodCheckIn.times) {
-          const times = prefs.cbtReminders.moodCheckIn.times;
-          const moodIds = [
-            NOTIFICATION_IDS.moodCheckInMorning,
-            NOTIFICATION_IDS.moodCheckInAfternoon,
-            NOTIFICATION_IDS.moodCheckInEvening,
+          const moodBases = [
+            NOTIFICATION_ID_BASES.moodCheckInMorning,
+            NOTIFICATION_ID_BASES.moodCheckInAfternoon,
+            NOTIFICATION_ID_BASES.moodCheckInEvening,
           ];
-          times.slice(0, 3).forEach((time, index) => {
-            const scheduleAt = getNextTime(time);
-            notifications.push({
-              id: moodIds[index],
-              title: "Mood Check-In",
-              body: "How are you feeling right now?",
-              schedule: {
-                at: scheduleAt,
-                repeats: true,
-                every: "day" as any,
-              },
-            });
+          prefs.cbtReminders.moodCheckIn.times.slice(0, 3).forEach((time, index) => {
+            pushDailyNotifications(
+              moodBases[index],
+              "Mood Check-In",
+              "How are you feeling right now?",
+              time
+            );
           });
         }
       }
 
-      // Thought prompt
       if (prefs.cbtReminders.thoughtPrompt?.enabled && prefs.cbtReminders.thoughtPrompt.time) {
-        const scheduleAt = getNextTime(prefs.cbtReminders.thoughtPrompt.time);
-        notifications.push({
-          id: NOTIFICATION_IDS.thoughtPrompt,
-          title: "Time for reflection",
-          body: "Notice any challenging thoughts? Take a moment to examine them",
-          schedule: {
-            at: scheduleAt,
-            repeats: true,
-            every: "day" as any,
-          },
-        });
+        pushDailyNotifications(
+          NOTIFICATION_ID_BASES.thoughtPrompt,
+          "Time for reflection",
+          "Notice any challenging thoughts? Take a moment to examine them",
+          prefs.cbtReminders.thoughtPrompt.time
+        );
       }
 
-      // Exercise reminder
       if (prefs.cbtReminders.exerciseReminder?.enabled && prefs.cbtReminders.exerciseReminder.preferredTime) {
-        const scheduleAt = getNextTime(prefs.cbtReminders.exerciseReminder.preferredTime);
-        notifications.push({
-          id: NOTIFICATION_IDS.exerciseReminder,
-          title: "CBT Exercise Time",
-          body: "A few minutes of mindfulness can make a big difference",
-          schedule: {
-            at: scheduleAt,
-            repeats: true,
-            every: "day" as any,
-          },
-        });
+        pushDailyNotifications(
+          NOTIFICATION_ID_BASES.exerciseReminder,
+          "CBT Exercise Time",
+          "A few minutes of mindfulness can make a big difference",
+          prefs.cbtReminders.exerciseReminder.preferredTime
+        );
       }
     }
 
-    // Schedule all notifications
     if (notifications.length > 0) {
       try {
         await LocalNotifications.schedule({ notifications });

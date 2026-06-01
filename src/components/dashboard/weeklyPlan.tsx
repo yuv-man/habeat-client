@@ -9,17 +9,15 @@ import {
   Plus,
   Trash2,
   CalendarDays,
-  Flame,
-  Beef,
-  Wheat,
-  CircleDot,
   ShoppingCart,
   BookOpen,
   Heart,
   ArrowLeft,
   Loader2,
+  Brain,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { useCBTStats, useCBTStore, useTodayMoods } from "@/stores/cbtStore";
 import { IDailyPlan, IMeal, IPlan, WorkoutData } from "@/types/interfaces";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,82 +33,70 @@ import { formatMealName } from "@/lib/formatters";
 import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
-// Components
-const MacroCard = ({
-  label,
-  value,
-  unit,
-  color,
-  icon: Icon,
-  iconBgColor,
-}: {
-  label: string;
-  value: number;
-  unit: string;
-  color: string;
-  icon: React.ComponentType<{ className?: string }>;
-  iconBgColor: string;
-}) => (
-  <div className="flex-1 bg-white rounded-lg p-2.5 border border-gray-200 shadow-sm">
-    <div className="flex items-center gap-2 justify-between">
-      <div className="flex items-center gap-2 flex-1 min-w-0">
-        <div className={`p-1.5 rounded-lg ${iconBgColor} flex-shrink-0`}>
-          <Icon className={`w-3.5 h-3.5 ${color}`} />
-        </div>
-        <span className="text-xs font-medium text-gray-600 truncate">
-          {label}
-        </span>
-      </div>
-      <div className="flex items-baseline gap-1 flex-shrink-0">
-        <span className={`text-lg font-bold ${color}`}>
-          {Math.round(value)}
-        </span>
-        <span className="text-xs text-gray-500">{unit}</span>
-      </div>
-    </div>
-  </div>
-);
+const MOOD_EMOJI: Record<string, string> = {
+  happy: "😊",
+  calm: "😌",
+  energetic: "⚡",
+  neutral: "😐",
+  stressed: "😰",
+  anxious: "😟",
+  sad: "😢",
+  angry: "😤",
+  tired: "😴",
+};
 
-const MacroSummary = ({
-  macros,
-}: {
-  macros: { calories: number; protein: number; carbs: number; fat: number };
-}) => (
-  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-    <MacroCard
-      label="Calories"
-      value={macros.calories}
-      unit="kcal"
-      color="text-orange-500"
-      icon={Flame}
-      iconBgColor="bg-orange-100"
-    />
-    <MacroCard
-      label="Protein"
-      value={macros.protein}
-      unit="g"
-      color="text-teal-500"
-      icon={Beef}
-      iconBgColor="bg-teal-100"
-    />
-    <MacroCard
-      label="Carbs"
-      value={macros.carbs}
-      unit="g"
-      color="text-blue-500"
-      icon={Wheat}
-      iconBgColor="bg-blue-100"
-    />
-    <MacroCard
-      label="Fats"
-      value={macros.fat}
-      unit="g"
-      color="text-purple-500"
-      icon={CircleDot}
-      iconBgColor="bg-purple-100"
-    />
-  </div>
-);
+// Components
+const HabitProcessCard = () => {
+  const navigate = useNavigate();
+  const cbtStats = useCBTStats();
+  const todayMoods = useTodayMoods();
+
+  useEffect(() => {
+    const store = useCBTStore.getState();
+    store.fetchCBTStats();
+    store.fetchTodayMoods();
+  }, []);
+
+  const cbtStreak = cbtStats?.cbtActivityStreak ?? 0;
+  const latestMood = todayMoods[todayMoods.length - 1];
+  const emoji = latestMood?.moodCategory ? (MOOD_EMOJI[latestMood.moodCategory] ?? "😐") : null;
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate("/mindfulness")}
+      className="w-full mb-4 flex items-center gap-3 rounded-xl border border-purple-100 bg-purple-50/60 px-4 py-2.5 text-left transition hover:bg-purple-50 hover:border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2"
+      aria-label="Open mindfulness tracker"
+    >
+      <div className="flex-shrink-0 rounded-lg bg-purple-500 p-1.5">
+        <Brain className="h-4 w-4 text-white" />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {latestMood ? (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-base leading-none">{emoji}</span>
+            <span className="text-sm font-medium text-purple-900 capitalize">
+              {latestMood.moodCategory ?? "Mood logged"}
+            </span>
+            {latestMood.moodLevel != null && (
+              <span className="text-xs text-gray-400">· {latestMood.moodLevel}/5</span>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm font-medium text-purple-900">How are you feeling today?</p>
+        )}
+        {cbtStreak > 0 && (
+          <p className="text-xs text-gray-400 mt-0.5">{cbtStreak}-day mindfulness streak</p>
+        )}
+      </div>
+
+      <span className="flex-shrink-0 rounded-lg bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700">
+        {latestMood ? "View" : "Log mood"}
+      </span>
+    </button>
+  );
+};
 
 const MealItem = ({
   meal,
@@ -917,25 +903,8 @@ export default function WeeklyMealPlan() {
           </div>
         )}
 
-        {/* Macro Summary - Show target values from plan */}
-        <MacroSummary
-          macros={{
-            calories:
-              plan?.userMetrics?.targetCalories ||
-              currentDay?.totalCalories ||
-              0,
-            protein:
-              plan?.userMetrics?.dailyMacros?.protein ||
-              currentDay?.totalProtein ||
-              0,
-            carbs:
-              plan?.userMetrics?.dailyMacros?.carbs ||
-              currentDay?.totalCarbs ||
-              0,
-            fat:
-              plan?.userMetrics?.dailyMacros?.fat || currentDay?.totalFat || 0,
-          }}
-        />
+        {/* CBT habit-process context */}
+        <HabitProcessCard />
 
         {/* Generate AI Button, Shopping List, and Favorites */}
         <div className="flex items-center gap-2 mb-4">

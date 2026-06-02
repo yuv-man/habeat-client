@@ -6,6 +6,11 @@
 
 // All available webp image files (without extension)
 const availableImages = [
+  "arencini",
+  "chicken-leg-with-fried-cauliflower",
+  "pasta-limone",
+  "ravioli-with-mashroom-sauce",
+  "seafood-pasta",
   "avocado-chicken-wrap",
   "avocado-toast-with-poached-egg",
   "bagel-with-cream-cheese-and-salmon",
@@ -192,6 +197,7 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // Chicken dishes
   chicken: [
+    "chicken-leg-with-fried-cauliflower",
     "chicken-breast-and-sweet-potato",
     "chicken-curry",
     "chicken-fajitas",
@@ -302,6 +308,9 @@ const keywordMappings: { [key: string]: string[] } = {
   // Pasta
   pasta: [
     "pasta",
+    "pasta-limone",
+    "ravioli-with-mashroom-sauce",
+    "seafood-pasta",
     "shrimp-pasta",
     "spaghetti-aglio-e-olio",
     "spaghetti-bolognese",
@@ -313,6 +322,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "gnocchi-in-mushroom-sauce",
   ],
   spaghetti: [
+    "pasta-limone",
+    "seafood-pasta",
     "spaghetti-aglio-e-olio",
     "spaghetti-bolognese",
     "spaghetti-in-tomato-sauce",
@@ -320,20 +331,21 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   bolognese: ["spaghetti-bolognese"],
   carbonara: ["pasta", "spaghetti-aglio-e-olio"],
-  alfredo: ["pasta", "gnocchi-with-white-sauce"],
+  alfredo: ["pasta", "gnocchi-with-white-sauce", "ravioli-with-mashroom-sauce"],
   marinara: [
     "whole-wheat-pasta-with-ground-chicken-marinara",
     "whole-wheat-pasta-with-ground-beef-marinara",
     "spaghetti-in-tomato-sauce",
+    "seafood-pasta",
   ],
   penne: ["pasta"],
   fettuccine: ["pasta"],
-  linguine: ["pasta", "shrimp-pasta"],
-  tagliatelle: ["pasta", "spaghetti-bolognese"],
+  linguine: ["pasta", "shrimp-pasta", "seafood-pasta"],
+  tagliatelle: ["pasta", "spaghetti-bolognese", "pasta-limone"],
   rigatoni: ["pasta"],
   macaroni: ["pasta"],
   lasagna: ["lasagna"],
-  ravioli: ["ravioli-with-sauce"],
+  ravioli: ["ravioli-with-sauce", "ravioli-with-mashroom-sauce"],
   gnocchi: ["gnocchi-in-mushroom-sauce", "gnocchi-with-white-sauce"],
   aglio: ["spaghetti-aglio-e-olio"],
   olio: ["spaghetti-aglio-e-olio"],
@@ -341,6 +353,7 @@ const keywordMappings: { [key: string]: string[] } = {
 
   // Rice dishes
   rice: [
+    "arencini",
     "spicy-red-tuna-poke-bowl",
     "biryani-rice",
     "rice-with-curry",
@@ -352,7 +365,7 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
-  fried: ["chicken-fried-rice", "fish-buns"],
+  fried: ["chicken-fried-rice", "fish-buns", "arencini"],
   buns: ["fish-buns"],
 
   // Asian dishes
@@ -461,7 +474,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "duck-breast-with-mushed-potatoes",
   ],
-  fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries"],
+  fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries", "arencini"],
 
   // Smoothies & Yogurt
   smoothie: [
@@ -504,6 +517,7 @@ const keywordMappings: { [key: string]: string[] } = {
   // Shrimp
   shrimp: ["shrimp-pasta", "shrimps-pad-thai"],
   shrimps: ["shrimps-pad-thai"],
+  seafood: ["seafood-pasta", "shrimp-pasta", "spicy-red-tuna-poke-bowl"],
 };
 
 // Common words to ignore in matching (low-value words)
@@ -563,6 +577,7 @@ const specificKeywords = new Set([
   "shrimp",
   "tuna",
   "cod",
+  "seafood",
   "mussels",
   "pancakes",
   "waffles",

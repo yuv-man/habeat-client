@@ -418,10 +418,11 @@ const MealCard = ({
                   onClick={handleComplete}
                   className={`flex-1 px-4 py-3 rounded-lg transition-all duration-300 font-bold text-base flex items-center justify-center gap-2 relative overflow-hidden ${
                     isCompleting && !isCompleted
-                      ? "bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg"
+                      ? "bg-habeat text-white shadow-lg"
                       : isCompleted
-                        ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md"
-                        : "bg-gradient-to-br from-emerald-100 to-teal-100 hover:from-emerald-200 hover:to-teal-200 text-emerald-700 border border-emerald-200"
+                        ? 
+                         "bg-habeat-light hover:bg-habeat/10 text-habeat border border-habeat/20"
+                        :"bg-habeat hover:bg-habeat-hover text-white shadow-md"
                   }`}
                   aria-label={
                     isCompleted ? "Mark as incomplete" : "Mark as complete"
@@ -429,7 +430,7 @@ const MealCard = ({
                   disabled={isCompleting}
                 >
                   {isCompleting && !isCompleted && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-emerald-300/40 to-transparent animate-shimmer" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-habeat/40 to-transparent animate-shimmer" />
                   )}
                   <Check
                     className={`w-5 h-5 transition-all duration-300 ${

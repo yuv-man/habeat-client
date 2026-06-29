@@ -72,6 +72,12 @@ export default {
         keto: "hsl(var(--keto))",
         fasting: "hsl(var(--fasting))",
         other: "hsl(var(--other))",
+        habeat: {
+          DEFAULT: "var(--habeat-primary)",
+          hover: "var(--habeat-primary-hover)",
+          light: "var(--habeat-primary-light)",
+          muted: "var(--habeat-primary-muted)",
+        },
       },
       backgroundImage: {
         "gradient-primary": "var(--gradient-primary)",

@@ -87,6 +87,12 @@
   --vitamins: #22c55e; /* Green - Nutrients */
   --minerals: #3b82f6; /* Blue - Essential elements */
 
+  /* Brand teal - daily tracker / meal completion */
+  --habeat-primary: #146a5c;
+  --habeat-primary-hover: #0f5247;
+  --habeat-primary-light: #e8f4f1;
+  --habeat-primary-muted: #6f7976;
+
   /* Button Colors */
   --button-primary-bg: #61ea8f; /* primary-500 */
   --button-primary-text: #062e14; /* Dark green text */
@@ -116,6 +122,12 @@
 .text-info {
   color: var(--info);
 }
+.text-habeat {
+  color: var(--habeat-primary);
+}
+.text-habeat-muted {
+  color: var(--habeat-primary-muted);
+}
 
 /* Background Colors */
 .bg-primary {
@@ -141,6 +153,15 @@
 }
 .bg-success {
   background-color: var(--success);
+}
+.bg-habeat {
+  background-color: var(--habeat-primary);
+}
+.bg-habeat-light {
+  background-color: var(--habeat-primary-light);
+}
+.bg-habeat-hover:hover {
+  background-color: var(--habeat-primary-hover);
 }
 
 /* Border Colors */

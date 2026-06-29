@@ -910,9 +910,16 @@ export interface IEmotionalEatingInsight {
   emotionalEatingInstances: number;
   emotionalEatingPercentage: number;
   mindfulEatingScore: number;
+  satietyRate: number;
   patternSpotlight: string | null;
   weeklyTrend: { week: string; score: number }[];
   strongestMealType: string | null;
+  dailyBreakdown: {
+    date: string;
+    mindfulScore: number | null;
+    moodAvg: number | null;
+    hasData: boolean;
+  }[];
   commonTriggers: { trigger: string; count: number }[];
   commonEmotions: { emotion: string; count: number }[];
   mealTypeBreakdown: {

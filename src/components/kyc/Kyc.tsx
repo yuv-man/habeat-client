@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SignupStep from "./SignupStep";
+import EmotionalEatingStep from "./EmotionalEatingStep";
 import DietStep from "./DietStep";
 import DietaryRestrictionsStep from "./DietaryRestrictionsStep";
 import FastingHoursStep from "./FastingHoursStep";
@@ -57,6 +58,8 @@ export default function KYCFlow() {
     allergies: [],
     dislikes: [],
     foodPreferences: [],
+    foodRelationship: "",
+    emotionalTriggers: [],
   });
 
   const [customInputs, setCustomInputs] = useState<CustomInputs>({
@@ -172,7 +175,7 @@ export default function KYCFlow() {
         name: authData.name,
       } as IUser);
       setAuthData((prev) => ({ ...prev, authMethod: "email" }));
-      setStep("diet");
+      setStep("emotionalEating");
     } catch (err: unknown) {
       setError(getErrorMessage(err, "Failed to sign up. Please try again."));
     } finally {
@@ -200,7 +203,7 @@ export default function KYCFlow() {
           email: currentUser.email || "",
           authMethod: "google",
         }));
-        setStep("diet");
+        setStep("emotionalEating");
       }
     } catch (err: unknown) {
       const message = getErrorMessage(err, "Google signup failed. Please try again.");
@@ -222,6 +225,8 @@ export default function KYCFlow() {
       setLoading(false);
     }
   };
+
+  const submitEmotionalEating = () => setStep("diet");
 
   const submitDietType = async () => {
     if (!kycData.dietType) {
@@ -310,6 +315,8 @@ export default function KYCFlow() {
         dietaryRestrictions: kycData.dietaryRestrictions || [],
         foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
+        foodRelationship: kycData.foodRelationship ?? "",
+        emotionalTriggers: kycData.emotionalTriggers ?? [],
         subscriptionTier: "free",
       };
 
@@ -420,42 +427,48 @@ export default function KYCFlow() {
   // Helper function to calculate step number and total steps
   const getStepInfo = (currentStep: string) => {
     const hasFasting = kycData.dietType === "fasting";
-    const totalSteps = hasFasting ? 7 : 6; // 7 if fasting, 6 otherwise (added dietaryRestrictions step)
-    
+    const totalSteps = hasFasting ? 8 : 7;
+
     let stepNumber = 0;
     switch (currentStep) {
-      case "diet":
+      case "emotionalEating":
         stepNumber = 1;
         break;
-      case "dietaryRestrictions":
+      case "diet":
         stepNumber = 2;
         break;
-      case "fastingHours":
+      case "dietaryRestrictions":
         stepNumber = 3;
         break;
-      case "profile":
-        stepNumber = hasFasting ? 4 : 3;
+      case "fastingHours":
+        stepNumber = 4;
         break;
-      case "fitness":
+      case "profile":
         stepNumber = hasFasting ? 5 : 4;
         break;
-      case "preferences":
+      case "fitness":
         stepNumber = hasFasting ? 6 : 5;
         break;
-      case "healthProfile":
+      case "preferences":
         stepNumber = hasFasting ? 7 : 6;
+        break;
+      case "healthProfile":
+        stepNumber = hasFasting ? 8 : 7;
         break;
       default:
         stepNumber = 0;
     }
-    
+
     return { stepNumber, totalSteps };
   };
 
   const handleBack = () => {
     switch (step) {
-      case "diet":
+      case "emotionalEating":
         setStep("signup");
+        break;
+      case "diet":
+        setStep("emotionalEating");
         break;
       case "dietaryRestrictions":
         setStep("diet");
@@ -497,6 +510,22 @@ export default function KYCFlow() {
           onGoogleSignup={handleGoogleSignup}
         />
       );
+
+    case "emotionalEating": {
+      const { stepNumber, totalSteps } = getStepInfo("emotionalEating");
+      return (
+        <EmotionalEatingStep
+          kycData={kycData}
+          setKycData={setKycData}
+          loading={loading}
+          error={error}
+          onSubmit={submitEmotionalEating}
+          onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
+        />
+      );
+    }
 
     case "diet": {
       const { stepNumber, totalSteps } = getStepInfo("diet");

@@ -20,6 +20,8 @@ export interface KYCData {
   foodPreferences: string[];
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
+  foodRelationship?: string; // fuel | sometimes-emotional | very-emotional | unsure
+  emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
 }
 
 export interface CustomInputs {
@@ -150,4 +152,24 @@ export const dietaryRestrictions: DietaryPreference[] = [
   { id: "kosher", name: "Kosher", icon: "kosher" },
   { id: "halal", name: "Halal", icon: "halal" },
   { id: "other", name: "Other", icon: "other" },
+];
+
+export const FOOD_RELATIONSHIP_OPTIONS = [
+  { id: "fuel", emoji: "🥗", label: "I eat mostly for fuel and nourishment" },
+  { id: "sometimes-emotional", emoji: "😤", label: "I sometimes eat when stressed or bored" },
+  { id: "very-emotional", emoji: "💭", label: "Food and emotions are pretty connected for me" },
+  { id: "unsure", emoji: "🤷", label: "I'm not sure — that's why I'm here" },
+];
+
+export const EMOTIONAL_TRIGGERS = [
+  { id: "stress", emoji: "😰", label: "Stress" },
+  { id: "boredom", emoji: "😑", label: "Boredom" },
+  { id: "sadness", emoji: "😢", label: "Sadness" },
+  { id: "celebration", emoji: "🎉", label: "Celebration" },
+  { id: "habit", emoji: "🔄", label: "Habit / mindless" },
+  { id: "social", emoji: "👥", label: "Social situations" },
+  { id: "tiredness", emoji: "😴", label: "Tiredness" },
+  { id: "procrastination", emoji: "📱", label: "Procrastination" },
+  { id: "anxiety", emoji: "😟", label: "Anxiety" },
+  { id: "late-night", emoji: "🌙", label: "Late night" },
 ];

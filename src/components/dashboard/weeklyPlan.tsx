@@ -15,6 +15,15 @@ import {
   ArrowLeft,
   Loader2,
   Brain,
+  Coffee,
+  Utensils,
+  Moon,
+  Cookie,
+  Dumbbell,
+  Flame,
+  Beef,
+  Wheat,
+  Droplet,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { useCBTStats, useCBTStore, useTodayMoods } from "@/stores/cbtStore";
@@ -30,6 +39,7 @@ import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import AddSnackModal from "@/components/modals/AddSnackModal";
 import PlanSelector from "./PlanSelector";
 import { formatMealName } from "@/lib/formatters";
+import { getMealImageVite } from "@/lib/mealImageHelper";
 import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
@@ -44,6 +54,48 @@ const MOOD_EMOJI: Record<string, string> = {
   angry: "😤",
   tired: "😴",
 };
+
+// Soft floating card look shared across the redesigned plan surfaces
+const SOFT_LIFT =
+  "shadow-[0_10px_40px_-10px_rgba(63,102,82,0.12)] border-b-4";
+
+// Visual treatment per meal type (badge / accent border / thumbnail tile / icon)
+const MEAL_STYLES: Record<
+  string,
+  { badge: string; border: string; tile: string; swap: string; icon: typeof Coffee }
+> = {
+  breakfast: {
+    badge: "bg-amber-100 text-amber-700",
+    border: "border-amber-500/60",
+    tile: "bg-amber-50 text-amber-600",
+    swap: "hover:bg-amber-50 text-amber-600",
+    icon: Coffee,
+  },
+  lunch: {
+    badge: "bg-green-100 text-green-700",
+    border: "border-green-500/60",
+    tile: "bg-green-50 text-green-600",
+    swap: "hover:bg-green-50 text-green-600",
+    icon: Utensils,
+  },
+  dinner: {
+    badge: "bg-indigo-100 text-indigo-700",
+    border: "border-indigo-500/60",
+    tile: "bg-indigo-50 text-indigo-600",
+    swap: "hover:bg-indigo-50 text-indigo-600",
+    icon: Moon,
+  },
+  snack: {
+    badge: "bg-purple-100 text-purple-700",
+    border: "border-purple-400/60",
+    tile: "bg-purple-50 text-purple-600",
+    swap: "hover:bg-purple-50 text-purple-600",
+    icon: Cookie,
+  },
+};
+
+const getMealStyle = (mealType: string) =>
+  MEAL_STYLES[mealType] ?? MEAL_STYLES.breakfast;
 
 // Components
 const HabitProcessCard = () => {
@@ -118,12 +170,18 @@ const MealItem = ({
   dayStatus?: "past" | "current" | "future";
 }) => {
   const navigate = useNavigate();
+  const style = getMealStyle(isSnack ? "snack" : mealType);
+  const MealIcon = style.icon;
 
-  const getTextColor = () => {
-    if (dayStatus === "past") return "text-gray-500";
-    if (dayStatus === "current") return "text-gray-900";
-    return "text-gray-700";
-  };
+  // Resolve a real food photo; if none matches (or it fails to load) we render
+  // the icon tile instead of a broken/placeholder image. The error flag is
+  // reset whenever the meal changes so switching days re-attempts the image.
+  const imageSrc = getMealImageVite(meal.name);
+  const hasRealImage = !!imageSrc && !imageSrc.includes("via.placeholder");
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => {
+    setImgFailed(false);
+  }, [imageSrc]);
 
   const handleViewRecipe = () => {
     if (meal._id) {
@@ -133,24 +191,44 @@ const MealItem = ({
 
   return (
     <div
-      className={`flex items-center justify-between py-3 border-b border-gray-200 last:border-0 ${
-        dayStatus === "past" ? "opacity-75" : ""
-      }`}
+      className={`bg-white rounded-2xl p-3 flex items-center gap-4 group ${SOFT_LIFT} ${
+        style.border
+      } ${dayStatus === "past" ? "opacity-75" : ""}`}
     >
-      <div className="flex-1 min-w-0">
-        <div
-          className={`text-sm capitalize ${
-            dayStatus === "past" ? "text-gray-400" : "text-gray-600"
+      {/* Thumbnail — real food photo with icon-tile fallback */}
+      <div
+        className={`w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center ${style.tile}`}
+      >
+        {hasRealImage && !imgFailed ? (
+          <img
+            key={imageSrc}
+            src={imageSrc}
+            alt={formatMealName(meal.name)}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <MealIcon className="w-7 h-7" />
+        )}
+      </div>
+
+      <div className="flex-grow min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span
+            className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${style.badge}`}
+          >
+            {isSnack ? "snack" : mealType}
+          </span>
+        </div>
+        <h3
+          className={`font-semibold break-words line-clamp-2 ${
+            dayStatus === "past" ? "text-gray-500" : "text-gray-900"
           }`}
         >
-          {mealType}
-        </div>
-        <div
-          className={`font-medium break-words line-clamp-2 ${getTextColor()}`}
-        >
           {formatMealName(meal.name)}
-        </div>
-        <div
+        </h3>
+        <p
           className={`flex items-center gap-3 text-xs mt-0.5 ${
             dayStatus === "past" ? "text-gray-400" : "text-gray-500"
           }`}
@@ -158,28 +236,14 @@ const MealItem = ({
           <span>{meal.calories} kcal</span>
           {!isSnack && meal.prepTime > 0 && (
             <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {meal.prepTime} min
+              <Clock className="w-3 h-3" /> {meal.prepTime} min
             </span>
           )}
-        </div>
+        </p>
       </div>
-      <div className="flex items-center gap-1">
-        {/* Recipe button */}
-        {meal._id && mealType !== "snack" && (
-          <button
-            onClick={handleViewRecipe}
-            className={`hover:bg-blue-50 p-2 rounded transition flex-shrink-0 ${
-              dayStatus === "past"
-                ? "text-gray-400 hover:text-gray-600"
-                : "text-blue-500"
-            }`}
-            aria-label="View recipe"
-          >
-            <BookOpen className="w-5 h-5" />
-          </button>
-        )}
-        {/* Show swap icon for all days (including past days) */}
+
+      <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {/* Swap icon for all days (including past days) */}
         {dayStatus !== "past" && (
           <ChangeMealModal
             currentMeal={meal}
@@ -189,20 +253,37 @@ const MealItem = ({
             onMealChange={onMealChange}
           >
             <button
-              className={`hover:bg-green-50 p-2 rounded transition flex-shrink-0 ${"text-green-500"}`}
+              className={`w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 transition-colors active:scale-90 ${style.swap}`}
               aria-label="Swap meal"
+              title="Swap"
             >
-              <RefreshCw className="w-5 h-5" />
+              <RefreshCw className="w-[18px] h-[18px]" />
             </button>
           </ChangeMealModal>
+        )}
+        {/* Recipe button */}
+        {meal._id && mealType !== "snack" && (
+          <button
+            onClick={handleViewRecipe}
+            className={`w-9 h-9 flex items-center justify-center rounded-full transition-all active:scale-90 hover:shadow-md ${
+              dayStatus === "past"
+                ? "bg-gray-100 text-gray-500 hover:text-gray-700"
+                : "bg-habeat hover:bg-habeat-hover text-white"
+            }`}
+            aria-label="View recipe"
+            title="View Recipe"
+          >
+            <BookOpen className="w-[18px] h-[18px]" />
+          </button>
         )}
         {isSnack && onDelete && dayStatus !== "past" && (
           <button
             onClick={onDelete}
-            className={`hover:bg-red-50 p-2 rounded transition flex-shrink-0 ${"text-red-500"}`}
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-red-500 hover:bg-red-50 transition-colors active:scale-90 flex-shrink-0"
             aria-label="Delete snack"
+            title="Delete"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-[18px] h-[18px]" />
           </button>
         )}
       </div>
@@ -217,84 +298,185 @@ const ExerciseItem = ({
   workout: { name: string; duration: number; caloriesBurned: number };
   onDelete?: () => void;
 }) => (
-  <div className="flex items-center justify-between py-3 border-b border-gray-200 last:border-0">
-    <div className="flex-1">
-      <div className="text-gray-600 text-sm">Workout</div>
-      <div className="font-medium text-gray-900">{workout.name}</div>
-      <div className="text-gray-500 text-xs">
+  <div
+    className={`bg-white rounded-2xl p-3 flex items-center gap-4 ${SOFT_LIFT} border-secondary/5 border-b-emerald-500/40`}
+  >
+    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 flex-shrink-0">
+      <Dumbbell className="w-6 h-6" />
+    </div>
+    <div className="flex-grow min-w-0">
+      <h3 className="font-semibold text-gray-900 break-words">{workout.name}</h3>
+      <p className="text-xs text-gray-500 mt-0.5">
         {workout.duration} min • {workout.caloriesBurned} kcal
-      </div>
+      </p>
     </div>
     {onDelete && (
       <button
         onClick={onDelete}
-        className="text-red-500 hover:bg-red-50 p-2 rounded transition flex-shrink-0"
+        className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-red-500 hover:bg-red-50 transition-colors active:scale-90 flex-shrink-0"
         aria-label="Delete workout"
+        title="Delete"
       >
-        <Trash2 className="w-5 h-5" />
+        <Trash2 className="w-[18px] h-[18px]" />
       </button>
     )}
   </div>
 );
 
-const WaterIntake = ({ goal }: { goal: number }) => (
-  <div className="py-4 border-b border-gray-200">
-    <div className="flex items-center gap-2 mb-2">
-      <GlassWater className="w-5 h-5 text-blue-500" />
-      <span className="text-gray-900 font-medium">Water Target</span>
-    </div>
-    <div className="flex flex-wrap gap-1">
-      {Array.from({ length: goal }).map((_, index) => (
-        <div
-          key={index}
-          className="w-7 h-7 rounded-md border border-blue-200 bg-blue-50 flex items-center justify-center"
-        >
-          <GlassWater className="w-4 h-4 text-blue-400" />
+const WaterIntake = ({ goal, filled = 0 }: { goal: number; filled?: number }) => {
+  const filledCount = Math.min(Math.max(filled, 0), goal);
+  return (
+    <div className="bg-[#eef6ff] mb-2 rounded-3xl p-5 border-b-4 border-blue-200/60 shadow-[0_10px_40px_-10px_rgba(59,130,246,0.15)]">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <GlassWater className="w-5 h-5 text-blue-600" />
+          <div>
+            <h3 className="font-semibold text-blue-900 leading-tight">
+              Hydration
+            </h3>
+            <p className="text-xs text-blue-700/70">{goal} glasses daily target</p>
+          </div>
         </div>
-      ))}
+        <div className="text-right leading-none">
+          <span className="text-3xl font-bold text-blue-800">{filledCount}</span>
+          <span className="text-blue-700/60 text-sm font-semibold"> / {goal}</span>
+        </div>
+      </div>
+      <div className="flex justify-between gap-2">
+        {Array.from({ length: goal }).map((_, index) => {
+          const isFilled = index < filledCount;
+          return (
+            <div
+              key={index}
+              className={`flex-grow h-10 rounded-lg border flex items-center justify-center ${
+                isFilled
+                  ? "bg-white/60 border-blue-200 text-blue-600"
+                  : "bg-blue-100/30 border-dashed border-blue-300 text-blue-300"
+              }`}
+            >
+              <Droplet
+                className="w-4 h-4"
+                fill={isFilled ? "currentColor" : "none"}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
-    <p className="text-xs text-gray-500 mt-1">{goal} glasses daily target</p>
-  </div>
-);
+  );
+};
+
+// Daily macro goals — informative bento summary row (targets only, no progress)
+const NutritionSummary = ({
+  dayData,
+  goals,
+}: {
+  dayData: IDailyPlan;
+  goals?: {
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fat?: number;
+  };
+}) => {
+  const items = [
+    {
+      label: "Cals",
+      icon: Flame,
+      target: goals?.calories ?? dayData.totalCalories,
+      unit: "",
+      color: "text-green-600",
+      ring: "border-green-500/10",
+    },
+    {
+      label: "Prot",
+      icon: Beef,
+      target: goals?.protein ?? dayData.totalProtein,
+      unit: "g",
+      color: "text-purple-600",
+      ring: "border-purple-500/10",
+    },
+    {
+      label: "Carb",
+      icon: Wheat,
+      target: goals?.carbs ?? dayData.totalCarbs,
+      unit: "g",
+      color: "text-amber-600",
+      ring: "border-amber-500/10",
+    },
+    {
+      label: "Fat",
+      icon: Droplet,
+      target: goals?.fat ?? dayData.totalFat,
+      unit: "g",
+      color: "text-rose-500",
+      ring: "border-rose-500/10",
+    },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={item.label}
+            className={`bg-gray-50 rounded-xl p-2.5 flex items-center justify-between border ${item.ring}`}
+          >
+            <div className="flex items-center gap-2">
+              <Icon className={`w-[18px] h-[18px] ${item.color}`} />
+              <span className="text-xs font-medium text-gray-500">
+                {item.label}
+              </span>
+            </div>
+            <p className={`text-sm font-semibold ${item.color}`}>
+              {Math.round(item.target ?? 0).toLocaleString()}
+              {item.unit}
+            </p>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const DayCard = ({
-  date,
   dayName,
+  dayNumber,
   isActive,
   onClick,
   dayStatus,
 }: {
-  date: string;
   dayName: string;
+  dayNumber: string;
   isActive: boolean;
   onClick: () => void;
   dayStatus: "past" | "current" | "future";
 }) => {
   const getStatusStyles = () => {
+    if (isActive) {
+      return "bg-green-900 text-white ring-4 ring-green-500/10 shadow-lg";
+    }
     if (dayStatus === "current") {
-      return isActive
-        ? "bg-green-500 text-white border-2 border-green-600"
-        : "bg-green-100 text-green-800 border-2 border-green-300";
+      return "bg-green-100 text-green-800 border-2 border-green-300 hover:bg-green-200";
     }
     if (dayStatus === "past") {
-      return isActive
-        ? "bg-gray-400 text-white"
-        : "bg-gray-100 text-gray-500 opacity-75";
+      return "bg-gray-200 text-gray-400 opacity-75 hover:bg-gray-300";
     }
-    return isActive
-      ? "bg-blue-500 text-white"
-      : "bg-gray-100 text-gray-700 hover:bg-gray-200";
+    return "bg-gray-200 text-gray-600 hover:bg-gray-300";
   };
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1 p-4 rounded-lg transition ${getStatusStyles()}`}
+      className={`w-full h-20 flex flex-col items-center justify-center gap-0.5 rounded-2xl transition-all active:scale-95 ${getStatusStyles()}`}
     >
-      <span className="font-semibold">{dayName}</span>
-      <span className="text-xs">{date}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-tight">
+        {dayName}
+      </span>
+      <span className="text-lg font-bold leading-none">{dayNumber}</span>
       {dayStatus === "current" && (
-        <span className="text-xs font-bold">TODAY</span>
+        <span className="w-1.5 h-1.5 rounded-full bg-current mt-0.5" />
       )}
     </button>
   );
@@ -360,41 +542,52 @@ const DayContent = ({
       ))}
       <button
         onClick={onAddSnack}
-        className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition"
+        className="w-full h-14 flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-600 border-2 border-dashed border-gray-300 rounded-2xl hover:border-green-500 transition active:scale-[0.98]"
       >
-        <Plus className="w-4 h-4" />
-        <span>Add Snack</span>
+        <Plus className="w-5 h-5" />
+        <span>Add Custom Log / Snack</span>
       </button>
-      {(() => {
-        const actualWorkouts = dayData.workouts.filter(
-          (w) => !w.name?.toLowerCase().includes("rest")
-        );
-        const hasOnlyRestDay =
-          dayData.workouts.length > 0 && actualWorkouts.length === 0;
 
-        if (hasOnlyRestDay || dayData.workouts.length === 0) {
-          return (
-            <div className="py-3 border-b border-gray-200 text-gray-500 text-sm text-center">
-              Rest Day
-            </div>
-          );
-        }
+      {/* Daily Exercises */}
+      <div className="pt-2">
+        <h2 className="text-lg font-bold text-gray-900 mb-3">Daily Exercises</h2>
+        <div className="space-y-3">
+          {(() => {
+            const actualWorkouts = dayData.workouts.filter(
+              (w) => !w.name?.toLowerCase().includes("rest")
+            );
+            const hasOnlyRestDay =
+              dayData.workouts.length > 0 && actualWorkouts.length === 0;
 
-        return actualWorkouts.map((workout, idx) => (
-          <ExerciseItem
-            key={idx}
-            workout={workout}
-            onDelete={() => onDeleteWorkout(workout as WorkoutData)}
-          />
-        ));
-      })()}
-      <WorkoutModal onWorkoutAdd={onAddWorkout}>
-        <button className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:text-gray-900 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 transition">
-          <Plus className="w-4 h-4" />
-          <span>Add Workout</span>
-        </button>
-      </WorkoutModal>
-      <WaterIntake goal={8} />
+            if (hasOnlyRestDay || dayData.workouts.length === 0) {
+              return (
+                <div className="bg-white rounded-2xl py-4 text-gray-500 text-sm text-center shadow-[0_10px_40px_-10px_rgba(63,102,82,0.12)] border-b-4 border-gray-200">
+                  Rest Day
+                </div>
+              );
+            }
+
+            return actualWorkouts.map((workout, idx) => (
+              <ExerciseItem
+                key={idx}
+                workout={workout}
+                onDelete={() => onDeleteWorkout(workout as WorkoutData)}
+              />
+            ));
+          })()}
+          <WorkoutModal onWorkoutAdd={onAddWorkout}>
+            <button className="w-full h-14 flex items-center justify-center gap-2 text-sm font-semibold text-gray-500 hover:text-green-600 border-2 border-dashed border-gray-300 rounded-2xl hover:border-green-500 transition active:scale-[0.98]">
+              <Plus className="w-5 h-5" />
+              <span>Add Workout</span>
+            </button>
+          </WorkoutModal>
+        </div>
+      </div>
+
+      {/* Hydration */}
+      <div className="pt-2">
+        <WaterIntake goal={8} filled={dayData.waterIntake ?? 0} />
+      </div>
     </div>
   );
 };
@@ -786,7 +979,7 @@ export default function WeeklyMealPlan() {
 
     return (
       <>
-        <div className="bg-white min-h-screen">
+        <div className="bg-gray-100 min-h-screen">
           <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
@@ -832,7 +1025,7 @@ export default function WeeklyMealPlan() {
   if (!currentDay || dates.length === 0) {
     return (
       <>
-        <div className="bg-white min-h-screen">
+        <div className="bg-gray-100 min-h-screen">
           <div className="max-w-7xl mx-auto px-4 py-6 pt-6">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Weekly Plan</h1>
@@ -869,7 +1062,7 @@ export default function WeeklyMealPlan() {
   // Favorites View
   if (showFavorites) {
     return (
-      <div className="bg-white min-h-screen md:pb-0">
+      <div className="bg-gray-100 min-h-screen md:pb-0">
         <div className="max-w-full mx-auto px-4 py-6 pt-6 md:max-w-7xl">
           {/* Header with Back Button */}
           <div className="flex items-center gap-3 mb-6">
@@ -893,7 +1086,7 @@ export default function WeeklyMealPlan() {
   }
 
   return (
-    <div className="bg-white min-h-screen md:pb-0">
+    <div className="bg-gray-100 min-h-screen md:pb-0">
       <div className="max-w-full mx-auto px-4 py-6 pt-6 md:max-w-7xl">
         {/* Background generation banner */}
         {plan?.generationStatus === "generating" && (
@@ -911,11 +1104,11 @@ export default function WeeklyMealPlan() {
           <button
             onClick={openPlanSelector}
             disabled={isGenerating}
-            className={`bg-green-500 text-white hover:bg-green-600 font-semibold py-3 px-4 rounded-lg transition disabled:opacity-50 ${
+            className={`bg-habeat text-white hover:bg-habeat-hover shadow-md font-semibold py-3 px-4 rounded-2xl transition disabled:opacity-50 ${
               plan && plan.weeklyPlan && dates.length > 0 ? "flex-1" : "w-full"
             }`}
           >
-            <span className="sm:inline flex items-center">
+            <span className="sm:inline flex items-center justify-center">
               <Sparkles className="w-5 h-5 mr-2" /> Generate Plan
             </span>
           </button>
@@ -923,14 +1116,18 @@ export default function WeeklyMealPlan() {
             <>
               <button
                 onClick={() => navigate("/shopping-list")}
-                className="flex items-center justify-center gap-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
+                className="flex items-center justify-center gap-2 h-12 px-4 sm:px-4 w-12 sm:w-auto rounded-2xl bg-gray-100 text-gray-700 hover:bg-gray-200 font-semibold transition active:scale-95 flex-shrink-0"
+                title="Shopping List"
+                aria-label="Shopping List"
               >
                 <ShoppingCart className="w-5 h-5" />
                 <span className="hidden sm:inline">Shopping List</span>
               </button>
               <button
                 onClick={() => setShowFavorites(true)}
-                className="flex items-center justify-center gap-2 bg-white border-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 font-semibold py-3 px-4 rounded-lg transition flex-shrink-0"
+                className="flex items-center justify-center gap-2 h-12 px-4 sm:px-4 w-12 sm:w-auto rounded-2xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold transition active:scale-95 flex-shrink-0"
+                title="Favorites"
+                aria-label="Favorites"
               >
                 <Heart className="w-5 h-5" />
                 <span className="hidden sm:inline">Favorites</span>
@@ -969,85 +1166,98 @@ export default function WeeklyMealPlan() {
 
         {/* Mobile View */}
         <div className="md:hidden">
-          {/* Day Selector */}
-          <div className="grid grid-cols-7 gap-2 mb-6">
-            {displayDates.map((date) => {
-              const day = weeklyPlan[date];
-              const dayStatus = getDayStatus(date);
-              if (!day) {
+          {/* Weekly Plan header + horizontal day picker */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Weekly Plan</h2>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5 py-2">
+              {displayDates.map((date) => {
+                const day = weeklyPlan[date];
+                const dayStatus = getDayStatus(date);
+                if (!day) {
+                  return (
+                    <div
+                      key={date}
+                      className="w-full h-20 flex flex-col items-center justify-center gap-1 rounded-2xl bg-gray-100 animate-pulse"
+                    >
+                      <div className="h-3 w-5 bg-gray-300 rounded" />
+                      <div className="h-4 w-6 bg-gray-200 rounded" />
+                    </div>
+                  );
+                }
+                const dayNumber = date.split("-")[2] ?? "";
                 return (
-                  <div
+                  <DayCard
                     key={date}
-                    className="flex flex-col items-center gap-1 p-4 rounded-lg bg-gray-100 animate-pulse"
-                  >
-                    <div className="h-3 w-5 bg-gray-300 rounded" />
-                    <div className="h-2 w-7 bg-gray-200 rounded mt-1" />
-                  </div>
+                    dayName={
+                      day.day.charAt(0).toUpperCase() + day.day.slice(1, 3)
+                    }
+                    dayNumber={String(Number(dayNumber))}
+                    isActive={selectedDate === date}
+                    onClick={() => setSelectedDate(date)}
+                    dayStatus={dayStatus}
+                  />
                 );
-              }
-              return (
-                <DayCard
-                  key={date}
-                  dayName={
-                    day.day.charAt(0).toUpperCase() + day.day.slice(1, 3)
-                  }
-                  date={day.date}
-                  isActive={selectedDate === date}
-                  onClick={() => setSelectedDate(date)}
-                  dayStatus={dayStatus}
-                />
-              );
-            })}
+              })}
+            </div>
           </div>
 
-          {/* Selected Day Content */}
-          <div
-            className={`p-4 rounded-lg ${
+          {/* Selected day heading */}
+          <h2
+            className={`text-xl font-bold mb-4 ${
               getDayStatus(selectedDate) === "current"
-                ? "bg-green-50 border-2 border-green-200"
+                ? "text-green-700"
                 : getDayStatus(selectedDate) === "past"
-                ? "bg-gray-50 border border-gray-200"
-                : "bg-gray-50 border border-gray-200"
+                ? "text-gray-500"
+                : "text-gray-900"
             }`}
           >
-            <h2
-              className={`text-xl font-bold mb-4 ${
-                getDayStatus(selectedDate) === "current"
-                  ? "text-green-800"
-                  : getDayStatus(selectedDate) === "past"
-                  ? "text-gray-500"
-                  : "text-gray-900"
-              }`}
-            >
-              {getDayName(selectedDate)}
-              {getDayStatus(selectedDate) === "current" && (
-                <span className="ml-2 text-sm font-normal text-green-600">
-                  (Today)
-                </span>
-              )}
-            </h2>
-            {currentDay ? (
-              <DayContent
-                dayData={currentDay}
-                onMealChange={(mealType, newMeal) =>
-                  handleMealChange(selectedDate, mealType, newMeal)
-                }
-                onDeleteSnack={handleDeleteSnack}
-                onAddSnack={() => handleAddSnack(selectedDate)}
-                onDeleteWorkout={handleDeleteWorkout}
-                onAddWorkout={handleAddWorkout}
-                date={new Date(selectedDate)}
-                dayStatus={getDayStatus(selectedDate)}
-              />
-            ) : plan?.generationStatus === "generating" ? (
-              <div className="space-y-3 animate-pulse">
-                <div className="h-24 bg-gray-200 rounded-lg" />
-                <div className="h-24 bg-gray-200 rounded-lg" />
-                <div className="h-24 bg-gray-200 rounded-lg" />
-                <p className="text-center text-sm text-gray-400 pt-1">Preparing your meals...</p>
-              </div>
-            ) : null}
-          </div>
+            {getDayName(selectedDate)}
+            {getDayStatus(selectedDate) === "current" && (
+              <span className="ml-2 text-sm font-normal text-green-600">
+                (Today)
+              </span>
+            )}
+          </h2>
+
+          {/* Nutrition summary bento */}
+          {currentDay && (
+            <NutritionSummary
+              dayData={currentDay}
+              goals={{
+                calories: plan?.userMetrics?.targetCalories,
+                protein: plan?.userMetrics?.dailyMacros?.protein,
+                carbs: plan?.userMetrics?.dailyMacros?.carbs,
+                fat: plan?.userMetrics?.dailyMacros?.fat,
+              }}
+            />
+          )}
+
+          {/* Selected Day Content */}
+          {currentDay ? (
+            <DayContent
+              dayData={currentDay}
+              onMealChange={(mealType, newMeal) =>
+                handleMealChange(selectedDate, mealType, newMeal)
+              }
+              onDeleteSnack={handleDeleteSnack}
+              onAddSnack={() => handleAddSnack(selectedDate)}
+              onDeleteWorkout={handleDeleteWorkout}
+              onAddWorkout={handleAddWorkout}
+              date={new Date(selectedDate)}
+              dayStatus={getDayStatus(selectedDate)}
+            />
+          ) : plan?.generationStatus === "generating" ? (
+            <div className="space-y-3 animate-pulse">
+              <div className="h-24 bg-gray-200 rounded-2xl" />
+              <div className="h-24 bg-gray-200 rounded-2xl" />
+              <div className="h-24 bg-gray-200 rounded-2xl" />
+              <p className="text-center text-sm text-gray-400 pt-1">
+                Preparing your meals...
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
 

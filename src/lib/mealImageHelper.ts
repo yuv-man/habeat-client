@@ -498,6 +498,9 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
   chia: ["chia-pudding"],
   pudding: ["chia-pudding"],
+  oats: ["oatmeal-bowl-with-fruits", "porridge-with-cinnamon-and-apples"],
+  overnight: ["oatmeal-bowl-with-fruits", "chia-pudding"],
+  shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi"],
 
   // Sandwiches & Wraps
   sandwich: [

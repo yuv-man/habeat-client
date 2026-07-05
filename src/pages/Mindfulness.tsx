@@ -425,12 +425,18 @@ const Mindfulness = () => {
                 more resilient mind.
               </p>
               <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-1">
-                <span className="bg-green-800/10 text-green-800 px-4 py-1.5 rounded-full text-sm font-semibold border border-green-800/20">
-                  CBT Guided
-                </span>
-                <span className="bg-violet-500/10 text-violet-700 px-4 py-1.5 rounded-full text-sm font-semibold border border-violet-500/20">
+                <button
+                  onClick={() => navigate("/mindfulness/emotional-eating")}
+                  className="bg-green-800/10 text-green-800 px-4 py-1.5 rounded-full text-sm font-semibold border border-green-800/20 hover:bg-green-800/20 transition-colors active:scale-95"
+                >
+                  Eating Patterns
+                </button>
+                <button
+                  onClick={() => setActiveTab("mood")}
+                  className="bg-violet-500/10 text-violet-700 px-4 py-1.5 rounded-full text-sm font-semibold border border-violet-500/20 hover:bg-violet-500/20 transition-colors active:scale-95"
+                >
                   Daily Check-in
-                </span>
+                </button>
               </div>
             </div>
           </div>

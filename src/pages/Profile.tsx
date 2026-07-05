@@ -143,7 +143,7 @@ const Profile = () => {
     if (user?._id) {
       fetchFavoriteMeals(user._id);
     }
-  }, [user?._id, fetchFavoriteMeals]);
+  }, [user?._id, user?.weight, user?.height, user?.age, user?.gender, fetchFavoriteMeals]);
 
   // Also fetch when switching to favorites tab
   useEffect(() => {

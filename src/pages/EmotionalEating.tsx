@@ -480,8 +480,8 @@ export default function EmotionalEating() {
             Understand the connection between your emotional state and eating habits.
           </p>
 
-          {/* Empty state */}
-          {!insight || insight.totalMeals === 0 ? (
+          {/* No data at all */}
+          {!insight && moodHistory.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center border border-slate-100 shadow-sm">
               <div className="text-4xl mb-3">🌱</div>
               <p className="font-semibold text-slate-700 mb-1">No patterns yet</p>
@@ -492,45 +492,67 @@ export default function EmotionalEating() {
           ) : (
             <div className="space-y-4">
 
-              {/* Bento row 1: Score + Mood chart */}
+              {/* Bento row 1: Score (only when real data) + Mood chart */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-5">
-                  <ScoreRing score={score} weeklyChange={weeklyChange} />
-                </div>
-                <div className="md:col-span-7">
+                {insight && insight.totalMeals > 0 && (
+                  <div className="md:col-span-5">
+                    <ScoreRing score={score} weeklyChange={weeklyChange} />
+                  </div>
+                )}
+                <div className={insight && insight.totalMeals > 0 ? "md:col-span-7" : "md:col-span-12"}>
                   <MoodEatingChart
                     days={chartDays}
-                    insight={insight.patternSpotlight}
+                    insight={insight?.patternSpotlight ?? null}
                   />
                 </div>
               </div>
 
-              {/* Bento row 2: Mini metric cards + Tips slider */}
-              <div className="grid grid-cols-2 md:grid-cols-12 gap-4">
-                <div className="md:col-span-3">
-                  <MetricCard
-                    label="Satiety Rate"
-                    value={`${satietyPct}%`}
-                    unit={satietyPct >= 70 ? "High" : satietyPct >= 40 ? "Medium" : "Low"}
-                    sublabel="Meals eaten for hunger, not emotion"
-                    icon={<Sparkles className="w-4 h-4" />}
-                    color="teal"
-                  />
+              {/* Link-moods CTA — shown until user has real meal-mood correlations */}
+              {(!insight || insight.totalMeals === 0) && (
+                <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 flex items-start gap-3">
+                  <Brain className="w-5 h-5 text-teal-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-teal-800 mb-0.5">Mood data connected</p>
+                    <p className="text-xs text-teal-700 leading-relaxed">
+                      Your mood check-ins are showing above. To unlock your Mindful Eating Score and satiety stats, log a mood right after a meal — the check-in will ask if you want to link it.
+                    </p>
+                  </div>
                 </div>
-                <div className="md:col-span-3">
-                  <MetricCard
-                    label="Meals Analysed"
-                    value={String(mealsAnalyzed)}
-                    unit="total"
-                    sublabel={`${insight.emotionalEatingInstances} showed emotional eating`}
-                    icon={<Brain className="w-4 h-4" />}
-                    color="violet"
-                  />
+              )}
+
+              {/* Bento row 2: Mini metric cards + Tips slider — only when real correlations */}
+              {insight && insight.totalMeals > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-12 gap-4">
+                  <div className="md:col-span-3">
+                    <MetricCard
+                      label="Satiety Rate"
+                      value={`${satietyPct}%`}
+                      unit={satietyPct >= 70 ? "High" : satietyPct >= 40 ? "Medium" : "Low"}
+                      sublabel="Meals eaten for hunger, not emotion"
+                      icon={<Sparkles className="w-4 h-4" />}
+                      color="teal"
+                    />
+                  </div>
+                  <div className="md:col-span-3">
+                    <MetricCard
+                      label="Meals Analysed"
+                      value={String(mealsAnalyzed)}
+                      unit="total"
+                      sublabel={`${insight.emotionalEatingInstances} showed emotional eating`}
+                      icon={<Brain className="w-4 h-4" />}
+                      color="violet"
+                    />
+                  </div>
+                  <div className="col-span-2 md:col-span-6">
+                    <TipsSlider recommendations={insight.recommendations} />
+                  </div>
                 </div>
-                <div className="col-span-2 md:col-span-6">
-                  <TipsSlider recommendations={insight.recommendations} />
-                </div>
-              </div>
+              )}
+
+              {/* Tips slider standalone when no correlations yet */}
+              {(!insight || insight.totalMeals === 0) && (
+                <TipsSlider recommendations={[]} />
+              )}
 
               {/* Patterns table */}
               <PatternsTable patterns={patterns} />

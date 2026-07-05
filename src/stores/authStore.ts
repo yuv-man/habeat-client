@@ -63,7 +63,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email: normalized.email,
         name: normalized.name,
         profilePicture: normalized.profilePicture,
-        // Don't store sensitive data like password, tokens, etc.
+        // Non-sensitive profile fields — needed for cold-start Profile page render
+        weight: normalized.weight,
+        height: normalized.height,
+        age: normalized.age,
+        gender: normalized.gender,
+        path: normalized.path,
+        allergies: normalized.allergies,
+        dislikes: normalized.dislikes,
+        foodPreferences: normalized.foodPreferences,
+        dietaryRestrictions: normalized.dietaryRestrictions,
+        phone: normalized.phone,
       };
       localStorage.setItem("habeat_user", JSON.stringify(userDataToStore));
     } else {

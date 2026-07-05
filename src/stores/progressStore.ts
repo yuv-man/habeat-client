@@ -108,7 +108,7 @@ export const useProgressStore = create<ProgressStore>()(
       // State
       todayProgress: null,
       progressHistory: [],
-      loading: false,
+      loading: true, // true until first fetch attempt completes — prevents "No Progress" flash on cold start
       error: null,
       lastFetchTime: null,
       cachedDate: null,

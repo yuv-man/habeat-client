@@ -1,468 +1,318 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Heart,
-  MessageCircle,
-  Share2,
-  MoreHorizontal,
-  Trash2,
-  Send,
-  Flame,
-  Award,
-  Calendar,
-  Target,
-  Brain,
-} from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Heart, MessageCircle, Share2, Trash2, Send, Trophy, Utensils, Brain, Flame, Award, Calendar, Target, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { ISocialPost, PostType } from "@/services/api";
+import { ISocialPost } from "@/services/api";
 import { useSocialStore } from "@/stores/socialStore";
 import { useAuthStore } from "@/stores/authStore";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface PostCardProps {
   post: ISocialPost;
 }
 
-const typeIcons: Record<string, typeof Flame> = {
-  streak: Flame,
-  achievement: Award,
-  weekly_summary: Calendar,
-  habit_score: Target,
-  cbt_milestone: Brain,
-  text: MessageCircle,
+const TYPE_META: Record<string, { label: string; color: string }> = {
+  goal_reached:   { label: "Goal Reached",    color: "text-green-800 bg-green-800/10" },
+  meal_share:     { label: "Meal Share",       color: "text-[#5f5a80] bg-[#5f5a80]/10" },
+  mindful_moment: { label: "Mindful Moment",   color: "text-violet-600 bg-violet-100" },
+  streak:         { label: "Streak",           color: "text-orange-600 bg-orange-50" },
+  achievement:    { label: "Achievement",      color: "text-purple-600 bg-purple-50" },
+  weekly_summary: { label: "Weekly Summary",   color: "text-blue-600 bg-blue-50" },
+  habit_score:    { label: "Habit Score",      color: "text-green-600 bg-green-50" },
+  cbt_milestone:  { label: "CBT Milestone",    color: "text-pink-600 bg-pink-50" },
+  text:           { label: "Post",             color: "text-gray-500 bg-gray-100" },
 };
 
-const typeColors: Record<string, string> = {
-  streak: "text-orange-500 bg-orange-50 dark:bg-orange-900/20",
-  achievement: "text-purple-500 bg-purple-50 dark:bg-purple-900/20",
-  weekly_summary: "text-blue-500 bg-blue-50 dark:bg-blue-900/20",
-  habit_score: "text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20",
-  cbt_milestone: "text-pink-500 bg-pink-50 dark:bg-pink-900/20",
-  text: "text-gray-500 bg-gray-50 dark:bg-gray-900/20",
+const TYPE_ICONS: Record<string, typeof Heart> = {
+  goal_reached:   Trophy,
+  meal_share:     Utensils,
+  mindful_moment: Brain,
+  streak:         Flame,
+  achievement:    Award,
+  weekly_summary: Calendar,
+  habit_score:    Target,
+  cbt_milestone:  Brain,
+  text:           MessageSquare,
 };
 
 const PostCard = ({ post }: PostCardProps) => {
   const { toast } = useToast();
   const user = useAuthStore((state) => state.user);
   const { toggleLike, addComment, deleteComment, deletePost, trackShare } = useSocialStore();
-
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  // Handle cases where userId might not be populated
   const postUser = post.userId || { _id: "", name: "Unknown", profilePicture: "" };
   const postUserId = typeof postUser === "string" ? postUser : postUser._id;
   const postUserName = typeof postUser === "string" ? "User" : (postUser.name || "User");
   const postUserPicture = typeof postUser === "string" ? "" : (postUser.profilePicture || "");
-
   const isOwner = user?._id === postUserId;
-  const Icon = typeIcons[post.type] || Award;
+
+  const meta = TYPE_META[post.type] || TYPE_META.text;
+  const TypeIcon = TYPE_ICONS[post.type] || MessageSquare;
+  const isMindful = post.type === "mindful_moment";
 
   const handleLike = async () => {
-    try {
-      await toggleLike(post._id);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    }
+    try { await toggleLike(post._id); }
+    catch (e) { toast({ title: "Error", description: (e as Error).message, variant: "destructive" }); }
   };
 
   const handleComment = async () => {
     if (!commentText.trim()) return;
-
     setIsSubmittingComment(true);
     try {
       await addComment(post._id, commentText);
       setCommentText("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmittingComment(false);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    try {
-      await deleteComment(post._id, commentId);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await deletePost(post._id);
-      toast({
-        title: "Post deleted",
-        description: "Your post has been removed",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    }
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+    } finally { setIsSubmittingComment(false); }
   };
 
   const handleShare = async () => {
     try {
       await trackShare(post._id);
       if (navigator.share) {
-        await navigator.share({
-          title: post.content.title,
-          text: post.caption || post.content.description,
-          url: `${window.location.origin}/social/post/${post._id}`,
-        });
+        await navigator.share({ title: post.content.title, text: post.caption || post.content.description, url: `${window.location.origin}/social/post/${post._id}` });
       } else {
-        await navigator.clipboard.writeText(
-          `${window.location.origin}/social/post/${post._id}`
-        );
-        toast({
-          title: "Link copied!",
-          description: "Post link has been copied to clipboard",
-        });
+        await navigator.clipboard.writeText(`${window.location.origin}/social/post/${post._id}`);
+        toast({ title: "Link copied!" });
       }
-    } catch (error) {
-      if ((error as Error).name !== "AbortError") {
-        toast({
-          title: "Error",
-          description: (error as Error).message,
-          variant: "destructive",
-        });
-      }
-    }
+    } catch (e) { if ((e as Error).name !== "AbortError") toast({ title: "Error", description: (e as Error).message, variant: "destructive" }); }
   };
 
-  const renderPostContent = () => {
-    const { content, type } = post;
+  const handleDelete = async () => {
+    try {
+      await deletePost(post._id);
+      toast({ title: "Post deleted" });
+    } catch (e) { toast({ title: "Error", description: (e as Error).message, variant: "destructive" }); }
+  };
 
-    switch (type) {
-      case "streak":
-        return (
-          <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-red-500">
-              <Flame className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                {content.streakDays} days
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Streak achieved!
-              </p>
-            </div>
-          </div>
-        );
+  // Stacked avatars from likes (show up to 2 + count)
+  const likedBy = post.likes?.slice(0, 2) || [];
+  const extraLikes = Math.max(0, (post.likesCount || 0) - 2);
 
-      case "achievement":
-        return (
+  return (
+    <div className={cn(
+      "bg-white rounded-2xl overflow-hidden shadow-[0_10px_40px_-10px_rgba(63,102,82,0.08)] border border-gray-100 border-b-4 border-b-green-800/10 flex flex-col",
+    )}>
+      {/* Header */}
+      <div className="p-5 pb-3">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-purple-400 to-pink-500">
-              {content.badgeIcon ? (
-                <span className="text-2xl">{content.badgeIcon}</span>
+            <div className="w-10 h-10 rounded-full bg-green-100 overflow-hidden flex-shrink-0">
+              {postUserPicture ? (
+                <img src={postUserPicture} alt={postUserName} className="w-full h-full object-cover" />
               ) : (
-                <Award className="h-8 w-8 text-white" />
+                <div className="w-full h-full flex items-center justify-center text-green-800 font-bold text-sm">
+                  {postUserName.charAt(0).toUpperCase()}
+                </div>
               )}
             </div>
             <div>
-              <p className="font-bold text-slate-900 dark:text-white">
-                {content.badgeName || content.title}
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Badge earned
+              <p className="text-sm font-semibold text-gray-900">{postUserName}</p>
+              <p className="text-xs text-gray-400">
+                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })} · {meta.label}
               </p>
             </div>
           </div>
-        );
-
-      case "weekly_summary":
-        return (
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-slate-100 p-3 text-center dark:bg-slate-800">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                {content.weeklyData?.daysTracked || 0}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Days</p>
-            </div>
-            <div className="rounded-lg bg-slate-100 p-3 text-center dark:bg-slate-800">
-              <p className="text-2xl font-bold text-emerald-600">
-                {content.weeklyData?.consistencyScore || 0}%
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Consistency</p>
-            </div>
-            <div className="rounded-lg bg-slate-100 p-3 text-center dark:bg-slate-800">
-              <p className="text-2xl font-bold text-blue-600">
-                {content.weeklyData?.avgCalories || 0}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Avg Cal</p>
-            </div>
-          </div>
-        );
-
-      case "habit_score":
-        return (
-          <div className="flex items-center gap-4">
-            <div className="relative h-16 w-16">
-              <svg className="h-16 w-16 -rotate-90" viewBox="0 0 36 36">
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-slate-200 dark:text-slate-700"
-                />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeDasharray={`${((content.habitScore || 0) / 100) * 100} 100`}
-                  className="text-emerald-500"
-                />
-              </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-lg font-bold">
-                {content.habitScore}
-              </span>
-            </div>
-            <div>
-              <p className="font-bold text-slate-900 dark:text-white">
-                Habit Score
-              </p>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Keep building!
-              </p>
-            </div>
-          </div>
-        );
-
-      case "cbt_milestone":
-        return (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-pink-50 p-3 dark:bg-pink-900/20">
-              <p className="text-2xl font-bold text-pink-600">
-                {content.cbtData?.moodsLogged || 0}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Moods logged</p>
-            </div>
-            <div className="rounded-lg bg-purple-50 p-3 dark:bg-purple-900/20">
-              <p className="text-2xl font-bold text-purple-600">
-                {content.cbtData?.exercisesCompleted || 0}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">Exercises</p>
-            </div>
-          </div>
-        );
-
-      case "text":
-        return (
-          <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-            <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-              {content.description}
-            </p>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl bg-white p-4 shadow-sm dark:bg-slate-900"
-    >
-      {/* Header */}
-      <div className="mb-4 flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={postUserPicture} />
-            <AvatarFallback>
-              {postUserName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-semibold text-slate-900 dark:text-white">
-              {postUserName}
-            </p>
-            <p className="text-xs text-slate-500">
-              {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-            </p>
+          <div className="flex items-center gap-2">
+            {/* Health score badge for meal share */}
+            {post.type === "meal_share" && post.content.healthScore != null && (
+              <div className="px-3 py-1 rounded-full bg-green-800/8 border border-green-800/15 text-green-800 text-xs font-bold">
+                {post.content.healthScore} Score
+              </div>
+            )}
+            {/* Type icon for other types */}
+            {post.type !== "meal_share" && (
+              <div className={cn("w-9 h-9 rounded-full flex items-center justify-center", meta.color)}>
+                <TypeIcon className="w-4 h-4" />
+              </div>
+            )}
+            {isOwner && (
+              <button onClick={handleDelete} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ${typeColors[post.type]}`}
-          >
-            <Icon className="h-3 w-3" />
-            {post.type.replace("_", " ")}
-          </span>
-
-          {isOwner && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="rounded-full p-1 hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <MoreHorizontal className="h-5 w-5 text-slate-500" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={handleDelete}
-                  className="text-red-600"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+        {/* Caption / text */}
+        {isMindful ? (
+          <blockquote className="mt-1 mb-2">
+            <p className="text-lg font-semibold text-green-800 italic leading-relaxed">
+              "{post.caption || post.content.description}"
+            </p>
+          </blockquote>
+        ) : (
+          (post.caption || post.content.description) && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {post.caption || post.content.description}
+            </p>
+          )
+        )}
       </div>
 
-      {/* Caption */}
-      {post.caption && (
-        <p className="mb-4 text-slate-700 dark:text-slate-300">{post.caption}</p>
+      {/* Image */}
+      {post.content.imageUrl && (
+        <div className="aspect-[4/3] w-full overflow-hidden">
+          <img src={post.content.imageUrl} alt={post.content.title} className="w-full h-full object-cover" />
+        </div>
       )}
 
-      {/* Content */}
-      <div className="mb-4">{renderPostContent()}</div>
+      {/* Streak / habit_score / legacy content */}
+      {["streak", "achievement", "weekly_summary", "habit_score", "cbt_milestone"].includes(post.type) && (
+        <div className="px-5 pb-3">
+          {post.type === "streak" && (
+            <div className="flex items-center gap-3 p-3 bg-orange-50 rounded-xl">
+              <Flame className="w-7 h-7 text-orange-500" />
+              <span className="text-xl font-bold text-gray-900">{post.content.streakDays} day streak</span>
+            </div>
+          )}
+          {post.type === "achievement" && (
+            <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl">
+              <Award className="w-7 h-7 text-purple-500" />
+              <span className="font-semibold text-gray-900">{post.content.badgeName || post.content.title}</span>
+            </div>
+          )}
+          {post.type === "habit_score" && (
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
+              <Target className="w-7 h-7 text-green-600" />
+              <span className="text-xl font-bold text-green-700">{post.content.habitScore} pts</span>
+            </div>
+          )}
+          {post.type === "weekly_summary" && post.content.weeklyData && (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Days", value: post.content.weeklyData.daysTracked ?? 0 },
+                { label: "Consistency", value: `${post.content.weeklyData.consistencyScore ?? 0}%` },
+                { label: "Avg Cal", value: post.content.weeklyData.avgCalories ?? 0 },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-gray-50 rounded-xl p-3 text-center">
+                  <p className="text-lg font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-xs text-gray-400">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-4 border-t border-slate-100 pt-3 dark:border-slate-800">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 transition-colors ${
-            post.isLiked
-              ? "text-red-500"
-              : "text-slate-500 hover:text-red-500"
-          }`}
-        >
-          <Heart
-            className={`h-5 w-5 ${post.isLiked ? "fill-current" : ""}`}
-          />
-          <span className="text-sm font-medium">{post.likesCount}</span>
-        </button>
+      {/* Action bar */}
+      <div className={cn(
+        "px-4 py-3 flex items-center border-t border-gray-100 mt-auto",
+        isMindful ? "justify-between" : "justify-around"
+      )}>
+        {/* Mindful moment: stacked avatars left, actions right */}
+        {isMindful && likedBy.length > 0 && (
+          <div className="flex -space-x-2">
+            {likedBy.map((_, i) => (
+              <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-green-100" />
+            ))}
+            {extraLikes > 0 && (
+              <div className="w-7 h-7 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center">
+                <span className="text-[9px] font-bold text-gray-500">+{extraLikes}</span>
+              </div>
+            )}
+          </div>
+        )}
+        {isMindful && likedBy.length === 0 && <div />}
 
-        <button
-          onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-1.5 text-slate-500 transition-colors hover:text-blue-500"
-        >
-          <MessageCircle className="h-5 w-5" />
-          <span className="text-sm font-medium">{post.commentsCount}</span>
-        </button>
+        <div className={cn("flex items-center", isMindful ? "gap-3" : "gap-0 justify-around w-full")}>
+          {/* Beat (like) */}
+          <button
+            onClick={handleLike}
+            className={cn(
+              "flex items-center gap-1.5 py-2 px-3 rounded-full transition-all active:scale-90",
+              post.isLiked
+                ? "text-green-800 bg-green-800/5"
+                : "text-gray-400 hover:text-green-800 hover:bg-green-800/5"
+            )}
+          >
+            <Heart className={cn("w-5 h-5 transition-all", post.isLiked && "fill-current scale-110")} />
+            <span className="text-sm font-semibold">
+              {post.likesCount > 0 ? `${post.likesCount} ` : ""}Beat{post.likesCount !== 1 ? "s" : ""}
+            </span>
+          </button>
 
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 text-slate-500 transition-colors hover:text-emerald-500"
-        >
-          <Share2 className="h-5 w-5" />
-          <span className="text-sm font-medium">{post.shares}</span>
-        </button>
+          {/* Comment */}
+          <button
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-gray-400 hover:text-green-800 hover:bg-green-800/5 transition-colors"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span className="text-sm font-semibold">
+              {post.commentsCount > 0 ? post.commentsCount : "Comment"}
+            </span>
+          </button>
+
+          {/* Share */}
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 py-2 px-3 rounded-full text-gray-400 hover:text-green-800 hover:bg-green-800/5 transition-colors"
+          >
+            <Share2 className="w-5 h-5" />
+            <span className="text-sm font-semibold">Share</span>
+          </button>
+        </div>
       </div>
 
-      {/* Comments section */}
+      {/* Comments */}
       <AnimatePresence>
         {showComments && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="mt-4 overflow-hidden"
+            className="overflow-hidden border-t border-gray-100"
           >
-            {/* Comment input */}
-            <div className="mb-3 flex gap-2">
-              <Input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Write a comment..."
-                onKeyDown={(e) => e.key === "Enter" && handleComment()}
-                className="flex-1"
-              />
-              <Button
-                onClick={handleComment}
-                disabled={!commentText.trim() || isSubmittingComment}
-                size="icon"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Comments list */}
-            <div className="space-y-3">
+            <div className="p-4 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  onKeyDown={(e) => e.key === "Enter" && handleComment()}
+                  className="flex-1 rounded-full border-gray-200 text-sm"
+                />
+                <Button onClick={handleComment} disabled={!commentText.trim() || isSubmittingComment} size="icon" className="rounded-full bg-green-800 hover:bg-green-700 w-9 h-9">
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
               {post.comments.map((comment) => {
-                const commentUser = comment.userId || { _id: "", name: "User", profilePicture: "" };
-                const commentUserId = typeof commentUser === "string" ? commentUser : commentUser._id;
-                const commentUserName = typeof commentUser === "string" ? "User" : (commentUser.name || "User");
-                const commentUserPicture = typeof commentUser === "string" ? "" : (commentUser.profilePicture || "");
-
+                const cu = comment.userId || { _id: "", name: "User", profilePicture: "" };
+                const cuId = typeof cu === "string" ? cu : cu._id;
+                const cuName = typeof cu === "string" ? "User" : (cu.name || "User");
+                const cuPic = typeof cu === "string" ? "" : (cu.profilePicture || "");
                 return (
-                <div key={comment._id} className="flex gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={commentUserPicture} />
-                    <AvatarFallback>
-                      {commentUserName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 rounded-lg bg-slate-50 p-2 dark:bg-slate-800">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">
-                        {commentUserName}
-                      </p>
-                      {(user?._id === commentUserId || isOwner) && (
-                        <button
-                          onClick={() => handleDeleteComment(comment._id)}
-                          className="text-slate-400 hover:text-red-500"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                  <div key={comment._id} className="flex gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden">
+                      {cuPic ? <img src={cuPic} alt={cuName} className="w-full h-full object-cover" /> : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">{cuName.charAt(0)}</div>
                       )}
                     </div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {comment.text}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-400">
-                      {formatDistanceToNow(new Date(comment.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </p>
+                    <div className="flex-1 bg-gray-50 rounded-2xl px-3 py-2">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-xs font-semibold text-gray-900">{cuName}</p>
+                        {(user?._id === cuId || isOwner) && (
+                          <button onClick={() => deleteComment(post._id, comment._id)} className="text-gray-300 hover:text-red-400">
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{comment.text}</p>
+                    </div>
                   </div>
-                </div>
-              );
+                );
               })}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 };
 

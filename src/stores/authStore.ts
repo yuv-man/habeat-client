@@ -63,6 +63,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         email: normalized.email,
         name: normalized.name,
         profilePicture: normalized.profilePicture,
+        // Subscription fields — must be stored so tier checks work on cold start
+        subscriptionTier: normalized.subscriptionTier,
+        role: normalized.role,
         // Non-sensitive profile fields — needed for cold-start Profile page render
         weight: normalized.weight,
         height: normalized.height,

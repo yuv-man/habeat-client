@@ -1,15 +1,15 @@
 import { useEffect, useCallback, useRef } from "react";
-import { motion } from "framer-motion";
-import { Loader2, RefreshCw, Users } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import { useSocialStore } from "@/stores/socialStore";
 import PostCard from "./PostCard";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SocialFeedProps {
-  userId?: string; // If provided, show user's posts. Otherwise, show general feed.
+  userId?: string;
+  refreshKey?: number;
 }
 
-const SocialFeed = ({ userId }: SocialFeedProps) => {
+const SocialFeed = ({ userId, refreshKey }: SocialFeedProps) => {
   const {
     posts,
     userPosts,
@@ -27,138 +27,69 @@ const SocialFeed = ({ userId }: SocialFeedProps) => {
   const isLoading = userId ? userPostsLoading : feedLoading;
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Initial fetch
   useEffect(() => {
     if (userId) {
       fetchUserPosts(userId, 1, false);
     } else {
       fetchFeed(1, false);
     }
-  }, [userId, fetchFeed, fetchUserPosts]);
+  }, [userId, fetchFeed, fetchUserPosts, refreshKey]);
 
-  // Load more handler
   const handleLoadMore = useCallback(() => {
     if (!pagination || pagination.page >= pagination.totalPages || isLoading) return;
-
     const nextPage = pagination.page + 1;
-    if (userId) {
-      fetchUserPosts(userId, nextPage, true);
-    } else {
-      fetchFeed(nextPage, true);
-    }
+    if (userId) fetchUserPosts(userId, nextPage, true);
+    else fetchFeed(nextPage, true);
   }, [pagination, isLoading, userId, fetchFeed, fetchUserPosts]);
 
-  // Intersection observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore();
-        }
-      },
+      (entries) => { if (entries[0].isIntersecting) handleLoadMore(); },
       { threshold: 0.1 }
     );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
+    if (loadMoreRef.current) observer.observe(loadMoreRef.current);
     return () => observer.disconnect();
   }, [handleLoadMore]);
 
-  const handleRefresh = () => {
-    if (userId) {
-      fetchUserPosts(userId, 1, false);
-    } else {
-      fetchFeed(1, false);
-    }
-  };
-
-  // Empty state
   if (!isLoading && displayPosts.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center rounded-2xl bg-white p-8 text-center shadow-sm dark:bg-slate-900"
-      >
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
-          <Users className="h-8 w-8 text-slate-400" />
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+          <Users className="w-8 h-8 text-gray-300" />
         </div>
-        <h3 className="mb-2 text-lg font-semibold text-slate-900 dark:text-white">
-          No posts yet
-        </h3>
-        <p className="mb-4 text-slate-500">
-          {userId
-            ? "This user hasn't shared any achievements yet."
-            : "Be the first to share an achievement!"}
+        <p className="font-semibold text-gray-500 mb-1">No posts yet</p>
+        <p className="text-sm text-gray-400">
+          {userId ? "Nothing shared yet." : "Be the first to share something!"}
         </p>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
-      </motion.div>
+      </div>
     );
   }
 
-  // Error state
   if (feedError) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-center justify-center rounded-2xl bg-white p-8 text-center shadow-sm dark:bg-slate-900"
-      >
-        <p className="mb-4 text-red-500">{feedError}</p>
-        <Button onClick={handleRefresh} variant="outline" size="sm">
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Try Again
-        </Button>
-      </motion.div>
+      <div className="text-center py-12 text-red-400 text-sm">{feedError}</div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Refresh button */}
-      <div className="flex justify-end">
-        <Button
-          onClick={handleRefresh}
-          variant="ghost"
-          size="sm"
-          disabled={isLoading}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+    <div>
+      {/* Bento grid: 2-col on md+, mindful_moment spans full width */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {displayPosts.map((post) => (
+          <div
+            key={post._id}
+            className={cn(post.type === "mindful_moment" && "md:col-span-2")}
+          >
+            <PostCard post={post} />
+          </div>
+        ))}
       </div>
 
-      {/* Posts */}
-      {displayPosts.map((post, index) => (
-        <motion.div
-          key={post._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: index * 0.05 }}
-        >
-          <PostCard post={post} />
-        </motion.div>
-      ))}
-
-      {/* Load more trigger */}
-      <div ref={loadMoreRef} className="py-4">
-        {isLoading && (
-          <div className="flex justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
-          </div>
-        )}
-
-        {pagination && pagination.page >= pagination.totalPages && displayPosts.length > 0 && (
-          <p className="text-center text-sm text-slate-500">
-            You've reached the end
-          </p>
+      {/* Infinite scroll trigger */}
+      <div ref={loadMoreRef} className="py-6 flex justify-center">
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin text-green-800/40" />}
+        {!isLoading && pagination && pagination.page >= pagination.totalPages && displayPosts.length > 0 && (
+          <p className="text-xs text-gray-300">You're all caught up</p>
         )}
       </div>
     </div>

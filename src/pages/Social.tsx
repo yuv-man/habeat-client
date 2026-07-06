@@ -1,28 +1,63 @@
-import { useState, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Users, UserPlus, Sparkles, Plus } from "lucide-react";
+import { useState, useCallback, useRef } from "react";
+import { Trophy, ImagePlus, Brain, Plus, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { SocialFeed } from "@/components/social";
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/authStore";
+import { useSocialStore } from "@/stores/socialStore";
+import { socialAPI } from "@/services/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
 import CreatePostModal from "@/components/social/CreatePostModal";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+
+type PostMode = "goal" | "photo" | "mood" | "achievement";
 
 const Social = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { user, loading, token } = useAuthStore();
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const { fetchFeed } = useSocialStore();
+
+  const [modalMode, setModalMode] = useState<PostMode>("mood");
+  const [showModal, setShowModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Inline composer state
+  const [composerText, setComposerText] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const handlePostCreated = useCallback(() => {
-    // Trigger feed refresh by changing key
-    setRefreshKey((prev) => prev + 1);
+    setRefreshKey((k) => k + 1);
   }, []);
+
+  const openModal = (mode: PostMode) => {
+    setModalMode(mode);
+    setShowModal(true);
+  };
+
+  const handleInlinePost = async () => {
+    if (!composerText.trim()) return;
+    setIsPosting(true);
+    try {
+      await socialAPI.createPost({
+        type: "mindful_moment",
+        content: { title: composerText.trim(), description: composerText.trim() },
+        caption: composerText.trim(),
+        visibility: "public",
+      });
+      setComposerText("");
+      toast({ title: "Posted!" });
+      setRefreshKey((k) => k + 1);
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" });
+    } finally { setIsPosting(false); }
+  };
 
   if (loading || (token && !user)) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
         <MealLoader />
       </div>
     );
@@ -30,73 +65,100 @@ const Social = () => {
 
   if (!user) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-        <Users className="w-12 h-12 text-gray-300 mb-4" />
-        <p className="text-gray-500 mb-4">Please log in to view the community.</p>
-        <Button onClick={() => navigate("/register")} className="bg-emerald-500 hover:bg-emerald-600">
-          Sign In
-        </Button>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#faf9f6] p-4 gap-4">
+        <Users className="w-12 h-12 text-gray-300" />
+        <p className="text-gray-400">Please log in to view the community.</p>
+        <button onClick={() => navigate("/register")} className="px-6 py-3 bg-green-800 text-white rounded-full font-semibold text-sm">Sign In</button>
       </div>
     );
   }
 
   return (
-    <DashboardLayout currentView="daily" hidePlanBanner>
-      <div className="max-w-2xl mx-auto px-4 py-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-emerald-500" />
-            <h1 className="text-xl font-bold text-gray-900">Community</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => setShowCreateModal(true)}
-              className="bg-emerald-500 hover:bg-emerald-600"
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Post
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/social/discover")}
-              className="text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-            >
-              <UserPlus className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+    <DashboardLayout currentView="daily" hidePlanBanner bgColor="bg-[#faf9f6]">
+      <div className="max-w-2xl mx-auto px-4 pt-4 pb-8">
 
-        {/* Welcome Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 p-4 text-white shadow-sm"
-        >
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Sparkles className="w-5 h-5" />
+        {/* Inline composer */}
+        <section className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_-10px_rgba(63,102,82,0.08)] border border-gray-100 border-b-4 border-b-green-800/10 mb-6">
+          <div className="flex gap-3 mb-4">
+            {/* Avatar */}
+            <div className="w-11 h-11 rounded-full bg-green-100 flex-shrink-0 overflow-hidden">
+              {user.profilePicture ? (
+                <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-green-800 font-bold">
+                  {user.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+              )}
             </div>
-            <div>
-              <h2 className="font-semibold mb-1">Welcome to the Community!</h2>
-              <p className="text-sm text-white/90">
-                Share achievements, celebrate milestones, and connect with others on their wellness journey.
-              </p>
-            </div>
+            <textarea
+              ref={textareaRef}
+              value={composerText}
+              onChange={(e) => setComposerText(e.target.value)}
+              placeholder="What's on your mind?"
+              rows={2}
+              className="flex-1 bg-transparent border-none outline-none resize-none text-base text-gray-800 placeholder:text-gray-400 leading-relaxed"
+            />
           </div>
-        </motion.div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {/* Chips */}
+              <button
+                onClick={() => openModal("goal")}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-green-800/8 hover:bg-green-800/15 text-green-800 text-sm font-semibold transition-colors"
+              >
+                <Trophy className="w-4 h-4" />
+                Goal
+              </button>
+              <button
+                onClick={() => openModal("photo")}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-[#5f5a80]/8 hover:bg-[#5f5a80]/15 text-[#5f5a80] text-sm font-semibold transition-colors"
+              >
+                <ImagePlus className="w-4 h-4" />
+                Photo
+              </button>
+              <button
+                onClick={() => openModal("mood")}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-violet-100 hover:bg-violet-200 text-violet-700 text-sm font-semibold transition-colors"
+              >
+                <Brain className="w-4 h-4" />
+                Mood
+              </button>
+            </div>
+
+            {/* Post button — only visible when there's text */}
+            {composerText.trim() && (
+              <button
+                onClick={handleInlinePost}
+                disabled={isPosting}
+                className={cn(
+                  "px-5 py-2 bg-green-800 text-white rounded-full text-sm font-semibold hover:bg-green-700 transition-all active:scale-95",
+                  isPosting && "opacity-60"
+                )}
+              >
+                {isPosting ? "Posting..." : "Post"}
+              </button>
+            )}
+          </div>
+        </section>
 
         {/* Feed */}
-        <SocialFeed key={refreshKey} />
+        <SocialFeed refreshKey={refreshKey} />
       </div>
 
-      {/* Create Post Modal */}
+      {/* FAB for quick post */}
+      <button
+        onClick={() => openModal("mood")}
+        className="fixed bottom-24 right-5 w-14 h-14 bg-green-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-green-700 hover:scale-105 active:scale-90 transition-all z-40"
+      >
+        <Plus className="w-7 h-7" />
+      </button>
+
       <CreatePostModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
         onPostCreated={handlePostCreated}
+        initialMode={modalMode}
       />
     </DashboardLayout>
   );

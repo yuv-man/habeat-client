@@ -1999,7 +1999,7 @@ const getMoodBasedMealRecommendations = async (
 // SOCIAL API
 // ============================================================================
 
-export type PostType = "achievement" | "streak" | "weekly_summary" | "habit_score" | "cbt_milestone";
+export type PostType = "achievement" | "streak" | "weekly_summary" | "habit_score" | "cbt_milestone" | "text" | "goal_reached" | "meal_share" | "mindful_moment";
 export type PostVisibility = "public" | "friends" | "private";
 
 export interface PostContent {
@@ -2012,6 +2012,7 @@ export interface PostContent {
   badgeIcon?: string;
   streakDays?: number;
   habitScore?: number;
+  healthScore?: number;
   weeklyData?: {
     daysTracked?: number;
     consistencyScore?: number;

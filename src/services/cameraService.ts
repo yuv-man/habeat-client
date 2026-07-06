@@ -19,6 +19,40 @@ export const takePhoto = async (): Promise<PhotoResult> => {
 };
 
 /**
+ * Pick a photo from the device gallery (no camera, gallery only)
+ */
+export const pickFromGallery = async (): Promise<PhotoResult> => {
+  if (isNativePlatform()) {
+    const photo = await Camera.getPhoto({
+      quality: 80,
+      allowEditing: false,
+      resultType: CameraResultType.Base64,
+      source: CameraSource.Photos,
+      correctOrientation: true,
+    });
+    if (!photo.base64String) throw new Error("Failed to pick photo");
+    return { base64: photo.base64String, format: photo.format || "jpeg" };
+  }
+  // Web: open file picker without camera capture attribute
+  return new Promise((resolve, reject) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) { reject(new Error("No file selected")); return; }
+      try {
+        const base64 = await fileToBase64(file);
+        const base64Data = base64.includes(",") ? base64.split(",")[1] : base64;
+        resolve({ base64: base64Data, format: file.type.split("/")[1] || "jpeg" });
+      } catch (error) { reject(error); }
+    };
+    input.oncancel = () => reject(new Error("Cancelled"));
+    input.click();
+  });
+};
+
+/**
  * Take photo using native Capacitor Camera
  */
 const takePhotoNative = async (): Promise<PhotoResult> => {

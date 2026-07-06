@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useStreak } from "@/stores/engagementStore";
 import { shouldShowStreakUpgradePromptForUser } from "@/lib/subscriptionAccess";
+import { getEffectiveTier } from "@/lib/subscription";
 import {
   Dialog,
   DialogContent,
@@ -22,11 +23,14 @@ export function StreakUpgradePrompt() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    // Check if we should show the prompt
     const hasSeenPrompt = localStorage.getItem(STREAK_PROMPT_KEY) === "true";
+    const shouldShow = shouldShowStreakUpgradePromptForUser(user, currentStreak, hasSeenPrompt);
 
-    if (shouldShowStreakUpgradePromptForUser(user, currentStreak, hasSeenPrompt)) {
+    if (shouldShow) {
       setIsOpen(true);
+    } else {
+      // Close immediately if already open but user no longer qualifies (e.g. just upgraded)
+      setIsOpen(false);
     }
   }, [user, currentStreak]);
 
@@ -40,6 +44,10 @@ export function StreakUpgradePrompt() {
     handleClose();
     navigate("/subscription");
   };
+
+  const currentTier = getEffectiveTier(user);
+  const targetTier = currentTier === "plus" ? "Premium" : "Plus";
+  const targetPrice = currentTier === "plus" ? "$14.99" : "$9.99";
 
   if (!isOpen) return null;
 
@@ -69,7 +77,7 @@ export function StreakUpgradePrompt() {
             You're building a habit ⭐
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            Keep it going with Plus.
+            Keep it going with {targetTier}.
           </DialogDescription>
         </DialogHeader>
 
@@ -117,7 +125,7 @@ export function StreakUpgradePrompt() {
           {/* Pricing */}
           <div className="text-center">
             <p className="text-2xl font-bold text-gray-900">
-              $9.99
+              {targetPrice}
               <span className="text-sm font-normal text-gray-500">/month</span>
             </p>
             <p className="text-xs text-gray-500 mt-1">Cancel anytime</p>
@@ -133,7 +141,7 @@ export function StreakUpgradePrompt() {
               className="flex-1 bg-gradient-to-r from-purple-600 to-yellow-500 text-white hover:from-purple-700 hover:to-yellow-600"
             >
               <Crown className="w-4 h-4 mr-2" />
-              Upgrade to Plus
+              Upgrade to {targetTier}
             </Button>
           </div>
         </div>

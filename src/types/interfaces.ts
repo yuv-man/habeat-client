@@ -335,6 +335,7 @@ export interface AuthState {
   mealTimes: MealTimes;
   favoriteMealsData: IMeal[];
   favoriteMealsLoaded: boolean;
+  userAuthError: boolean;
 }
 
 export interface AuthActions {

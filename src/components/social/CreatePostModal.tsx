@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { X, Loader2, Flame, Target, Calendar, Send, Trophy, ImagePlus, Brain, XCircle } from "lucide-react";
 import { useEngagementStore } from "@/stores/engagementStore";
 import { useAuthStore } from "@/stores/authStore";
-import { socialAPI } from "@/services/api";
+import { useSocialStore } from "@/stores/socialStore";
 import { pickFromGallery } from "@/services/cameraService";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -84,6 +84,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, initialMode }: Create
 
   const user = useAuthStore((state) => state.user);
   const engagementStats = useEngagementStore((state) => state.stats);
+  const createPost = useSocialStore((state) => state.createPost);
 
   const resetAndClose = () => {
     setTextContent("");
@@ -108,8 +109,14 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, initialMode }: Create
 
   const post = async (type: string, content: Record<string, any>, caption?: string) => {
     setIsPosting(true);
+    const author = user
+      ? { _id: user._id!, name: user.name, profilePicture: user.profilePicture }
+      : undefined;
     try {
-      await socialAPI.createPost({ type: type as any, content: { title: caption || type, ...content }, caption, visibility: "public" });
+      await createPost(
+        { type: type as any, content: { title: caption || type, ...content }, caption, visibility: "public" },
+        author
+      );
       toast({ title: "Posted!", description: "Your post is now live" });
       onPostCreated?.();
       resetAndClose();
@@ -148,9 +155,12 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, initialMode }: Create
       score:  { title: `Habit Score: ${engagementStats.habitScore}`, habitScore: engagementStats.habitScore },
       weekly: { title: `${engagementStats.weeklyConsistency}% Weekly`, weeklyData: { daysTracked: engagementStats.weeklyGoalsHit, consistencyScore: engagementStats.weeklyConsistency } },
     };
+    const author = user
+      ? { _id: user._id!, name: user.name, profilePicture: user.profilePicture }
+      : undefined;
     setIsPosting(true);
     try {
-      await socialAPI.createPost({ type: typeMap[selectedAchievement], content: contentMap[selectedAchievement], visibility: "public" });
+      await createPost({ type: typeMap[selectedAchievement], content: contentMap[selectedAchievement], visibility: "public" }, author);
       toast({ title: "Posted!" });
       onPostCreated?.();
       resetAndClose();

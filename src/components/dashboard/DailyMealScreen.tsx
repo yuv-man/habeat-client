@@ -4,7 +4,8 @@ import "@/styles/dailyScreen.css";
 import { Trash2, Check, Droplet, ArrowRight, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { IDailyProgress, WorkoutData, IMeal } from "@/types/interfaces";
+import { IDailyProgress, WorkoutData, IMeal, MoodCategory, MoodLevel } from "@/types/interfaces";
+import { MoodCheckInCard } from "@/components/cbt/MoodCheckInCard";
 import MealLoader from "../helper/MealLoader";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
@@ -26,20 +27,6 @@ import WorkoutModal from "@/components/modals/WorkoutModal";
 
 const CIRCUMFERENCE = 314.16; // 2 * Math.PI * 50
 
-const MOOD_OPTIONS = [
-  { emoji: "😔", label: "Low",   moodCategory: "sad",      moodLevel: 2 },
-  { emoji: "😐", label: "Okay",  moodCategory: "neutral",  moodLevel: 3 },
-  { emoji: "😊", label: "Good",  moodCategory: "happy",    moodLevel: 4 },
-  { emoji: "🤩", label: "Great", moodCategory: "energetic",moodLevel: 5 },
-] as const;
-
-const getGreeting = () => {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning!";
-  if (h < 17) return "Good Afternoon!";
-  return "Good Evening!";
-};
-
 const formatDayDate = (dateStr: string) => {
   const d = new Date(dateStr);
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -57,6 +44,7 @@ const DailyMealScreen = () => {
   const progressLoading = useProgressStore((state) => state.loading);
   const fetchTodayProgress = useProgressStore((state) => state.fetchTodayProgress);
   const setTodayProgress = useProgressStore((state) => state.setTodayProgress);
+  const syncProgressWithServer = useProgressStore((state) => state.syncProgressWithServer);
   const addWaterGlassToStore = useProgressStore((state) => state.addWaterGlass);
 
   const fetchFavorites = useFavoritesStore((state) => state.fetchFavorites);
@@ -163,16 +151,15 @@ const DailyMealScreen = () => {
     if (user?._id) await addWaterGlassToStore(user._id, currentDate.toISOString());
   };
 
-  const handleMoodSelect = async (index: number) => {
+  const handleMoodSelect = async (index: number, category: MoodCategory, level: MoodLevel) => {
     setSelectedMoodIndex(index);
-    const mood = MOOD_OPTIONS[index];
     const now = new Date();
     try {
       await logMood({
         date: now.toISOString().split("T")[0],
         time: now.toTimeString().slice(0, 5),
-        moodCategory: mood.moodCategory,
-        moodLevel: mood.moodLevel,
+        moodCategory: category,
+        moodLevel: level,
         triggers: [],
         notes: "",
       });
@@ -291,16 +278,11 @@ const DailyMealScreen = () => {
         ) : (
           <div className="px-4 py-5 space-y-5 pb-28">
 
-            {/* ── Greeting & Streak ───────────────────────────────────── */}
+            {/* ── Date & Streak ───────────────────────────────────────── */}
             <div className="flex justify-between items-center">
-              <div>
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">
-                  {formatDayDate(dailyProgress.date)}
-                </p>
-                <h1 className="text-2xl font-bold leading-tight text-habeat">
-                  {getGreeting()}
-                </h1>
-              </div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                {formatDayDate(dailyProgress.date)}
+              </p>
               {engagementStats && (
                 <div className="flex items-center gap-1.5 bg-orange-50 border-b-2 border-orange-200 px-3 py-1.5 rounded-full">
                   <Flame className="w-4 h-4 fill-orange-500 text-orange-500" />
@@ -312,32 +294,11 @@ const DailyMealScreen = () => {
             </div>
 
             {/* ── Mood Check-in ────────────────────────────────────────── */}
-            <section className="p-4 rounded-2xl border bg-habeat/[0.03] border-habeat/[0.09]">
-              <h3 className="text-xs font-semibold text-center mb-3 text-habeat/60">
-                How are you feeling right now?
-              </h3>
-              <div className="flex justify-around items-center">
-                {MOOD_OPTIONS.map((mood, i) => (
-                  <button
-                    key={mood.label}
-                    onClick={() => handleMoodSelect(i)}
-                    className={`flex flex-col items-center gap-1 transition-all duration-200 active:scale-90 rounded-full px-3 py-1.5 ${
-                      selectedMoodIndex === i ? "bg-white shadow-sm scale-105" : ""
-                    }`}
-                    aria-label={`Mood: ${mood.label}`}
-                  >
-                    <span className="text-2xl">{mood.emoji}</span>
-                    <span
-                      className={`text-xs font-semibold ${
-                        selectedMoodIndex === i ? "text-habeat" : "text-habeat-muted"
-                      }`}
-                    >
-                      {mood.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
+            <MoodCheckInCard
+              firstName={user?.name?.split(" ")[0]}
+              selectedIndex={selectedMoodIndex}
+              onSelect={handleMoodSelect}
+            />
 
             {/* ── Challenges Banner ────────────────────────────────────── */}
             <ChallengesBanner className="!mb-0" />
@@ -463,9 +424,10 @@ const DailyMealScreen = () => {
                     mealTime={getMealTime("breakfast")}
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(dailyProgress.meals.breakfast, "breakfast")}
-                    onMealChange={(newMeal) =>
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, breakfast: newMeal } })
-                    }
+                    onMealChange={(newMeal) => {
+                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, breakfast: newMeal } });
+                      if (userId) syncProgressWithServer(userId);
+                    }}
                   />
                 )}
                 {dailyProgress.meals.lunch && (
@@ -475,9 +437,10 @@ const DailyMealScreen = () => {
                     mealTime={getMealTime("lunch")}
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(dailyProgress.meals.lunch, "lunch")}
-                    onMealChange={(newMeal) =>
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, lunch: newMeal } })
-                    }
+                    onMealChange={(newMeal) => {
+                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, lunch: newMeal } });
+                      if (userId) syncProgressWithServer(userId);
+                    }}
                   />
                 )}
                 {dailyProgress.meals.dinner && (
@@ -487,9 +450,10 @@ const DailyMealScreen = () => {
                     mealTime={getMealTime("dinner")}
                     date={dailyProgress.date}
                     mealStatus={getMealStatus(dailyProgress.meals.dinner, "dinner")}
-                    onMealChange={(newMeal) =>
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, dinner: newMeal } })
-                    }
+                    onMealChange={(newMeal) => {
+                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, dinner: newMeal } });
+                      if (userId) syncProgressWithServer(userId);
+                    }}
                   />
                 )}
                 {dailyProgress.meals.snacks?.length > 0 &&
@@ -506,6 +470,7 @@ const DailyMealScreen = () => {
                         const updatedSnacks = [...dailyProgress.meals.snacks];
                         updatedSnacks[index] = newMeal;
                         setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, snacks: updatedSnacks } });
+                        if (userId) syncProgressWithServer(userId);
                       }}
                     />
                   ))}

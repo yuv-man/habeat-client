@@ -50,6 +50,8 @@ const Profile = () => {
     loading,
     token,
     logout,
+    fetchUser,
+    userAuthError,
     mealTimes: storeMealTimes,
     setMealTimes: setStoreMealTimes,
     favoriteMealsData,
@@ -143,7 +145,7 @@ const Profile = () => {
     if (user?._id) {
       fetchFavoriteMeals(user._id);
     }
-  }, [user?._id, user?.weight, user?.height, user?.age, user?.gender, fetchFavoriteMeals]);
+  }, [user?._id, user?.weight, user?.height, user?.age, user?.gender, fetchFavoriteMeals, loading, token, navigate]);
 
   // Also fetch when switching to favorites tab
   useEffect(() => {
@@ -333,6 +335,24 @@ const Profile = () => {
   };
 
   if (!user) {
+    // Fetch failed with no cache fallback — show retry instead of infinite spinner
+    if (userAuthError && token) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center px-6">
+            <p className="text-gray-700 font-medium mb-2">Couldn't load your profile</p>
+            <p className="text-gray-500 text-sm mb-4">Check your connection and try again.</p>
+            <button
+              onClick={() => token && fetchUser(token)}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

@@ -27,7 +27,10 @@ interface SocialState {
   // Actions
   fetchFeed: (page?: number, append?: boolean) => Promise<void>;
   fetchUserPosts: (userId: string, page?: number, append?: boolean) => Promise<void>;
-  createPost: (post: CreatePostDto) => Promise<ISocialPost>;
+  createPost: (
+    post: CreatePostDto,
+    author?: { _id: string; name: string; profilePicture?: string }
+  ) => Promise<ISocialPost>;
   deletePost: (postId: string) => Promise<void>;
   toggleLike: (postId: string) => Promise<void>;
   addComment: (postId: string, text: string) => Promise<void>;
@@ -86,16 +89,25 @@ export const useSocialStore = create<SocialState>((set, get) => ({
     }
   },
 
-  createPost: async (post) => {
+  createPost: async (post, author) => {
     const response = await socialAPI.createPost(post);
-    const newPost = response.data;
+    const rawPost = response.data;
 
-    // Add to feed at the beginning
+    // Normalize userId: backend may return it as a string ObjectID or omit it.
+    // Use the author passed by the caller (current user) as the reliable source.
+    const normalizedPost: ISocialPost = {
+      ...rawPost,
+      userId:
+        author && (typeof rawPost.userId === "string" || !rawPost.userId)
+          ? { _id: author._id, name: author.name, profilePicture: author.profilePicture }
+          : rawPost.userId,
+    };
+
     set((state) => ({
-      posts: [newPost, ...state.posts],
+      posts: [normalizedPost, ...state.posts],
     }));
 
-    return newPost;
+    return normalizedPost;
   },
 
   deletePost: async (postId) => {

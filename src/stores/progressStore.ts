@@ -25,6 +25,7 @@ interface ProgressState {
 
 interface ProgressActions {
   fetchTodayProgress: (userId: string, force?: boolean) => Promise<void>;
+  syncProgressWithServer: (userId: string) => Promise<void>;
   fetchProgressHistory: (
     userId: string,
     startDate?: string,
@@ -114,7 +115,18 @@ export const useProgressStore = create<ProgressStore>()(
       cachedDate: null,
 
       // Actions
-      setTodayProgress: (progress) => set({ todayProgress: progress }),
+      setTodayProgress: (progress) => set({ todayProgress: progress, lastFetchTime: Date.now() }),
+
+      syncProgressWithServer: async (userId: string) => {
+        if (config.testFrontend) return;
+        try {
+          const response = await userAPI.getTodayProgress(userId);
+          const today = getTodayDateString();
+          set({ todayProgress: response.progress, lastFetchTime: Date.now(), cachedDate: today });
+        } catch {
+          // Silent fail — keep the current optimistic state
+        }
+      },
       setProgressHistory: (history) => set({ progressHistory: history }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),

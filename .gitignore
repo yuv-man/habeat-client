@@ -29,3 +29,5 @@ dist-ssr
 .cursor
 .cursorrules
 .cursorignore
+
+.claude-personal

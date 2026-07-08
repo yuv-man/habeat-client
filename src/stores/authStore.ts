@@ -49,6 +49,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   mealTimes: loadMealTimes(),
   favoriteMealsData: [],
   favoriteMealsLoaded: false,
+  userAuthError: false,
 
   // Actions
   setUser: (user) => {
@@ -116,7 +117,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     // Cache-first: If we have cached data, use it immediately and refresh in background
     if (cachedUser && cachedPlan) {
       // Set loading to false immediately to show cached data
-      set({ loading: false });
+      set({ loading: false, userAuthError: false });
       
       // Refresh in background
       try {
@@ -144,7 +145,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     // No cache available - fetch from API
     try {
-      set({ loading: true });
+      set({ loading: true, userAuthError: false });
       const { user, plan } = await userAPI.fetchUser(token);
       get().setUser(user);
       get().setPlan(plan);
@@ -161,14 +162,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const is401 = error?.response?.status === 401 || error?.message?.includes("401");
       if (is401 && token === get().token) {
         get().logout();
-      }
-      // For other errors, try to load from cache if available
-      const cachedUserData = getCachedDataSync<IUser>("auth_user", { ttl: DEFAULT_TTL.AUTH });
-      const cachedPlanData = getCachedDataSync<IPlan>("auth_plan", { ttl: DEFAULT_TTL.PLAN });
-      if (cachedUserData) {
-        get().setUser(cachedUserData);
-        if (cachedPlanData) {
-          get().setPlan(cachedPlanData);
+      } else {
+        // For other errors, try to load from cache if available
+        const cachedUserData = getCachedDataSync<IUser>("auth_user", { ttl: DEFAULT_TTL.AUTH });
+        const cachedPlanData = getCachedDataSync<IPlan>("auth_plan", { ttl: DEFAULT_TTL.PLAN });
+        if (cachedUserData) {
+          get().setUser(cachedUserData);
+          if (cachedPlanData) {
+            get().setPlan(cachedPlanData);
+          }
+        } else {
+          // No cache fallback — surface the error so Profile can show a retry
+          set({ userAuthError: true });
         }
       }
     } finally {
@@ -361,7 +366,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     get().setToken(null);
     get().setUser(null);
     get().setPlan(null);
-    set({ loading: false, favoriteMealsData: [], favoriteMealsLoaded: false });
+    set({ loading: false, userAuthError: false, favoriteMealsData: [], favoriteMealsLoaded: false });
     localStorage.removeItem("habeat_favorite_meals");
   },
 

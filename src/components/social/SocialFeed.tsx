@@ -74,7 +74,7 @@ const SocialFeed = ({ userId, refreshKey }: SocialFeedProps) => {
   return (
     <div>
       {/* Bento grid: 2-col on md+, mindful_moment spans full width */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
         {displayPosts.map((post) => (
           <div
             key={post._id}

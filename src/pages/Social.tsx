@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { SocialFeed } from "@/components/social";
 import { useAuthStore } from "@/stores/authStore";
 import { useSocialStore } from "@/stores/socialStore";
-import { socialAPI } from "@/services/api";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
 import CreatePostModal from "@/components/social/CreatePostModal";
@@ -17,7 +16,7 @@ const Social = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading, token } = useAuthStore();
-  const { fetchFeed } = useSocialStore();
+  const { createPost } = useSocialStore();
 
   const [modalMode, setModalMode] = useState<PostMode>("mood");
   const [showModal, setShowModal] = useState(false);
@@ -40,13 +39,19 @@ const Social = () => {
   const handleInlinePost = async () => {
     if (!composerText.trim()) return;
     setIsPosting(true);
+    const author = user
+      ? { _id: user._id!, name: user.name, profilePicture: user.profilePicture }
+      : undefined;
     try {
-      await socialAPI.createPost({
-        type: "mindful_moment",
-        content: { title: composerText.trim(), description: composerText.trim() },
-        caption: composerText.trim(),
-        visibility: "public",
-      });
+      await createPost(
+        {
+          type: "mindful_moment",
+          content: { title: composerText.trim(), description: composerText.trim() },
+          caption: composerText.trim(),
+          visibility: "public",
+        },
+        author
+      );
       setComposerText("");
       toast({ title: "Posted!" });
       setRefreshKey((k) => k + 1);

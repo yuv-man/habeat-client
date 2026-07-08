@@ -25,6 +25,7 @@ import {
   calculateMealHealthScore,
   getHealthScoreColor,
 } from "@/lib/nutritionHelpers";
+import { EatingModeCard } from "@/components/cbt/EatingModeCard";
 
 type MealStatus = "past" | "current" | "future";
 
@@ -66,6 +67,9 @@ const MealCard = ({
 
   // Get meal ID with fallback for compatibility
   const mealId = meal._id || (meal as any).id || "";
+
+  // Manual meals have a synthetic ID — they can't be favorited (no DB record)
+  const isManualMeal = mealId.startsWith("manual-");
 
   // Check if meal is in user.favoriteMeals array
   const isFavorite = user?.favoriteMeals?.includes(mealId) || false;
@@ -205,9 +209,10 @@ const MealCard = ({
           <div className="flex items-center gap-1">
             <button
               onClick={handleFavorite}
-              className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors"
+              disabled={isManualMeal}
+              className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label={
-                isFavorite ? "Remove from favorites" : "Add to favorites"
+                isManualMeal ? "Cannot favorite a manually-entered meal" : isFavorite ? "Remove from favorites" : "Add to favorites"
               }
             >
               <Heart
@@ -318,9 +323,10 @@ const MealCard = ({
           {/* Favorite Button */}
           <button
             onClick={handleFavorite}
-            className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={isManualMeal}
+            className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label={
-              isFavorite ? "Remove from favorites" : "Add to favorites"
+              isManualMeal ? "Cannot favorite a manually-entered meal" : isFavorite ? "Remove from favorites" : "Add to favorites"
             }
           >
             <Heart
@@ -455,6 +461,11 @@ const MealCard = ({
                   />
                 )}
               </div>
+            )}
+
+            {/* Eating Mode Picker - shown after completing a meal */}
+            {isCompleted && !isPast && (
+              <EatingModeCard />
             )}
 
             {/* Other Action Buttons */}

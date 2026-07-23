@@ -280,8 +280,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       get().setUser(user);
       get().setPlan(plan || null);
 
-      // For signin, fetch plan if not returned
-      if (action === "signin" && !plan) {
+      // Fetch plan if not included in response — covers both signin and signup
+      // of existing users where the backend omits the plan field
+      if (!plan) {
         const { plan: fetchedPlan } = await userAPI.fetchUser(token);
         get().setPlan(fetchedPlan);
       }

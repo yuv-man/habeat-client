@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, BarChart3, User } from "lucide-react";
-//import logo from "@/assets/habeatIcon.png";
-import logo from "@/assets/logos/app1.webp";
+import logo from "@/assets/logos/habeat-logo.png";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";
 import { HealthyCoins } from "@/components/engagement/HealthyCoins";

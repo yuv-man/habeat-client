@@ -8,8 +8,7 @@ import {
   User,
   Brain,
 } from "lucide-react";
-//import logo from "@/assets/habeatIcon.png";
-import logo from "@/assets/logos/app1.webp";
+import logo from "@/assets/logos/habeat-logo.png";
 import "@/styles/navbar.css";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";

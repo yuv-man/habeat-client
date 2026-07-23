@@ -10,8 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle, Target } from "lucide-react";
 import foodBg from "@/assets/food-bg.webp";
-//import logo from "@/assets/habeatIcon.png";
-import logo from "@/assets/logos/app1.webp";
+import logo from "@/assets/logos/habeat-logo.png";
 import { features } from "@/lib/paths";
 import {
   HABEAT_SLOGAN,

@@ -253,11 +253,7 @@ export function MealMoodLink({
                           : "border-gray-200 hover:border-gray-300"
                       )}
                     >
-                      <img
-                        src={MOOD_IMAGES[mood.value]}
-                        alt={mood.label}
-                        className="w-8 h-8 object-contain"
-                      />
+                      <span className="text-2xl leading-none">{MOOD_IMAGES[mood.value]}</span>
                       <span className="text-xs text-gray-600">{mood.label}</span>
                     </button>
                   ))}
@@ -338,11 +334,7 @@ export function MealMoodLink({
                           : "border-gray-200 hover:border-gray-300"
                       )}
                     >
-                      <img
-                        src={MOOD_IMAGES[mood.value]}
-                        alt={mood.label}
-                        className="w-8 h-8 object-contain"
-                      />
+                      <span className="text-2xl leading-none">{MOOD_IMAGES[mood.value]}</span>
                       <span className="text-xs text-gray-600">{mood.label}</span>
                     </button>
                   ))}

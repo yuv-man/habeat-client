@@ -7,15 +7,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Import feeling type images
-import happyImg from "@/assets/feelingsTypes/happy.webp";
-import calmImg from "@/assets/feelingsTypes/calm.webp";
-import energeticImg from "@/assets/feelingsTypes/energetic.webp";
-import neutralImg from "@/assets/feelingsTypes/neutral.webp";
-import tiredImg from "@/assets/feelingsTypes/tired.webp";
-import stressedImg from "@/assets/feelingsTypes/stressed.webp";
-import anxiousImg from "@/assets/feelingsTypes/anxious.webp";
-import sadImg from "@/assets/feelingsTypes/sad.webp";
 
 interface MoodTrackerProps {
   className?: string;
@@ -28,28 +19,30 @@ interface MoodTrackerProps {
 // Minimum time between mood logs (in milliseconds) - 5 minutes
 const MIN_TIME_BETWEEN_LOGS = 5 * 60 * 1000;
 
-// Mood images map for easy access
-export const MOOD_IMAGES: Record<MoodCategory, string> = {
-  happy: happyImg,
-  calm: calmImg,
-  energetic: energeticImg,
-  neutral: neutralImg,
-  tired: tiredImg,
-  stressed: stressedImg,
-  anxious: anxiousImg,
-  sad: sadImg,
-  angry: stressedImg, // Using stressed image for angry as fallback
+export const MOOD_EMOJIS: Record<MoodCategory, string> = {
+  happy: "😄",
+  calm: "😌",
+  energetic: "😁",
+  neutral: "😐",
+  tired: "😴",
+  stressed: "😤",
+  anxious: "😰",
+  sad: "😢",
+  angry: "😡",
 };
 
-const MOOD_OPTIONS: { value: MoodCategory; label: string; image: string; color: string; bgColor: string; gradient: string; glowColor: string }[] = [
-  { value: "happy", label: "Happy", image: happyImg, color: "border-yellow-300", bgColor: "bg-yellow-50 hover:bg-yellow-100", gradient: "from-yellow-100 via-amber-50 to-orange-50", glowColor: "shadow-yellow-200" },
-  { value: "calm", label: "Calm", image: calmImg, color: "border-blue-300", bgColor: "bg-blue-50 hover:bg-blue-100", gradient: "from-blue-100 via-sky-50 to-cyan-50", glowColor: "shadow-blue-200" },
-  { value: "energetic", label: "Energetic", image: energeticImg, color: "border-orange-300", bgColor: "bg-orange-50 hover:bg-orange-100", gradient: "from-orange-100 via-amber-50 to-yellow-50", glowColor: "shadow-orange-200" },
-  { value: "neutral", label: "Neutral", image: neutralImg, color: "border-gray-300", bgColor: "bg-gray-50 hover:bg-gray-100", gradient: "from-gray-100 via-slate-50 to-gray-50", glowColor: "shadow-gray-200" },
-  { value: "tired", label: "Tired", image: tiredImg, color: "border-indigo-300", bgColor: "bg-indigo-50 hover:bg-indigo-100", gradient: "from-indigo-100 via-violet-50 to-purple-50", glowColor: "shadow-indigo-200" },
-  { value: "stressed", label: "Stressed", image: stressedImg, color: "border-red-300", bgColor: "bg-red-50 hover:bg-red-100", gradient: "from-red-100 via-rose-50 to-pink-50", glowColor: "shadow-red-200" },
-  { value: "anxious", label: "Anxious", image: anxiousImg, color: "border-purple-300", bgColor: "bg-purple-50 hover:bg-purple-100", gradient: "from-purple-100 via-violet-50 to-fuchsia-50", glowColor: "shadow-purple-200" },
-  { value: "sad", label: "Sad", image: sadImg, color: "border-cyan-300", bgColor: "bg-cyan-50 hover:bg-cyan-100", gradient: "from-cyan-100 via-teal-50 to-blue-50", glowColor: "shadow-cyan-200" },
+// Keep MOOD_IMAGES as alias for backwards compat (callers get the emoji string)
+export const MOOD_IMAGES = MOOD_EMOJIS;
+
+const MOOD_OPTIONS: { value: MoodCategory; label: string; emoji: string; color: string; bgColor: string; gradient: string; glowColor: string }[] = [
+  { value: "happy",    label: "Happy",    emoji: "😄", color: "border-yellow-300", bgColor: "bg-yellow-50 hover:bg-yellow-100", gradient: "from-yellow-100 via-amber-50 to-orange-50",   glowColor: "shadow-yellow-200" },
+  { value: "calm",     label: "Calm",     emoji: "😌", color: "border-blue-300",   bgColor: "bg-blue-50 hover:bg-blue-100",     gradient: "from-blue-100 via-sky-50 to-cyan-50",         glowColor: "shadow-blue-200"   },
+  { value: "energetic",label: "Energetic",emoji: "😁", color: "border-orange-300", bgColor: "bg-orange-50 hover:bg-orange-100", gradient: "from-orange-100 via-amber-50 to-yellow-50",   glowColor: "shadow-orange-200" },
+  { value: "neutral",  label: "Neutral",  emoji: "😐", color: "border-gray-300",   bgColor: "bg-gray-50 hover:bg-gray-100",     gradient: "from-gray-100 via-slate-50 to-gray-50",       glowColor: "shadow-gray-200"   },
+  { value: "tired",    label: "Tired",    emoji: "😴", color: "border-indigo-300", bgColor: "bg-indigo-50 hover:bg-indigo-100", gradient: "from-indigo-100 via-violet-50 to-purple-50",  glowColor: "shadow-indigo-200" },
+  { value: "stressed", label: "Stressed", emoji: "😤", color: "border-red-300",    bgColor: "bg-red-50 hover:bg-red-100",       gradient: "from-red-100 via-rose-50 to-pink-50",         glowColor: "shadow-red-200"    },
+  { value: "anxious",  label: "Anxious",  emoji: "😰", color: "border-purple-300", bgColor: "bg-purple-50 hover:bg-purple-100", gradient: "from-purple-100 via-violet-50 to-fuchsia-50", glowColor: "shadow-purple-200" },
+  { value: "sad",      label: "Sad",      emoji: "😢", color: "border-cyan-300",   bgColor: "bg-cyan-50 hover:bg-cyan-100",     gradient: "from-cyan-100 via-teal-50 to-blue-50",        glowColor: "shadow-cyan-200"   },
 ];
 
 const MOOD_LEVEL_OPTIONS: { value: MoodLevel; label: string; emoji: string }[] = [
@@ -202,11 +195,7 @@ export function MoodTracker({
               className="relative"
             >
               <div className="absolute inset-0 bg-green-200 rounded-full blur-xl opacity-50 animate-pulse" />
-              <img
-                src={selectedMood.image}
-                alt={selectedMood.label}
-                className="w-16 h-16 object-contain relative z-10"
-              />
+              <span className="text-6xl relative z-10 block text-center leading-none">{selectedMood.emoji}</span>
             </motion.div>
           )}
           <motion.div
@@ -297,13 +286,7 @@ export function MoodTracker({
                 title={mood.label}
               >
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/30 transition-colors" />
-                <motion.img
-                  src={mood.image}
-                  alt={mood.label}
-                  className="w-9 h-9 object-contain relative z-10"
-                  whileHover={{ rotate: [0, -5, 5, 0] }}
-                  transition={{ duration: 0.3 }}
-                />
+                <span className="text-3xl leading-none relative z-10">{mood.emoji}</span>
                 <span className="text-[10px] font-semibold text-gray-700 truncate w-full text-center relative z-10">{mood.label}</span>
               </motion.button>
             ))}
@@ -398,13 +381,11 @@ export function MoodTracker({
                   />
                 )}
 
-                <motion.img
-                  src={mood.image}
-                  alt={mood.label}
-                  className="w-14 h-14 object-contain relative z-10 drop-shadow-md"
+                <motion.span
+                  className="text-4xl leading-none relative z-10 block text-center"
                   animate={selectedCategory === mood.value ? { scale: [1, 1.1, 1] } : {}}
                   transition={{ duration: 0.3 }}
-                />
+                >{mood.emoji}</motion.span>
                 <span className={cn(
                   "text-xs font-semibold relative z-10 transition-colors",
                   selectedCategory === mood.value ? "text-purple-700" : "text-gray-700"
@@ -490,7 +471,7 @@ export function MoodTracker({
                   />
                 ) : (
                   <>
-                    <img src={selectedMood.image} alt={selectedMood.label} className="w-6 h-6 object-contain" />
+                    <span className="text-xl leading-none">{selectedMood.emoji}</span>
                     <span>Log {selectedMood.label}</span>
                     <Sparkles className="w-4 h-4 opacity-70" />
                   </>

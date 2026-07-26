@@ -4,7 +4,7 @@ import { AuthData } from "./types";
 import GoogleIcon from "@/assets/icons/google";
 import MealLoader from "@/components/helper/MealLoader";
 import { SLOGAN_EAT_WELL } from "@/lib/copy";
-import foodBg from "@/assets/food-bg.webp";
+import logo from "@/assets/logos/habeat-logo.png";
 
 interface SignupStepProps {
   authData: AuthData;
@@ -33,17 +33,18 @@ export default function SignupStep({
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{ backgroundColor: "var(--bg-primary)" }}
+      className="min-h-screen flex items-center justify-center p-4 bg-[#f7fdf9]"
     >
       <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <img src={foodBg} alt="Habeats" className="w-48 h-auto mx-auto mb-2" />
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Get Started</h1>
-          <p className="text-gray-600 text-sm max-w-sm mx-auto">{SLOGAN_EAT_WELL}</p>
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <img src={logo} alt="Habeats" className="w-20 h-20 object-contain" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Get Started</h1>
+          <p className="text-gray-500 text-sm max-w-sm mx-auto">{SLOGAN_EAT_WELL}</p>
         </div>
 
-        <div className="backdrop-blur-sm bg-white/95 rounded-lg p-6 shadow-lg">
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
               {error}
@@ -53,7 +54,7 @@ export default function SignupStep({
           <button
             onClick={handleGoogleClick}
             disabled={loading}
-            className="w-full mb-6 bg-white border-2 border-gray-300 hover:border-gray-400 text-gray-700 font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full mb-6 bg-white border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 text-gray-700 font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-3 shadow-sm"
           >
             <GoogleIcon />
             {loading ? "Loading..." : "Continue with Google"}
@@ -76,7 +77,7 @@ export default function SignupStep({
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, name: e.target.value }))
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-base"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 text-base transition-all"
             />
             <input
               type="email"
@@ -85,7 +86,7 @@ export default function SignupStep({
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, email: e.target.value }))
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-base"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 text-base transition-all"
             />
             <input
               type="password"
@@ -94,12 +95,12 @@ export default function SignupStep({
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, password: e.target.value }))
               }
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-base"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 text-base transition-all"
             />
             <button
               onClick={onSignupEmail}
               disabled={loading}
-              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50"
+              className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50 shadow-sm"
             >
               {loading ? (
                 <MealLoader size="small" />

@@ -35,9 +35,9 @@ export default function KycLayout({
     currentStep && totalSteps ? (currentStep / totalSteps) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#f7fdf9] flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 bg-white z-10">
+      <div className="sticky top-0 bg-[#f7fdf9] z-10">
         {/* Progress Bar */}
         {currentStep && totalSteps && (
           <div className="px-4 pt-4 pb-2">
@@ -92,7 +92,7 @@ export default function KycLayout({
       </div>
 
       {/* Bottom Button */}
-      <div className="sticky bottom-0 bg-white px-4 py-4 border-t border-gray-100">
+      <div className="sticky bottom-0 bg-[#f7fdf9] px-4 py-4 border-t border-green-100">
         <button
           onClick={onSubmit}
           disabled={loading || submitDisabled}

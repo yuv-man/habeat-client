@@ -52,6 +52,14 @@ const onAuthError = (error: unknown) => {
     const requestToken = authHeader?.replace("Bearer ", "");
     if (storedToken && requestToken && storedToken === requestToken) {
       localStorage.removeItem("token");
+      // Clear user + KYC state so the registration page starts fresh
+      // instead of restoring a stale step that has no valid token behind it
+      localStorage.removeItem("habeat_user");
+      localStorage.removeItem("habeat_plan");
+      localStorage.removeItem("habeat_auth_data");
+      localStorage.removeItem("habeat_current_step");
+      localStorage.removeItem("habeat_kyc_data");
+      localStorage.removeItem("habeat_custom_inputs");
       window.location.href = "/register";
     }
   }

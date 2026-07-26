@@ -233,11 +233,7 @@ const MoodHistory = () => {
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <img
-                                  src={MOOD_IMAGES[mood.moodCategory]}
-                                  alt={mood.moodCategory}
-                                  className="w-10 h-10 object-contain"
-                                />
+                                <span className="text-3xl leading-none">{MOOD_IMAGES[mood.moodCategory]}</span>
                                 <span
                                   className={cn(
                                     "px-2 py-0.5 rounded-full text-xs font-medium border capitalize",
@@ -302,11 +298,7 @@ const MoodHistory = () => {
                           <>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                <img
-                                  src={MOOD_IMAGES[mood.moodCategory]}
-                                  alt={mood.moodCategory}
-                                  className="w-10 h-10 object-contain"
-                                />
+                                <span className="text-3xl leading-none">{MOOD_IMAGES[mood.moodCategory]}</span>
                                 <div>
                                   <div className="flex items-center gap-2">
                                     <span

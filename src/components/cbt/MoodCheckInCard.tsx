@@ -1,33 +1,25 @@
 import { useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MoodCategory, MoodLevel } from "@/types/interfaces";
-
-import happyImg from "@/assets/feelingsTypes/happy.webp";
-import calmImg from "@/assets/feelingsTypes/calm.webp";
-import energeticImg from "@/assets/feelingsTypes/energetic.webp";
-import neutralImg from "@/assets/feelingsTypes/neutral.webp";
-import tiredImg from "@/assets/feelingsTypes/tired.webp";
-import stressedImg from "@/assets/feelingsTypes/stressed.webp";
-import anxiousImg from "@/assets/feelingsTypes/anxious.webp";
-import sadImg from "@/assets/feelingsTypes/sad.webp";
 
 const MOOD_OPTIONS: {
   value: MoodCategory;
   label: string;
-  image: string;
+  emoji: string;
   level: MoodLevel;
   ringColor: string;
   activeBg: string;
 }[] = [
-  { value: "happy",    label: "Happy",    image: happyImg,    level: 5, ringColor: "ring-yellow-300", activeBg: "bg-yellow-50" },
-  { value: "calm",     label: "Calm",     image: calmImg,     level: 4, ringColor: "ring-blue-300",   activeBg: "bg-blue-50"   },
-  { value: "energetic",label: "Energetic",image: energeticImg,level: 5, ringColor: "ring-orange-300", activeBg: "bg-orange-50" },
-  { value: "neutral",  label: "Neutral",  image: neutralImg,  level: 3, ringColor: "ring-gray-300",   activeBg: "bg-gray-100"  },
-  { value: "tired",    label: "Tired",    image: tiredImg,    level: 2, ringColor: "ring-indigo-300", activeBg: "bg-indigo-50" },
-  { value: "stressed", label: "Stressed", image: stressedImg, level: 2, ringColor: "ring-red-300",    activeBg: "bg-red-50"    },
-  { value: "anxious",  label: "Anxious",  image: anxiousImg,  level: 2, ringColor: "ring-purple-300", activeBg: "bg-purple-50" },
-  { value: "sad",      label: "Sad",      image: sadImg,      level: 1, ringColor: "ring-cyan-300",   activeBg: "bg-cyan-50"   },
+  { value: "happy",    label: "Happy",    emoji: "😄", level: 5, ringColor: "ring-yellow-300", activeBg: "bg-yellow-50" },
+  { value: "calm",     label: "Calm",     emoji: "😌", level: 4, ringColor: "ring-blue-300",   activeBg: "bg-blue-50"   },
+  { value: "energetic",label: "Energetic",emoji: "😁", level: 5, ringColor: "ring-orange-300", activeBg: "bg-orange-50" },
+  { value: "neutral",  label: "Neutral",  emoji: "😐", level: 3, ringColor: "ring-gray-300",   activeBg: "bg-gray-100"  },
+  { value: "tired",    label: "Tired",    emoji: "😴", level: 2, ringColor: "ring-indigo-300", activeBg: "bg-indigo-50" },
+  { value: "stressed", label: "Stressed", emoji: "😤", level: 2, ringColor: "ring-red-300",    activeBg: "bg-red-50"    },
+  { value: "anxious",  label: "Anxious",  emoji: "😰", level: 2, ringColor: "ring-purple-300", activeBg: "bg-purple-50" },
+  { value: "sad",      label: "Sad",      emoji: "😢", level: 1, ringColor: "ring-cyan-300",   activeBg: "bg-cyan-50"   },
 ];
 
 interface MoodCheckInCardProps {
@@ -77,12 +69,27 @@ export function MoodCheckInCard({ firstName, selectedIndex, onSelect }: MoodChec
                   : "hover:bg-gray-50 active:bg-gray-100"
               )}
             >
-              <img
-                src={mood.image}
-                alt={mood.label}
-                className="w-12 h-12 object-contain"
-                loading="lazy"
-              />
+              <div className="relative">
+                <motion.span
+                  className="text-4xl leading-none block text-center"
+                  animate={isSelected ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                >{mood.emoji}</motion.span>
+                {/* Confirmation gesture — pops in when the feeling is logged */}
+                <AnimatePresence>
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                      className="absolute -top-1.5 -right-1.5 bg-habeat text-white rounded-full p-0.5 shadow-md"
+                    >
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <span className={cn(
                 "text-[10px] font-semibold whitespace-nowrap",
                 isSelected ? "text-gray-700" : "text-gray-400"

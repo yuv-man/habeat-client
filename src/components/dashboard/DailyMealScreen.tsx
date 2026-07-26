@@ -163,8 +163,15 @@ const DailyMealScreen = () => {
         triggers: [],
         notes: "",
       });
+      // Confirmation so the user knows the feeling was saved
+      const label = category.charAt(0).toUpperCase() + category.slice(1);
+      toast.success(`Feeling logged: ${label}`, {
+        description: "Keep tracking to build your streak!",
+        duration: 3000,
+      });
     } catch {
       // mood log is non-critical
+      setSelectedMoodIndex(null);
     }
   };
 

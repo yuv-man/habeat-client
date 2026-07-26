@@ -1,14 +1,5 @@
 import { useState } from "react";
 import {
-  Smile,
-  Frown,
-  Meh,
-  Zap,
-  Moon,
-  Heart,
-  AlertCircle,
-  Flame,
-  Angry,
   Briefcase,
   Users,
   Activity,
@@ -35,16 +26,16 @@ interface MoodEntryFormProps {
   onCancel?: () => void;
 }
 
-const MOOD_OPTIONS: { value: MoodCategory; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: "happy", label: "Happy", icon: <Smile className="w-6 h-6" />, color: "text-yellow-500 bg-yellow-50 border-yellow-200" },
-  { value: "calm", label: "Calm", icon: <Heart className="w-6 h-6" />, color: "text-blue-500 bg-blue-50 border-blue-200" },
-  { value: "energetic", label: "Energetic", icon: <Zap className="w-6 h-6" />, color: "text-orange-500 bg-orange-50 border-orange-200" },
-  { value: "neutral", label: "Neutral", icon: <Meh className="w-6 h-6" />, color: "text-gray-500 bg-gray-50 border-gray-200" },
-  { value: "tired", label: "Tired", icon: <Moon className="w-6 h-6" />, color: "text-indigo-500 bg-indigo-50 border-indigo-200" },
-  { value: "stressed", label: "Stressed", icon: <Flame className="w-6 h-6" />, color: "text-red-500 bg-red-50 border-red-200" },
-  { value: "anxious", label: "Anxious", icon: <AlertCircle className="w-6 h-6" />, color: "text-purple-500 bg-purple-50 border-purple-200" },
-  { value: "sad", label: "Sad", icon: <Frown className="w-6 h-6" />, color: "text-cyan-500 bg-cyan-50 border-cyan-200" },
-  { value: "angry", label: "Angry", icon: <Angry className="w-6 h-6" />, color: "text-rose-500 bg-rose-50 border-rose-200" },
+const MOOD_OPTIONS: { value: MoodCategory; label: string; emoji: string; color: string }[] = [
+  { value: "happy",    label: "Happy",    emoji: "😄", color: "bg-yellow-50 border-yellow-200" },
+  { value: "calm",     label: "Calm",     emoji: "😌", color: "bg-blue-50 border-blue-200" },
+  { value: "energetic",label: "Energetic",emoji: "😁", color: "bg-orange-50 border-orange-200" },
+  { value: "neutral",  label: "Neutral",  emoji: "😐", color: "bg-gray-50 border-gray-200" },
+  { value: "tired",    label: "Tired",    emoji: "😴", color: "bg-indigo-50 border-indigo-200" },
+  { value: "stressed", label: "Stressed", emoji: "😤", color: "bg-red-50 border-red-200" },
+  { value: "anxious",  label: "Anxious",  emoji: "😰", color: "bg-purple-50 border-purple-200" },
+  { value: "sad",      label: "Sad",      emoji: "😢", color: "bg-cyan-50 border-cyan-200" },
+  { value: "angry",    label: "Angry",    emoji: "😡", color: "bg-rose-50 border-rose-200" },
 ];
 
 const TRIGGER_OPTIONS: { value: MoodTrigger; label: string; icon: React.ReactNode }[] = [
@@ -121,11 +112,11 @@ export function MoodEntryForm({
             className={cn(
               "flex flex-col items-center gap-1 p-3 rounded-xl border transition-all hover:scale-105",
               mood.color,
-              moodCategory === mood.value && "ring-2 ring-offset-1 ring-blue-500"
+              moodCategory === mood.value && "ring-2 ring-offset-1 ring-emerald-500"
             )}
           >
-            {mood.icon}
-            <span className="text-xs font-medium">{mood.label}</span>
+            <span className="text-3xl leading-none">{mood.emoji}</span>
+            <span className="text-xs font-medium text-gray-700">{mood.label}</span>
           </button>
         ))}
       </div>

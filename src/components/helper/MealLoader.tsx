@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
-import "@/styles/mealLoader.css";
+import logo from "@/assets/logos/habeat-logo.png";
 
 interface MealLoaderProps {
-  /** Array of strings to display sequentially */
   customMessages?: string[];
-  /** Time in milliseconds between message changes */
   interval?: number;
-  /** Size variant: "small" for inline/button use, "default" for full display */
   size?: "small" | "default";
 }
 
@@ -21,50 +18,177 @@ const MealLoader: React.FC<MealLoaderProps> = ({
   interval = 2500,
   size = "default",
 }) => {
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    // Typing the timer for browser environment
     const timer = setInterval(() => {
-      setCurrentIndex((prevIndex) => (prevIndex + 1) % customMessages.length);
+      setCurrentIndex((i) => (i + 1) % customMessages.length);
     }, interval);
-
-    // Cleanup interval on component unmount
     return () => clearInterval(timer);
   }, [customMessages.length, interval]);
 
-  // Small inline version for buttons
   if (size === "small") {
     return (
-      <div className="meal-loader-small" role="status" aria-live="polite">
-        <div className="pot-small">
-          <div className="steam-lines-small">
-            <span className="steam-small"></span>
-            <span className="steam-small"></span>
-            <span className="steam-small"></span>
-          </div>
-          <div className="pot-body-small"></div>
-        </div>
-        <span className="ml-2">Generating...</span>
-      </div>
+      <span
+        role="status"
+        aria-label="Loading"
+        style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
+      >
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            style={{
+              display: "inline-block",
+              width: "5px",
+              height: "5px",
+              borderRadius: "50%",
+              background: "currentColor",
+              animation: `habeatLeafBounce 1s ease-in-out infinite`,
+              animationDelay: `${i * 0.15}s`,
+            }}
+          />
+        ))}
+        <style>{`
+          @keyframes habeatLeafBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40%            { transform: scale(1.2); opacity: 1; }
+          }
+        `}</style>
+      </span>
     );
   }
 
   return (
-    <div className="meal-loader-container" role="status" aria-live="polite">
-      <div className="culinary-icon">
-        <div className="pot">
-          <div className="steam-lines">
-            <span className="steam"></span>
-            <span className="steam"></span>
-            <span className="steam"></span>
-          </div>
-          <div className="pot-body"></div>
-        </div>
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "2.5rem 1rem",
+        gap: "1.5rem",
+        textAlign: "center",
+      }}
+    >
+      {/* Spinner rings + logo */}
+      <div style={{ position: "relative", width: 120, height: 120 }}>
+
+        {/* Outer ring — slow clockwise, dashed like artichoke leaves */}
+        <svg
+          viewBox="0 0 120 120"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            animation: "habeatSpin 3.6s linear infinite",
+          }}
+        >
+          <circle
+            cx="60" cy="60" r="56"
+            fill="none"
+            stroke="#10b981"
+            strokeWidth="3.5"
+            strokeDasharray="16 9"
+            strokeLinecap="round"
+            opacity="0.35"
+          />
+        </svg>
+
+        {/* Middle ring — faster, counter-clockwise */}
+        <svg
+          viewBox="0 0 120 120"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            animation: "habeatSpin 2.4s linear infinite reverse",
+          }}
+        >
+          <circle
+            cx="60" cy="60" r="43"
+            fill="none"
+            stroke="#059669"
+            strokeWidth="3"
+            strokeDasharray="11 7"
+            strokeLinecap="round"
+            opacity="0.55"
+          />
+        </svg>
+
+        {/* Inner ring — slow, clockwise, tighter dashes */}
+        <svg
+          viewBox="0 0 120 120"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            animation: "habeatSpin 5s linear infinite",
+          }}
+        >
+          <circle
+            cx="60" cy="60" r="30"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="2"
+            strokeDasharray="7 5"
+            strokeLinecap="round"
+            opacity="0.4"
+          />
+        </svg>
+
+        {/* Artichoke logo — gentle pulse */}
+        <img
+          src={logo}
+          alt="Habeat"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "contain",
+            padding: "22px",
+            animation: "habeatLogoPulse 2s ease-in-out infinite",
+          }}
+        />
       </div>
 
-      <h3 className="status-title">{customMessages[currentIndex]}</h3>
-      <p className="sub-text">Our AI is crafting your perfect menu...</p>
+      {/* Cycling message */}
+      <div>
+        <p
+          key={currentIndex}
+          style={{
+            fontSize: "1.05rem",
+            fontWeight: 600,
+            color: "#1f2937",
+            margin: 0,
+            animation: "habeatFadeIn 0.4s ease",
+          }}
+        >
+          {customMessages[currentIndex]}
+        </p>
+        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.35rem" }}>
+          Our AI is crafting your perfect menu...
+        </p>
+      </div>
+
+      <style>{`
+        @keyframes habeatSpin {
+          to { transform: rotate(360deg); }
+        }
+        @keyframes habeatLogoPulse {
+          0%, 100% { transform: scale(0.92); opacity: 0.85; }
+          50%       { transform: scale(1.04); opacity: 1; }
+        }
+        @keyframes habeatFadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

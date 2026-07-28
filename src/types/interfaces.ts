@@ -40,6 +40,7 @@ export interface IUser {
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
   sensoryProfile?: ISensoryProfile | null;
+  kycCompleted?: boolean;
 }
 
 export interface IMeal {

@@ -144,6 +144,11 @@ const availableImages = [
   "vermicelli-salad",
   "calzone",
   "duck-breast-with-mushed-potatoes",
+  "miso-glazed-noodles-with-shrimp-and-broccoli",
+  "cottage-cheese-with-pineapple",
+  "tropical-mango-and-pineapple-smoothie-bowl",
+  "seafood-soup",
+  "onion-soup"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -157,6 +162,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "pho-soup",
     "gulash-soup",
     "chicken-noodle-soup",
+    "miso-glazed-noodles-with-shrimp-and-broccoli",
+    "seafood-soup",
+    "onion-soup",
   ],
   vegetable: [
     "vegetable-soup",
@@ -193,7 +201,8 @@ const keywordMappings: { [key: string]: string[] } = {
   quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
   buddha: ["buddha-salad"],
   couscous: ["couscous-salad"],
-  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit"],
+  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit", "cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl"],
+  pineapple: ["cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl"],
 
   // Chicken dishes
   chicken: [
@@ -250,6 +259,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "red-tuna-with-mixed-greens-noodles",
     "red-tuna-sashimi",
     "salmon-with-grill-aspargus-and-brocolli",
+    "seafood-soup",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -259,6 +269,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "baked-cod-with-quinoa",
     "baked-cod-with-sweet-potato-wedges-and-green-beans",
     "fish-buns",
+    "seafood-soup",
   ],
   // Eggs
   egg: [
@@ -376,6 +387,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "thai-green-curry",
     "chicken-pad-see-ew",
     "vermicelli-salad",
+    "miso-glazed-noodles-with-shrimp-and-broccoli",
   ],
   noodles: [
     "tofu-and-rice-noodles",
@@ -384,6 +396,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-pad-see-ew",
     "red-tuna-with-mixed-greens-noodles",
     "vermicelli-salad",
+    "miso-glazed-noodles-with-shrimp-and-broccoli",
   ],
   stir: [
     "stirfried-noodles",
@@ -465,7 +478,7 @@ const keywordMappings: { [key: string]: string[] } = {
   mussels: ["mussels-with-fries"],
 
   // Sides
-  sweet: ["baked-sweet-potato", "chicken-breast-and-sweet-potato"],
+  sweet: ["baked-sweet-potato", "chicken-breast-and-sweet-potato", "cottage-cheese-with-pineapple"],
   potato: [
     "baked-sweet-potato",
     "chicken-breast-and-sweet-potato",
@@ -482,12 +495,14 @@ const keywordMappings: { [key: string]: string[] } = {
     "smoothie-bowl-with-banana-and-kiwi",
     "green-power-smoothie",
     "power-berry-nut-muesli-bowl",
+    "tropical-mango-and-pineapple-smoothie-bowl",
   ],
   yogurt: [
     "greek-yogurt-topped-with-granola",
     "yogurt-parfait-with-granola",
     "power-berry-nut-muesli-bowl",
     "yogurt-with-muesli",
+    "tropical-mango-and-pineapple-smoothie-bowl",
   ],
   granola: [
     "greek-yogurt-topped-with-granola",
@@ -495,12 +510,14 @@ const keywordMappings: { [key: string]: string[] } = {
     "berry-greek-yogurt-parfait",
     "power-berry-nut-muesli-bowl",
     "yogurt-with-muesli",
+    "tropical-mango-and-pineapple-smoothie-bowl",
   ],
   chia: ["chia-pudding"],
   pudding: ["chia-pudding"],
   oats: ["oatmeal-bowl-with-fruits", "porridge-with-cinnamon-and-apples"],
   overnight: ["oatmeal-bowl-with-fruits", "chia-pudding"],
-  shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi"],
+  shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi", "tropical-mango-and-pineapple-smoothie-bowl"],
+  snack: ["cottage-cheese-with-pineapple"],
 
   // Sandwiches & Wraps
   sandwich: [
@@ -518,9 +535,9 @@ const keywordMappings: { [key: string]: string[] } = {
   ],
 
   // Shrimp
-  shrimp: ["shrimp-pasta", "shrimps-pad-thai"],
-  shrimps: ["shrimps-pad-thai"],
-  seafood: ["seafood-pasta", "shrimp-pasta", "spicy-red-tuna-poke-bowl"],
+  shrimp: ["shrimp-pasta", "shrimps-pad-thai", "miso-glazed-noodles-with-shrimp-and-broccoli", "seafood-soup"],
+  shrimps: ["shrimps-pad-thai", "miso-glazed-noodles-with-shrimp-and-broccoli"],
+  seafood: ["seafood-pasta", "shrimp-pasta", "spicy-red-tuna-poke-bowl", "miso-glazed-noodles-with-shrimp-and-broccoli", "seafood-soup"],
 };
 
 // Common words to ignore in matching (low-value words)

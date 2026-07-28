@@ -11,6 +11,7 @@ import PlanSelector from "@/components/dashboard/PlanSelector";
 import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradePrompt";
 import { MoodCheckInPrompt } from "@/components/cbt";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -87,6 +88,16 @@ const DashboardLayout = ({
       if (handleSubscriptionApiError(error, navigate)) {
         return;
       }
+      const rawMsg = error instanceof Error ? error.message : String(error);
+      const isAiBusy = rawMsg.includes("PLAN_GENERATION_UNAVAILABLE") ||
+        rawMsg.toLowerCase().includes("rate limit") ||
+        rawMsg.toLowerCase().includes("temporarily busy");
+      toast.error(
+        isAiBusy
+          ? "Our AI is temporarily busy — please try again in a few minutes. Your dietary preferences will be fully applied."
+          : "Failed to generate meal plan. Please try again.",
+        { duration: 8000 }
+      );
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGeneratingPlan(false);

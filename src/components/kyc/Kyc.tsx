@@ -383,7 +383,15 @@ export default function KYCFlow() {
         return;
       }
       console.error("Signup error:", err);
-      setError(getErrorMessage(err, "Failed to complete registration"));
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      const isAiBusy = rawMsg.includes("PLAN_GENERATION_UNAVAILABLE") ||
+        rawMsg.toLowerCase().includes("rate limit") ||
+        rawMsg.toLowerCase().includes("temporarily busy");
+      setError(
+        isAiBusy
+          ? "Your profile was saved! Our AI is temporarily busy — please tap 'Generate Plan' from the home screen in a few minutes. Your dietary preferences will be fully applied."
+          : getErrorMessage(err, "Failed to complete registration")
+      );
     } finally {
       setLoading(false);
     }

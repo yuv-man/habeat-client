@@ -84,18 +84,18 @@ const OAuthCallback = () => {
           description: "You have been successfully authenticated.",
         });
 
-        // Get current user state after authentication
         const currentUser = useAuthStore.getState().user;
         const currentPlan = useAuthStore.getState().plan;
 
-        if (isNewUser && currentUser && !currentPlan) {
-          // New user - route to the first KYC page
+        // Any user who hasn't finished registration (new signup OR existing account
+        // that never completed KYC) must go through the registration flow.
+        if (isNewUser || !currentUser?.kycCompleted) {
           localStorage.setItem(KYC_STORAGE_KEY, "diet");
           localStorage.setItem(
             "habeat_auth_data",
             JSON.stringify({
-              name: currentUser.name || "",
-              email: currentUser.email || "",
+              name: currentUser?.name || "",
+              email: currentUser?.email || "",
               password: "",
               authMethod: "google",
             })
@@ -104,18 +104,11 @@ const OAuthCallback = () => {
           return;
         }
 
-        // Redirect based on user state
-        // If user has completed KYC (has plan), go to daily tracker
-        // If user exists but no plan, go to weekly overview to regenerate plan
-        // If no user, redirect to register
-        if (currentUser && currentPlan) {
+        // Fully registered user — route to tracker or regeneration
+        if (currentPlan) {
           navigate("/daily-tracker");
-        } else if (currentUser && !currentPlan) {
-          // User exists but no plan - redirect to weekly overview to regenerate
-          navigate("/weekly-overview");
         } else {
-          // No user - redirect to register
-          navigate("/register");
+          navigate("/weekly-overview");
         }
       } catch (error) {
         console.error("OAuth callback error:", error);

@@ -578,15 +578,15 @@ if (typeof window !== "undefined") {
         // Don't redirect if user is already on a protected route
         const currentPath = window.location.pathname;
         if (currentPath === "/" || currentPath === "/auth/callback") {
-          // Check if user has completed KYC (has plan or other indicators)
           const state = useAuthStore.getState();
-          if (state.user && state.plan) {
+          if (state.user && !state.user.kycCompleted) {
+            // Logged in but registration never completed — force back to registration
+            window.location.href = "/register";
+          } else if (state.user && state.plan) {
             window.location.href = "/daily-tracker";
           } else if (state.user && !state.plan) {
-            // User exists but no plan - redirect to weekly overview to regenerate plan
             window.location.href = "/weekly-overview";
           } else {
-            // No user - redirect to register
             window.location.href = "/register";
           }
         }

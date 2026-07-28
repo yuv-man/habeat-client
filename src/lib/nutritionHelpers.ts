@@ -105,108 +105,72 @@ export const calculateMealProgress = (meals: {
  * - Overall nutritional quality
  */
 export const calculateMealHealthScore = (meal: IMeal): number => {
-  if (!meal.macros || meal.calories === 0) return 50; // Default score if no data
+  if (!meal.macros || meal.calories === 0) return 50;
 
   const { protein, carbs, fat } = meal.macros;
+  const proteinCal = protein * 4;
+  const carbsCal   = carbs * 4;
+  const fatCal     = fat * 9;
+  const totalMacroCal = proteinCal + carbsCal + fatCal;
 
-  // Calculate macro calories
-  const proteinCalories = protein * 4;
-  const carbsCalories = carbs * 4;
-  const fatCalories = fat * 9;
-  const totalMacroCalories = proteinCalories + carbsCalories + fatCalories;
+  if (totalMacroCal === 0) return 50;
 
-  if (totalMacroCalories === 0) return 50;
-
-  // Calculate macro percentages
-  const proteinPct = (proteinCalories / meal.calories) * 100;
-  const carbsPct = (carbsCalories / meal.calories) * 100;
-  const fatPct = (fatCalories / meal.calories) * 100;
+  // Divide by totalMacroCal (not meal.calories) so percentages always sum to 100%
+  // regardless of small AI rounding differences.
+  const proteinPct = (proteinCal / totalMacroCal) * 100;
+  const carbsPct   = (carbsCal   / totalMacroCal) * 100;
+  const fatPct     = (fatCal     / totalMacroCal) * 100;
 
   let score = 0;
-  let factors = 0;
 
-  // 1. Protein score (ideal: 20-30% of calories) - 30 points
-  factors++;
-  if (proteinPct >= 20 && proteinPct <= 30) {
-    score += 30; // Perfect range
-  } else if (proteinPct >= 15 && proteinPct < 20) {
-    score += 25; // Good, slightly low
-  } else if (proteinPct > 30 && proteinPct <= 35) {
-    score += 25; // Good, slightly high
-  } else if (proteinPct >= 10 && proteinPct < 15) {
-    score += 15; // Acceptable, low
-  } else if (proteinPct > 35 && proteinPct <= 40) {
-    score += 15; // Acceptable, high
+  // 1. Protein — 35 pts
+  // Wide acceptable band so fruit smoothie bowls, oatmeal and rice dishes aren't
+  // destroyed just for having natural carb-dominant ratios.
+  // Ideal 15-35% | Good 8-40% | Acceptable 5-50%
+  if (proteinPct >= 15 && proteinPct <= 35) {
+    score += 35;
+  } else if (proteinPct >= 8 && proteinPct < 15) {
+    score += 27; // low-protein whole foods (oatmeal, grain bowls, fruit)
+  } else if (proteinPct > 35 && proteinPct <= 45) {
+    score += 28; // high-protein — still very healthy
+  } else if (proteinPct >= 5 && proteinPct < 8) {
+    score += 18; // very low — typical for pure-fruit meals
+  } else if (proteinPct > 45) {
+    score += 18; // very high protein
   } else {
-    score += Math.max(0, 10 - Math.abs(proteinPct - 25) * 0.5); // Penalty for being far from ideal
+    score += 8;  // near-zero protein
   }
 
-  // 2. Carbs score (ideal: 45-65% of calories) - 30 points
-  factors++;
-  if (carbsPct >= 45 && carbsPct <= 65) {
-    score += 30; // Perfect range
-  } else if (carbsPct >= 40 && carbsPct < 45) {
-    score += 25; // Good, slightly low
-  } else if (carbsPct > 65 && carbsPct <= 70) {
-    score += 25; // Good, slightly high
-  } else if (carbsPct >= 35 && carbsPct < 40) {
-    score += 15; // Acceptable, low
-  } else if (carbsPct > 70 && carbsPct <= 75) {
-    score += 15; // Acceptable, high
+  // 2. Carbs — 35 pts
+  // Extend the "good" ceiling to 75% so fruit/grain meals score fairly.
+  // Ideal 40-65% | Good 30-75% | Acceptable 20-85%
+  if (carbsPct >= 40 && carbsPct <= 65) {
+    score += 35;
+  } else if ((carbsPct >= 30 && carbsPct < 40) || (carbsPct > 65 && carbsPct <= 75)) {
+    score += 27;
+  } else if ((carbsPct >= 20 && carbsPct < 30) || (carbsPct > 75 && carbsPct <= 85)) {
+    score += 18; // high-carb fruit meals are nutritionally sound
+  } else if (carbsPct > 85) {
+    score += 10; // very high carb (minimal fat+protein)
   } else {
-    score += Math.max(0, 10 - Math.abs(carbsPct - 55) * 0.3); // Penalty for being far from ideal
+    score += 10; // very low carb
   }
 
-  // 3. Fat score (ideal: 20-35% of calories) - 25 points
-  factors++;
-  if (fatPct >= 20 && fatPct <= 35) {
-    score += 25; // Perfect range
-  } else if (fatPct >= 15 && fatPct < 20) {
-    score += 20; // Good, slightly low
-  } else if (fatPct > 35 && fatPct <= 40) {
-    score += 20; // Good, slightly high
-  } else if (fatPct >= 10 && fatPct < 15) {
-    score += 12; // Acceptable, low
-  } else if (fatPct > 40 && fatPct <= 45) {
-    score += 12; // Acceptable, high
+  // 3. Fat — 30 pts
+  // Allow low fat for fruit/grain meals; allow moderately high fat for nuts/avocado dishes.
+  // Ideal 20-40% | Good 10-50% | Acceptable 5-60%
+  if (fatPct >= 20 && fatPct <= 40) {
+    score += 30;
+  } else if ((fatPct >= 10 && fatPct < 20) || (fatPct > 40 && fatPct <= 50)) {
+    score += 22;
+  } else if ((fatPct >= 5 && fatPct < 10) || (fatPct > 50 && fatPct <= 60)) {
+    score += 14;
   } else {
-    score += Math.max(0, 8 - Math.abs(fatPct - 27.5) * 0.4); // Penalty for being far from ideal
+    score += 6;
   }
 
-  // 4. Calorie appropriateness (ideal: 300-600 for meals, 100-300 for snacks) - 15 points
-  factors++;
-  const isSnack = meal.calories < 300;
-  if (isSnack) {
-    if (meal.calories >= 100 && meal.calories <= 300) {
-      score += 15; // Perfect snack range
-    } else if (meal.calories >= 50 && meal.calories < 100) {
-      score += 10; // Small snack
-    } else if (meal.calories > 300 && meal.calories <= 400) {
-      score += 8; // Large snack
-    } else {
-      score += Math.max(0, 5 - Math.abs(meal.calories - 200) / 50); // Penalty
-    }
-  } else {
-    if (meal.calories >= 300 && meal.calories <= 600) {
-      score += 15; // Perfect meal range
-    } else if (meal.calories >= 250 && meal.calories < 300) {
-      score += 12; // Small meal
-    } else if (meal.calories > 600 && meal.calories <= 700) {
-      score += 12; // Large meal
-    } else if (meal.calories >= 200 && meal.calories < 250) {
-      score += 8; // Very small meal
-    } else if (meal.calories > 700 && meal.calories <= 800) {
-      score += 8; // Very large meal
-    } else {
-      score += Math.max(0, 5 - Math.abs(meal.calories - 450) / 100); // Penalty
-    }
-  }
-
-  // Normalize to 0-100 scale
-  const maxScore = factors * 30; // Maximum possible score
-  const normalizedScore = Math.round((score / maxScore) * 100);
-
-  return Math.max(0, Math.min(100, normalizedScore));
+  // Max = 35 + 35 + 30 = 100 — no normalisation needed, score IS the 0-100 value.
+  return Math.max(0, Math.min(100, Math.round(score)));
 };
 
 // Get health score color and label

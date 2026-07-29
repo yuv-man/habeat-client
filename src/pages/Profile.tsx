@@ -312,14 +312,9 @@ const Profile = () => {
   };
 
   const addDietaryRestriction = () => {
-    if (
-      newDietaryRestriction.trim() &&
-      !dietaryRestrictions.includes(newDietaryRestriction.trim())
-    ) {
-      setDietaryRestrictions([
-        ...dietaryRestrictions,
-        newDietaryRestriction.trim(),
-      ]);
+    const value = `other:${newDietaryRestriction.trim()}`;
+    if (newDietaryRestriction.trim() && !dietaryRestrictions.includes(value)) {
+      setDietaryRestrictions([...dietaryRestrictions, value]);
       setNewDietaryRestriction("");
     }
   };
@@ -329,6 +324,28 @@ const Profile = () => {
       dietaryRestrictions.filter((r) => r !== restriction)
     );
   };
+
+  // Toggle a preset chip (add if missing, remove if already selected). Mirrors
+  // the KYC DietaryRestrictionsStep so both flows share the same canonical option list.
+  const toggleFromList = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    value: string
+  ) => {
+    setList(
+      list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value]
+    );
+  };
+
+  // Preset dietary-restriction ids (excludes "other" — the custom input covers that).
+  const dietaryRestrictionPresets = dietaryRestrictionsList.filter(
+    (o) => o.id !== "other"
+  );
+  const dietaryRestrictionPresetIds = dietaryRestrictionPresets.map(
+    (o) => o.id
+  );
 
   const updateMealTime = (mealType: keyof MealTimes, time: string) => {
     setMealTimes((prev) => ({ ...prev, [mealType]: time }));
@@ -881,43 +898,57 @@ const Profile = () => {
                 <Label className="text-xs font-medium mb-1.5 block">
                   Dietary Restrictions
                 </Label>
+                {/* Preset chips (same options as KYC) */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  {dietaryRestrictions.map((restriction) => {
-                    // Check if it's a predefined restriction or custom
-                    const isPredefined = dietaryRestrictionsList.some(
-                      (r) => r.id === restriction || r.name === restriction
-                    );
-                    const displayName = restriction.startsWith("other:")
-                      ? restriction.replace("other:", "")
-                      : restriction;
-
-                    return (
-                      <div
-                        key={restriction}
-                        className={`px-2 py-0.5 rounded-full flex items-center gap-1 text-xs ${
-                          isPredefined
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700"
-                        }`}
-                      >
-                        <span>{displayName}</span>
-                        <button
-                          onClick={() => removeDietaryRestriction(restriction)}
-                          className={`hover:${
-                            isPredefined ? "text-green-900" : "text-orange-900"
-                          }`}
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    );
-                  })}
+                  {dietaryRestrictionPresets.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() =>
+                        toggleFromList(
+                          dietaryRestrictions,
+                          setDietaryRestrictions,
+                          option.id
+                        )
+                      }
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                        dietaryRestrictions.includes(option.id)
+                          ? "bg-green-500 text-white"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {option.name}
+                    </button>
+                  ))}
                 </div>
+                {/* Custom entries not in the preset list */}
+                {dietaryRestrictions.filter(
+                  (r) => !dietaryRestrictionPresetIds.includes(r)
+                ).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {dietaryRestrictions
+                      .filter((r) => !dietaryRestrictionPresetIds.includes(r))
+                      .map((restriction) => (
+                        <div
+                          key={restriction}
+                          className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                        >
+                          <span>{restriction.replace("other:", "")}</span>
+                          <button
+                            onClick={() => removeDietaryRestriction(restriction)}
+                            className="hover:text-orange-900"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <Input
                     value={newDietaryRestriction}
                     onChange={(e) => setNewDietaryRestriction(e.target.value)}
-                    placeholder="Add dietary restriction"
+                    placeholder="Add custom dietary restriction"
                     className="h-8 text-sm"
                     onKeyPress={(e) =>
                       e.key === "Enter" && addDietaryRestriction()

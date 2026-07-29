@@ -2,7 +2,13 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { IUser, MealTimes } from "@/types/interfaces";
-import { dietTypes } from "@/components/kyc/types";
+import {
+  dietTypes,
+  allergies as ALLERGY_OPTIONS,
+  dislikes as DISLIKE_OPTIONS,
+  foodPreferences as FOOD_PREFERENCE_OPTIONS,
+  dietaryRestrictions as DIETARY_RESTRICTION_OPTIONS,
+} from "@/components/kyc/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,9 +70,11 @@ const Settings = () => {
   const [allergies, setAllergies] = useState<string[]>([]);
   const [dislikes, setDislikes] = useState<string[]>([]);
   const [foodPreferences, setFoodPreferences] = useState<string[]>([]);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState<string[]>([]);
   const [newAllergy, setNewAllergy] = useState("");
   const [newDislike, setNewDislike] = useState("");
   const [newFoodPreference, setNewFoodPreference] = useState("");
+  const [newDietaryRestriction, setNewDietaryRestriction] = useState("");
 
   // Meal times (initialized from store)
   const [mealTimes, setMealTimes] = useState<MealTimes>(storeMealTimes);
@@ -116,6 +124,7 @@ const Settings = () => {
     setAllergies(user.allergies || []);
     setDislikes(user.dislikes || []);
     setFoodPreferences(user.foodPreferences || []);
+    setDietaryRestrictions(user.dietaryRestrictions || []);
     // Map user.path to diet type name
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
 
@@ -190,6 +199,7 @@ const Settings = () => {
         allergies,
         dislikes,
         foodPreferences,
+        dietaryRestrictions,
         // Map diet type name back to path
         path: dietTypeToPath[dietType] || user.path || "healthy",
       };
@@ -251,6 +261,43 @@ const Settings = () => {
   const removeFoodPreference = (foodPreference: string) => {
     setFoodPreferences(foodPreferences.filter((fp) => fp !== foodPreference));
   };
+
+  const addDietaryRestriction = () => {
+    const value = `other:${newDietaryRestriction.trim()}`;
+    if (newDietaryRestriction.trim() && !dietaryRestrictions.includes(value)) {
+      setDietaryRestrictions([...dietaryRestrictions, value]);
+      setNewDietaryRestriction("");
+    }
+  };
+
+  const removeDietaryRestriction = (restriction: string) => {
+    setDietaryRestrictions(
+      dietaryRestrictions.filter((r) => r !== restriction)
+    );
+  };
+
+  // Toggle a preset chip (add if missing, remove if already selected). Mirrors
+  // the KYC PreferencesStep so both flows share the same canonical option lists.
+  const toggleFromList = (
+    list: string[],
+    setList: React.Dispatch<React.SetStateAction<string[]>>,
+    value: string
+  ) => {
+    setList(
+      list.includes(value)
+        ? list.filter((item) => item !== value)
+        : [...list, value]
+    );
+  };
+
+  // Preset dietary-restriction ids (excludes "other" — the custom input covers that).
+  const DIETARY_PRESETS = DIETARY_RESTRICTION_OPTIONS.filter(
+    (o) => o.id !== "other"
+  );
+  const DIETARY_PRESET_IDS = DIETARY_PRESETS.map((o) => o.id);
+  const dietaryNameFor = (id: string) =>
+    DIETARY_RESTRICTION_OPTIONS.find((o) => o.id === id)?.name ??
+    id.replace(/^other:/, "");
 
   const updateMealTime = (mealType: keyof MealTimes, time: string) => {
     setMealTimes((prev) => ({ ...prev, [mealType]: time }));
@@ -592,32 +639,128 @@ const Settings = () => {
               Preferences
             </h2>
 
+            {/* Dietary Restrictions */}
+            <div className="mb-4">
+              <Label className="text-xs font-medium mb-1.5 block">
+                Dietary Restrictions
+              </Label>
+              {/* Preset chips (same options as KYC) */}
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {DIETARY_PRESETS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() =>
+                      toggleFromList(
+                        dietaryRestrictions,
+                        setDietaryRestrictions,
+                        option.id
+                      )
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                      dietaryRestrictions.includes(option.id)
+                        ? "bg-green-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {option.name}
+                  </button>
+                ))}
+              </div>
+              {/* Custom entries not in the preset list */}
+              {dietaryRestrictions.filter(
+                (r) => !DIETARY_PRESET_IDS.includes(r)
+              ).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {dietaryRestrictions
+                    .filter((r) => !DIETARY_PRESET_IDS.includes(r))
+                    .map((restriction) => (
+                      <div
+                        key={restriction}
+                        className="bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                      >
+                        <span>{dietaryNameFor(restriction)}</span>
+                        <button
+                          onClick={() => removeDietaryRestriction(restriction)}
+                          className="hover:text-green-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  value={newDietaryRestriction}
+                  onChange={(e) => setNewDietaryRestriction(e.target.value)}
+                  placeholder="Add custom dietary restriction"
+                  className="h-8 text-sm"
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && addDietaryRestriction()
+                  }
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={addDietaryRestriction}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
             {/* Allergies */}
             <div className="mb-4">
               <Label className="text-xs font-medium mb-1.5 block">
                 Allergies
               </Label>
+              {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {allergies.map((allergy) => (
-                  <div
-                    key={allergy}
-                    className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                {ALLERGY_OPTIONS.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleFromList(allergies, setAllergies, item)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                      allergies.includes(item)
+                        ? "bg-red-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
-                    <span>{allergy}</span>
-                    <button
-                      onClick={() => removeAllergy(allergy)}
-                      className="hover:text-red-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
+                    {item}
+                  </button>
                 ))}
               </div>
+              {/* Custom entries not in the preset list */}
+              {allergies.filter((a) => !ALLERGY_OPTIONS.includes(a)).length >
+                0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {allergies
+                    .filter((a) => !ALLERGY_OPTIONS.includes(a))
+                    .map((allergy) => (
+                      <div
+                        key={allergy}
+                        className="bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                      >
+                        <span>{allergy}</span>
+                        <button
+                          onClick={() => removeAllergy(allergy)}
+                          className="hover:text-red-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   value={newAllergy}
                   onChange={(e) => setNewAllergy(e.target.value)}
-                  placeholder="Add allergy"
+                  placeholder="Add custom allergy"
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addAllergy()}
                 />
@@ -638,27 +781,50 @@ const Settings = () => {
               <Label className="text-xs font-medium mb-1.5 block">
                 Dislikes
               </Label>
+              {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {dislikes.map((dislike) => (
-                  <div
-                    key={dislike}
-                    className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                {DISLIKE_OPTIONS.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleFromList(dislikes, setDislikes, item)}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                      dislikes.includes(item)
+                        ? "bg-blue-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
-                    <span>{dislike}</span>
-                    <button
-                      onClick={() => removeDislike(dislike)}
-                      className="hover:text-blue-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
+                    {item}
+                  </button>
                 ))}
               </div>
+              {/* Custom entries not in the preset list */}
+              {dislikes.filter((d) => !DISLIKE_OPTIONS.includes(d)).length >
+                0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {dislikes
+                    .filter((d) => !DISLIKE_OPTIONS.includes(d))
+                    .map((dislike) => (
+                      <div
+                        key={dislike}
+                        className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                      >
+                        <span>{dislike}</span>
+                        <button
+                          onClick={() => removeDislike(dislike)}
+                          className="hover:text-blue-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   value={newDislike}
                   onChange={(e) => setNewDislike(e.target.value)}
-                  placeholder="Add dislike"
+                  placeholder="Add custom dislike"
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addDislike()}
                 />
@@ -679,27 +845,53 @@ const Settings = () => {
               <Label className="text-xs font-medium mb-1.5 block">
                 Food Preferences
               </Label>
+              {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
-                {foodPreferences.map((foodPreference) => (
-                  <div
-                    key={foodPreference}
-                    className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                {FOOD_PREFERENCE_OPTIONS.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() =>
+                      toggleFromList(foodPreferences, setFoodPreferences, item)
+                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition ${
+                      foodPreferences.includes(item)
+                        ? "bg-purple-500 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   >
-                    <span>{foodPreference}</span>
-                    <button
-                      onClick={() => removeFoodPreference(foodPreference)}
-                      className="hover:text-purple-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
+                    {item}
+                  </button>
                 ))}
               </div>
+              {/* Custom entries not in the preset list */}
+              {foodPreferences.filter(
+                (fp) => !FOOD_PREFERENCE_OPTIONS.includes(fp)
+              ).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {foodPreferences
+                    .filter((fp) => !FOOD_PREFERENCE_OPTIONS.includes(fp))
+                    .map((foodPreference) => (
+                      <div
+                        key={foodPreference}
+                        className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1 text-xs"
+                      >
+                        <span>{foodPreference}</span>
+                        <button
+                          onClick={() => removeFoodPreference(foodPreference)}
+                          className="hover:text-purple-900"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   value={newFoodPreference}
                   onChange={(e) => setNewFoodPreference(e.target.value)}
-                  placeholder="Add food preference"
+                  placeholder="Add custom food preference"
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addFoodPreference()}
                 />

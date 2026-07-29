@@ -148,7 +148,13 @@ const availableImages = [
   "cottage-cheese-with-pineapple",
   "tropical-mango-and-pineapple-smoothie-bowl",
   "seafood-soup",
-  "onion-soup"
+  "onion-soup",
+  "thai-peanut-tofu-bowl",
+  "spicy-kimchi-and-gochujang-tofu",
+  "mediterranean-chickpea-bowl",
+  "spanish-egg-and-potato-omelette",
+  "padron-peppers",
+  "croquetas",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -170,6 +176,12 @@ const keywordMappings: { [key: string]: string[] } = {
     "vegetable-soup",
     "grilled-vegetables-platter",
     "veggie-stir-fry",
+    "thai-peanut-tofu-bowl",
+    "spicy-kimchi-and-gochujang-tofu",
+    "mediterranean-chickpea-bowl",
+    "spanish-egg-and-potato-omelette",
+    "padron-peppers",
+    "croquetas",
   ],
   minestrone: ["vegetable-soup"],
   tomato: ["tomato-soup-and-crusty-bread", "spaghetti-in-tomato-sauce"],
@@ -278,10 +290,11 @@ const keywordMappings: { [key: string]: string[] } = {
     "veggie-omelette",
     "avocado-toast-with-poached-egg",
     "salmon-and-avocado-toast",
+    "spanish-egg-and-potato-omelette",
   ],
-  eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
+  eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach", "spanish-egg-and-potato-omelette"],
   scrambled: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
-  omelette: ["veggie-omelette"],
+  omelette: ["veggie-omelette", "spanish-egg-and-potato-omelette"],
   omelet: ["veggie-omelette"],
 
   // Breakfast
@@ -373,6 +386,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-teriyaki-bowl-with-brown-rice",
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
     "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
+    "thai-peanut-tofu-bowl",
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
@@ -388,6 +402,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-pad-see-ew",
     "vermicelli-salad",
     "miso-glazed-noodles-with-shrimp-and-broccoli",
+    "thai-peanut-tofu-bowl",
   ],
   noodles: [
     "tofu-and-rice-noodles",
@@ -463,10 +478,16 @@ const keywordMappings: { [key: string]: string[] } = {
     "veggie-stir-fry",
     "grilled-vegetable-wrap",
     "vermicelli-salad",
+    "thai-peanut-tofu-bowl",
+    "spicy-kimchi-and-gochujang-tofu",
+    "mediterranean-chickpea-bowl",
+    "spanish-egg-and-potato-omelette",
+    "padron-peppers",
+    "croquetas",
   ],
-  vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry", "vermicelli-salad"],
+  vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry", "vermicelli-salad", "spanish-egg-and-potato-omelette", "padron-peppers", "croquetas"],
   falafel: ["falafel", "falafel-and-hummus"],
-  tofu: ["tofu-and-rice-noodles"],
+  tofu: ["tofu-and-rice-noodles", "thai-peanut-tofu-bowl", "spicy-kimchi-and-gochujang-tofu"],
 
   // Other dishes
   pizza: ["pizza", "calzone"],
@@ -474,7 +495,7 @@ const keywordMappings: { [key: string]: string[] } = {
   shakshuka: ["shakshuka"],
   shepherds: ["sheperds-pie"],
   pie: ["sheperds-pie"],
-  peppers: ["stuffed-bell-peppers"],
+  peppers: ["stuffed-bell-peppers", "padron-peppers"],
   mussels: ["mussels-with-fries"],
 
   // Sides
@@ -486,8 +507,10 @@ const keywordMappings: { [key: string]: string[] } = {
     "duck-leg-with-mush-potatos",
     "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
     "duck-breast-with-mushed-potatoes",
+    "spanish-egg-and-potato-omelette",
+    "croquetas",
   ],
-  fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries", "arencini"],
+  fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries", "arencini", "croquetas"],
 
   // Smoothies & Yogurt
   smoothie: [

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, TrendingUp, Brain, Eye, Wind, BellOff, Sparkles } from "lucide-react";
+import {
+  ArrowLeft, TrendingUp, Brain, Eye, Wind, BellOff, Sparkles, Info, ChevronDown,
+} from "lucide-react";
 import {
   useCBTStore,
   useEmotionalEatingInsight,
@@ -12,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-const DAYS = ["M", "T", "W", "T", "F", "S", "S"];
+const DAY_INITIALS = ["S", "M", "T", "W", "T", "F", "S"];
 
 /** Returns the ISO date string for N days ago */
 const daysAgo = (n: number) => {
@@ -21,14 +23,34 @@ const daysAgo = (n: number) => {
   return d.toISOString().split("T")[0];
 };
 
+/** Single-letter weekday for an ISO date string, derived from the date itself. */
+const dayInitial = (isoDate: string) =>
+  DAY_INITIALS[new Date(`${isoDate}T00:00:00`).getDay()];
+
+/** "14 Jul" — used when naming the analysed period. */
+const fmtDate = (isoDate: string) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+  });
+
+/** "Mon 14 Jul" — used in the per-bar readout. */
+const dayFull = (isoDate: string) =>
+  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+
 // ─── sub-components ──────────────────────────────────────────────────────────
 
 interface ScoreRingProps {
   score: number;
   weeklyChange?: number;
+  mealsAnalysed: number;
 }
 
-function ScoreRing({ score, weeklyChange }: ScoreRingProps) {
+function ScoreRing({ score, weeklyChange, mealsAnalysed }: ScoreRingProps) {
   const R = 70;
   const circ = 2 * Math.PI * R;
   const filled = circ * (score / 100);
@@ -99,15 +121,36 @@ function ScoreRing({ score, weeklyChange }: ScoreRingProps) {
           </div>
         </div>
       )}
+
+      <HowToRead>
+        <p>
+          Your Mindful Eating Score is the share of your logged meals that were
+          eaten for physical hunger rather than emotion, scored 0–100. Higher is
+          better.
+        </p>
+        <p>
+          It is calculated from {mealsAnalysed} meal
+          {mealsAnalysed === 1 ? "" : "s"} you linked to a mood check-in over this
+          period — not from your onboarding answers. Log more meal-and-mood pairs
+          and it gets sharper.
+        </p>
+        <p className="text-slate-400">
+          75+ Excellent · 50–74 Building · under 50 Developing.
+          {weeklyChange !== undefined &&
+            " Weekly change compares this week's score with last week's."}
+        </p>
+      </HowToRead>
     </div>
   );
 }
 
 interface DayBar {
+  date: string;
   label: string;
-  moodPct: number;  // 0–1, grows upward
-  eatPct: number;   // 0–1, grows downward
-  hasData: boolean;
+  /** Average mood that day on the 1–5 scale, or null if nothing was logged. */
+  moodAvg: number | null;
+  /** Mindful-eating score that day on the 0–100 scale, or null if no meals. */
+  mindfulScore: number | null;
 }
 
 interface MoodEatingChartProps {
@@ -115,10 +158,42 @@ interface MoodEatingChartProps {
   insight: string | null;
 }
 
+/** Collapsible plain-language key for a chart. */
+function HowToRead({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors"
+      >
+        <Info className="w-3.5 h-3.5" />
+        How to read this
+        <ChevronDown
+          className={cn("w-3.5 h-3.5 transition-transform", open && "rotate-180")}
+        />
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2 text-[11px] leading-relaxed text-slate-500">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
+  const [selected, setSelected] = useState<number | null>(null);
+
+  const loggedMoodDays = days.filter((d) => d.moodAvg != null).length;
+  const loggedMealDays = days.filter((d) => d.mindfulScore != null).length;
+  const active = selected != null ? days[selected] : null;
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0_10px_40px_-10px_rgba(15,118,110,0.08)] border-b-4 border-b-violet-200 flex flex-col h-full">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
           Mood × Eating Drivers
         </span>
@@ -132,36 +207,108 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
         </div>
       </div>
 
-      {/* Bidirectional bars */}
+      {/* What the two halves actually measure — stated, not implied */}
+      <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+        Above the line: how you felt (1–5). Below: how mindful your eating was
+        (0–100). Tap a day for its numbers.
+      </p>
+
+      {/* Bidirectional bars — both halves share an equal 0–100% height so the
+          two directions are visually comparable. */}
       <div className="grid grid-cols-7 gap-2 flex-1 items-end">
-        {days.map((day, i) => (
-          <div key={i} className="flex flex-col items-center gap-0.5">
-            {/* Upper: mood, bar grows from bottom */}
-            <div className="w-full bg-violet-100/50 rounded-t-md h-24 relative flex items-end justify-center overflow-hidden">
-              <div
-                className="w-1/2 bg-violet-300 rounded-t-md transition-all duration-500 ease-out"
-                style={{ height: `${Math.round(day.moodPct * 100)}%` }}
-              />
-            </div>
-            {/* Center line */}
-            <div className="w-full h-px bg-slate-200" />
-            {/* Lower: eating quality, bar grows from top */}
-            <div className="w-full bg-teal-100/50 rounded-b-md h-12 relative flex items-start justify-center overflow-hidden">
-              <div
-                className="w-1/2 bg-teal-400 rounded-b-md transition-all duration-500 ease-out"
-                style={{ height: `${Math.round(day.eatPct * 100)}%` }}
-              />
-            </div>
-            <span className="text-[10px] text-slate-400 font-medium mt-1">
-              {day.label}
+        {days.map((day, i) => {
+          const hasMood = day.moodAvg != null;
+          const hasMeal = day.mindfulScore != null;
+          const isSelected = selected === i;
+
+          return (
+            <button
+              key={day.date}
+              onClick={() => setSelected(isSelected ? null : i)}
+              aria-label={`${dayFull(day.date)}: ${
+                hasMood ? `mood ${day.moodAvg!.toFixed(1)} of 5` : "no mood logged"
+              }, ${
+                hasMeal ? `eating score ${day.mindfulScore} of 100` : "no meals logged"
+              }`}
+              className={cn(
+                "flex flex-col items-center gap-0.5 rounded-md transition-all",
+                isSelected && "ring-2 ring-violet-300 ring-offset-2"
+              )}
+            >
+              {/* Upper: mood, grows from the centre line upward */}
+              <div className="w-full bg-violet-100/50 rounded-t-md h-20 relative flex items-end justify-center overflow-hidden">
+                {hasMood ? (
+                  <div
+                    className="w-1/2 bg-violet-300 rounded-t-md transition-all duration-500 ease-out"
+                    style={{ height: `${Math.round((day.moodAvg! / 5) * 100)}%` }}
+                  />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-slate-300 text-[9px]">
+                    —
+                  </span>
+                )}
+              </div>
+
+              {/* Centre line */}
+              <div className="w-full h-px bg-slate-300" />
+
+              {/* Lower: eating quality, grows from the centre line downward */}
+              <div className="w-full bg-teal-100/50 rounded-b-md h-20 relative flex items-start justify-center overflow-hidden">
+                {hasMeal ? (
+                  <div
+                    className="w-1/2 bg-teal-400 rounded-b-md transition-all duration-500 ease-out"
+                    style={{ height: `${Math.round(day.mindfulScore!)}%` }}
+                  />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-slate-300 text-[9px]">
+                    —
+                  </span>
+                )}
+              </div>
+
+              <span
+                className={cn(
+                  "text-[10px] font-medium mt-1",
+                  isSelected ? "text-violet-600" : "text-slate-400"
+                )}
+              >
+                {day.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Per-day readout for the tapped bar */}
+      {active && (
+        <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-100">
+          <p className="text-[11px] font-semibold text-slate-700 mb-1.5">
+            {dayFull(active.date)}
+          </p>
+          <div className="flex gap-5 text-[11px]">
+            <span className="text-slate-500">
+              <span className="w-2 h-2 rounded-full bg-violet-400 inline-block mr-1.5" />
+              Mood{" "}
+              <span className="font-semibold text-slate-700">
+                {active.moodAvg != null ? `${active.moodAvg.toFixed(1)} / 5` : "not logged"}
+              </span>
+            </span>
+            <span className="text-slate-500">
+              <span className="w-2 h-2 rounded-full bg-teal-500 inline-block mr-1.5" />
+              Eating{" "}
+              <span className="font-semibold text-slate-700">
+                {active.mindfulScore != null
+                  ? `${active.mindfulScore} / 100`
+                  : "no meals logged"}
+              </span>
             </span>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       {/* Insight callout */}
       {insight && (
-        <div className="mt-5 flex items-start gap-2 p-3 bg-violet-50 rounded-xl border border-violet-100">
+        <div className="mt-4 flex items-start gap-2 p-3 bg-violet-50 rounded-xl border border-violet-100">
           <Brain className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
           <p className="text-xs leading-relaxed text-slate-600">
             <span className="font-semibold text-slate-700">Insight: </span>
@@ -169,6 +316,33 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
           </p>
         </div>
       )}
+
+      <HowToRead>
+        <p>
+          <span className="font-semibold text-slate-600">Purple bars (up)</span> —
+          your average mood that day, from your check-ins. A full bar is 5/5.
+        </p>
+        <p>
+          <span className="font-semibold text-slate-600">Teal bars (down)</span> —
+          your mindful eating score for meals logged that day. A full bar is
+          100/100, meaning every meal was eaten for hunger rather than emotion.
+        </p>
+        <p>
+          <span className="font-semibold text-slate-600">A dash (—)</span> means
+          nothing was logged that day. It is not a score of zero — the day is
+          simply blank.
+        </p>
+        <p className="pt-1 text-slate-400">
+          Reading the shape: when a tall purple bar sits above a tall teal bar,
+          good mood and mindful eating went together. A tall purple bar over a
+          short teal one is the day worth looking at.
+        </p>
+        <p className="pt-1 text-slate-400">
+          Based on {loggedMoodDays} day{loggedMoodDays === 1 ? "" : "s"} with mood
+          check-ins and {loggedMealDays} day{loggedMealDays === 1 ? "" : "s"} with
+          logged meals, out of the last 7.
+        </p>
+      </HowToRead>
     </div>
   );
 }
@@ -180,26 +354,46 @@ interface MetricCardProps {
   sublabel: string;
   icon: React.ReactNode;
   color: "teal" | "violet";
+  /** Plain-language definition, revealed by the ⓘ button. */
+  help: string;
 }
 
-function MetricCard({ label, value, unit, sublabel, icon, color }: MetricCardProps) {
+function MetricCard({ label, value, unit, sublabel, icon, color, help }: MetricCardProps) {
+  const [showHelp, setShowHelp] = useState(false);
+
   return (
     <div className="bg-white rounded-2xl p-4 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)] border border-slate-100 flex flex-col justify-between h-full">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-slate-400 leading-tight">{label}</span>
-        <span className={cn("opacity-50", color === "teal" ? "text-teal-600" : "text-violet-600")}>
-          {icon}
-        </span>
+        <button
+          onClick={() => setShowHelp((v) => !v)}
+          aria-label={`What does ${label} mean?`}
+          aria-expanded={showHelp}
+          className={cn(
+            "transition-opacity hover:opacity-100",
+            showHelp ? "opacity-100" : "opacity-50",
+            color === "teal" ? "text-teal-600" : "text-violet-600"
+          )}
+        >
+          {showHelp ? <Info className="w-4 h-4" /> : icon}
+        </button>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className={cn("text-3xl font-bold", color === "teal" ? "text-teal-700" : "text-violet-600")}>
-          {value}
-        </span>
-        <span className="text-xs text-slate-400">{unit}</span>
-      </div>
-      <p className="text-[11px] text-slate-400 mt-3 pt-3 border-t border-slate-100 leading-snug">
-        {sublabel}
-      </p>
+
+      {showHelp ? (
+        <p className="text-[11px] text-slate-500 leading-relaxed flex-1">{help}</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1.5">
+            <span className={cn("text-3xl font-bold", color === "teal" ? "text-teal-700" : "text-violet-600")}>
+              {value}
+            </span>
+            <span className="text-xs text-slate-400">{unit}</span>
+          </div>
+          <p className="text-[11px] text-slate-400 mt-3 pt-3 border-t border-slate-100 leading-snug">
+            {sublabel}
+          </p>
+        </>
+      )}
     </div>
   );
 }
@@ -238,8 +432,9 @@ const TIP_COLORS = {
 };
 
 function TipsSlider({ recommendations }: { recommendations: string[] }) {
-  const tips = (recommendations ?? []).length >= 2
-    ? (recommendations ?? []).slice(0, 4).map((r, i) => ({
+  const isPersonalised = (recommendations ?? []).length >= 2;
+  const tips = isPersonalised
+    ? recommendations.slice(0, 4).map((r, i) => ({
         icon: TIPS[i % TIPS.length].icon,
         title: "Recommendation",
         body: r,
@@ -249,9 +444,15 @@ function TipsSlider({ recommendations }: { recommendations: string[] }) {
 
   return (
     <div className="bg-white rounded-2xl p-4 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.06)] border border-slate-100">
-      <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest block mb-3">
-        Mindful Tips
-      </span>
+      <div className="flex items-baseline justify-between mb-3">
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+          Mindful Tips
+        </span>
+        {/* Say whether these were computed from the user's data or are defaults */}
+        <span className="text-[10px] font-medium text-slate-400">
+          {isPersonalised ? "Based on your logs" : "General tips"}
+        </span>
+      </div>
       <div
         className="flex gap-3 overflow-x-auto pb-1"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
@@ -284,7 +485,13 @@ interface Pattern {
   impact: "positive" | "negative" | "neutral";
 }
 
-function PatternsTable({ patterns }: { patterns: Pattern[] }) {
+function PatternsTable({
+  patterns,
+  isExample,
+}: {
+  patterns: Pattern[];
+  isExample: boolean;
+}) {
   const IMPACT_STYLES = {
     positive: "bg-teal-100 text-teal-700",
     negative: "bg-red-100 text-red-700",
@@ -293,8 +500,33 @@ function PatternsTable({ patterns }: { patterns: Pattern[] }) {
 
   return (
     <div>
-      <h3 className="text-lg font-bold text-slate-800 mb-3">Top Recurring Patterns</h3>
-      <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)] overflow-hidden border border-slate-100">
+      <div className="flex items-center gap-2 mb-3">
+        <h3 className="text-lg font-bold text-slate-800">Top Recurring Patterns</h3>
+        {isExample && (
+          <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-full bg-amber-100 text-amber-700">
+            Example
+          </span>
+        )}
+      </div>
+
+      {/* Placeholder rows must never read as findings about the user. */}
+      {isExample && (
+        <div className="mb-3 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-[11px] leading-relaxed text-amber-800">
+            These rows illustrate what this table will show — they are not your
+            patterns. Yours appear once you have logged two meals in the same slot,
+            or a mood trigger has been observed at least once.
+          </p>
+        </div>
+      )}
+
+      <div
+        className={cn(
+          "bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)] overflow-hidden border border-slate-100",
+          isExample && "opacity-60"
+        )}
+      >
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/80">
@@ -350,38 +582,46 @@ export default function EmotionalEating() {
     fetchMoodHistory(start, end);
   }, [period, fetchEmotionalEatingInsight, fetchMoodHistory]);
 
-  // Build 7-day chart data from real dailyBreakdown
+  // Build the 7-day chart from real logged data only.
+  // A day with nothing logged is rendered as an explicit gap — never as a zero,
+  // and never padded with synthetic variance.
   const chartDays: DayBar[] = useMemo(() => {
     const breakdown = insight?.dailyBreakdown;
+
     if (breakdown?.length) {
-      return breakdown.slice(-7).map((d, i) => ({
-        label: DAYS[i % 7],
-        moodPct: d.moodAvg != null ? d.moodAvg / 5 : 0,
-        eatPct: d.mindfulScore != null ? d.mindfulScore / 100 : 0,
-        hasData: d.hasData,
+      return breakdown.slice(-7).map((d) => ({
+        date: d.date,
+        label: dayInitial(d.date),
+        moodAvg: d.moodAvg,
+        mindfulScore: d.mindfulScore,
       }));
     }
-    // Fallback: derive from moodHistory while backend data accumulates
-    const mindfulBase = insight ? insight.mindfulEatingScore / 100 : 0.5;
+
+    // Before any meal-mood correlations exist the backend has no mindfulScore to
+    // give us. We still plot the mood check-ins the user *has* logged, and leave
+    // the eating half empty rather than inventing a curve for it.
     return Array.from({ length: 7 }, (_, i) => {
       const dateKey = daysAgo(6 - i);
       const dayEntries = moodHistory.filter((m) => m.date.startsWith(dateKey));
-      const moodPct = dayEntries.length
-        ? dayEntries.reduce((s, m) => s + m.moodLevel, 0) / dayEntries.length / 5
-        : 0;
-      const variation = [0.05, -0.1, 0.15, -0.05, 0.1, 0.2, -0.08][i];
       return {
-        label: DAYS[i],
-        moodPct,
-        eatPct: Math.max(0, Math.min(1, mindfulBase + variation)),
-        hasData: dayEntries.length > 0,
+        date: dateKey,
+        label: dayInitial(dateKey),
+        moodAvg: dayEntries.length
+          ? dayEntries.reduce((s, m) => s + m.moodLevel, 0) / dayEntries.length
+          : null,
+        mindfulScore: null,
       };
     });
   }, [insight, moodHistory]);
 
-  // Build patterns table — only observed patterns, never KYC seeds
-  const patterns: Pattern[] = useMemo(() => {
-    if (!insight) return DEFAULT_PATTERNS;
+  // Build patterns table — only observed patterns, never KYC seeds.
+  // `isExample` tells the table to label itself as an illustration rather than
+  // presenting placeholder rows as findings.
+  const { patterns, patternsAreExample } = useMemo<{
+    patterns: Pattern[];
+    patternsAreExample: boolean;
+  }>(() => {
+    if (!insight) return { patterns: DEFAULT_PATTERNS, patternsAreExample: true };
 
     const rows: Pattern[] = [];
 
@@ -414,14 +654,18 @@ export default function EmotionalEating() {
         rows.push({
           emoji: TRIGGER_EMOJIS[key] ?? "⚡",
           name: `${t.trigger.charAt(0).toUpperCase()}${t.trigger.slice(1)}-Eating`,
-          context: "Observed from your logs",
+          // The real window this trigger fires in, when the data supports naming
+          // one. Falls back to the generic phrasing only when it doesn't.
+          context: t.windowLabel ?? "Observed from your logs",
           frequency: `${t.count}× this ${period}`,
           impact: "negative",
         });
       });
 
     // Only fall back to defaults when there's genuinely no data at all
-    return rows.length ? rows : DEFAULT_PATTERNS;
+    return rows.length
+      ? { patterns: rows, patternsAreExample: false }
+      : { patterns: DEFAULT_PATTERNS, patternsAreExample: true };
   }, [insight, period]);
 
   const score = insight?.mindfulEatingScore ?? 0;
@@ -476,9 +720,34 @@ export default function EmotionalEating() {
               ))}
             </div>
           </div>
-          <p className="text-sm text-slate-400 mb-6 max-w-md">
+          <p className="text-sm text-slate-400 mb-3 max-w-md">
             Understand the connection between your emotional state and eating habits.
           </p>
+
+          {/* Provenance: what this page is actually computed from. */}
+          {insight && (
+            <p className="text-[11px] text-slate-400 mb-6 flex items-center gap-1.5">
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              {insight.totalMeals > 0 ? (
+                <span>
+                  Computed from <strong className="text-slate-500">{insight.totalMeals}</strong>{" "}
+                  meal{insight.totalMeals === 1 ? "" : "s"} linked to a mood check-in
+                  {moodHistory.length > 0 && (
+                    <>
+                      {" "}and <strong className="text-slate-500">{moodHistory.length}</strong>{" "}
+                      mood entr{moodHistory.length === 1 ? "y" : "ies"}
+                    </>
+                  )}
+                  , {fmtDate(insight.period.start)}–{fmtDate(insight.period.end)}.
+                </span>
+              ) : (
+                <span>
+                  No meals linked to a mood yet — scores below stay locked until you
+                  link at least one.
+                </span>
+              )}
+            </p>
+          )}
 
           {/* No data at all */}
           {!insight && moodHistory.length === 0 ? (
@@ -496,7 +765,11 @@ export default function EmotionalEating() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                 {insight && insight.totalMeals > 0 && (
                   <div className="md:col-span-5">
-                    <ScoreRing score={score} weeklyChange={weeklyChange} />
+                    <ScoreRing
+                      score={score}
+                      weeklyChange={weeklyChange}
+                      mealsAnalysed={mealsAnalyzed}
+                    />
                   </div>
                 )}
                 <div className={insight && insight.totalMeals > 0 ? "md:col-span-7" : "md:col-span-12"}>
@@ -531,6 +804,7 @@ export default function EmotionalEating() {
                       sublabel="Meals eaten for hunger, not emotion"
                       icon={<Sparkles className="w-4 h-4" />}
                       color="teal"
+                      help={`Of the ${mealsAnalyzed} meal${mealsAnalyzed === 1 ? "" : "s"} you logged, ${satietyPct}% were started at a genuine hunger level (3 or more out of 5 on the pre-meal check-in). The rest were started while you were full or close to it.`}
                     />
                   </div>
                   <div className="md:col-span-3">
@@ -541,6 +815,7 @@ export default function EmotionalEating() {
                       sublabel={`${insight.emotionalEatingInstances} showed emotional eating`}
                       icon={<Brain className="w-4 h-4" />}
                       color="violet"
+                      help={`Meals you logged together with a mood check-in between ${fmtDate(insight.period.start)} and ${fmtDate(insight.period.end)}. Only these count towards your scores — meals logged without a mood aren't analysed.`}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-6">
@@ -555,7 +830,7 @@ export default function EmotionalEating() {
               )}
 
               {/* Patterns table */}
-              <PatternsTable patterns={patterns} />
+              <PatternsTable patterns={patterns} isExample={patternsAreExample} />
 
               {/* CBT Exercises toggle */}
               <div>

@@ -922,7 +922,28 @@ export interface IEmotionalEatingInsight {
     moodAvg: number | null;
     hasData: boolean;
   }[];
-  commonTriggers: { trigger: string; count: number }[];
+  commonTriggers: {
+    trigger: string;
+    count: number;
+    /** When this trigger fires, derived from real log timestamps. Null when
+     *  there aren't enough observations to name a time of day. */
+    window: {
+      hourStart: number;
+      hourEnd: number;
+      days: number[];
+      occurrences: number;
+      share: number;
+    } | null;
+    /** Server-formatted version of `window`, e.g. "Tue & Thu, 3–6 PM". */
+    windowLabel: string | null;
+  }[];
+  /** Day × time slots where emotional eating dominates. */
+  riskWindows: {
+    dayOfWeek: number;
+    hourStart: number;
+    hourEnd: number;
+    risk: "medium" | "high";
+  }[];
   commonEmotions: { emotion: string; count: number }[];
   mealTypeBreakdown: {
     breakfast: number;

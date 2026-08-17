@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import MealLoader from "@/components/helper/MealLoader";
 
 interface KycLayoutProps {
@@ -25,12 +26,14 @@ export default function KycLayout({
   onSubmit,
   loading,
   error,
-  submitText = "Next",
+  submitText,
   submitDisabled = false,
   showBackButton = true,
   currentStep,
   totalSteps,
 }: KycLayoutProps) {
+  const { t } = useTranslation("onboarding");
+  const resolvedSubmitText = submitText ?? t("common:buttons.next");
   const progressPercentage =
     currentStep && totalSteps ? (currentStep / totalSteps) * 100 : 0;
 
@@ -43,7 +46,7 @@ export default function KycLayout({
           <div className="px-4 pt-4 pb-2">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-gray-600">
-                Step {currentStep} of {totalSteps}
+                {t("layout.stepOf", { current: currentStep, total: totalSteps })}
               </span>
               <span className="text-xs font-medium text-gray-600">
                 {Math.round(progressPercentage)}%
@@ -63,9 +66,9 @@ export default function KycLayout({
               onClick={onBack}
               disabled={loading}
               className="p-1 text-gray-600 hover:text-gray-900 transition disabled:opacity-50"
-              aria-label="Go back"
+              aria-label={t("layout.goBack")}
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-6 h-6 rtl:-scale-x-100" />
             </button>
           ) : (
             <div className="w-8" /> // Spacer
@@ -111,9 +114,9 @@ export default function KycLayout({
             <MealLoader size="small" />
           ) : (
             <>
-              {submitText}
-              {submitText !== "Complete Registration" && (
-                <ChevronRight className="w-5 h-5" />
+              {resolvedSubmitText}
+              {resolvedSubmitText !== t("layout.completeRegistration") && (
+                <ChevronRight className="w-5 h-5 rtl:-scale-x-100" />
               )}
             </>
           )}

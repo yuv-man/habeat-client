@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, BarChart3, User } from "lucide-react";
 import logo from "@/assets/logos/habeat-logo.png";
@@ -7,6 +8,7 @@ import { ChatButton } from "@/components/chat";
 import { HealthyCoins } from "@/components/engagement/HealthyCoins";
 
 const MobileHeader = () => {
+  const { t } = useTranslation("navigation");
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -56,7 +58,7 @@ const MobileHeader = () => {
       <div className="flex items-center justify-between h-14 px-4">
         <Link to="/daily-tracker" className="flex items-center gap-2">
           <img src={logo} alt="logo" className="w-8 h-auto" />
-          <div className="text-lg font-semibold text-gray-900">Habeats</div>
+          <div className="text-lg font-semibold text-gray-900">{t("brand")}</div>
         </Link>
 
         {/* Healthy Coins, Chat Button, and Profile Picture */}
@@ -64,7 +66,7 @@ const MobileHeader = () => {
           {/* Healthy Coins */}
           <button
             onClick={() => navigate("/progress")}
-            aria-label="Healthy Coins"
+            aria-label={t("aria.healthyCoins")}
           >
             <HealthyCoins variant="compact" />
           </button>
@@ -77,12 +79,12 @@ const MobileHeader = () => {
           <button
             onClick={() => navigate("/profile")}
             className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 hover:border-emerald-400 transition flex-shrink-0"
-            aria-label="Profile"
+            aria-label={t("aria.profile")}
           >
             {user?.profilePicture ? (
               <img
                 src={user.profilePicture}
-                alt="Profile"
+                alt={t("aria.profile")}
                 className="w-full h-full object-cover"
               />
             ) : (

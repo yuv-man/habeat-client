@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/stores/languageStore";
 import { userAPI } from "@/services/api";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
@@ -28,6 +29,7 @@ const TiredButton = ({
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const { user, plan } = useAuthStore();
+  const language = useLanguageStore((state) => state.language);
 
   const handleTiredClick = async () => {
     if (!user?._id || !plan?._id) {
@@ -53,7 +55,8 @@ const TiredButton = ({
         dateString,
         mealType,
         meal.calories,
-        meal.macros
+        meal.macros,
+        language
       );
 
       if (response.data && response.data?.rescueMeal) {

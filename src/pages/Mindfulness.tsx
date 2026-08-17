@@ -366,11 +366,9 @@ const Mindfulness = () => {
           <p className="text-xs text-gray-400 mb-2 font-medium uppercase tracking-wide">Your latest mood</p>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <img
-                src={MOOD_IMAGES[latestMood.moodCategory]}
-                alt={latestMood.moodCategory}
-                className="w-12 h-12 object-contain"
-              />
+              <span className="text-4xl leading-none w-12 h-12 flex items-center justify-center">
+                {MOOD_IMAGES[latestMood.moodCategory]}
+              </span>
               <div>
                 <p className="font-semibold text-gray-800 capitalize">{latestMood.moodCategory}</p>
                 <p className="text-xs text-gray-400">Level {latestMood.moodLevel}/5 • {latestMood.time}</p>

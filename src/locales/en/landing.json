@@ -1,0 +1,57 @@
+{
+  "mobile": {
+    "heading1": "Nourish Your Body,",
+    "heading2": "Elevate Your Mind.",
+    "featureHabits": "Build Healthy Eating Habits",
+    "featureMindful": "Mindful Nutrition, Simplified",
+    "createAccount": "Create Account",
+    "signIn": "Sign In"
+  },
+  "hero": {
+    "welcomeTo": "Welcome to",
+    "startJourney": "Start Your Journey",
+    "signIn": "Sign In"
+  },
+  "features": {
+    "heading": "Everything you need to succeed",
+    "items": [
+      {
+        "title": "Personalized Goals",
+        "description": "Set and track custom health goals based on your lifestyle and preferences"
+      },
+      {
+        "title": "Health Monitoring",
+        "description": "Track calories, nutrients, water intake, and workout progress in real-time"
+      },
+      {
+        "title": "Smart Recommendations",
+        "description": "AI-powered meal suggestions and nutrition advice tailored to your goals"
+      },
+      {
+        "title": "Social Sharing",
+        "description": "Share progress with friends and stay motivated together"
+      }
+    ]
+  },
+  "paths": {
+    "heading": "Choose Your Path",
+    "description": "Whether you want to lose weight, gain muscle, or maintain a healthy lifestyle, we have a path for you"
+  },
+  "stats": {
+    "users": "Happy Users",
+    "meals": "Meals Tracked",
+    "successRate": "Success Rate"
+  },
+  "cta": {
+    "heading": "Ready to transform your health?",
+    "mealPlans": "Personalized meal plans",
+    "progressTracking": "Progress tracking",
+    "community": "Community support",
+    "getStarted": "Get Started Now"
+  },
+  "footer": {
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "support": "Support"
+  }
+}

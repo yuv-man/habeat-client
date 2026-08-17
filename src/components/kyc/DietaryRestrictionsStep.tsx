@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Leaf,
   Fish,
@@ -73,6 +74,7 @@ export default function DietaryRestrictionsStep({
   currentStep,
   totalSteps,
 }: DietaryRestrictionsStepProps) {
+  const { t } = useTranslation("onboarding");
   const [otherRestriction, setOtherRestriction] = useState("");
 
   // Multi-selection for dietary restrictions
@@ -146,23 +148,23 @@ export default function DietaryRestrictionsStep({
 
   return (
     <KycLayout
-      title="Dietary Restrictions"
-      description="Select any dietary restrictions or preferences (optional)."
+      title={t("dietaryRestrictions.title")}
+      description={t("dietaryRestrictions.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       currentStep={currentStep}
       totalSteps={totalSteps}
     >
       {/* Dietary Restrictions Section - Multi Select */}
       <div>
         <h3 className="text-lg font-bold text-gray-900 mb-3">
-          Any dietary restrictions?
+          {t("dietaryRestrictions.question")}
         </h3>
         <p className="text-sm text-gray-500 mb-4">
-          Select all that apply (optional)
+          {t("dietaryRestrictions.selectAllOptional")}
         </p>
         <div className="grid grid-cols-2 gap-3">
           {dietaryRestrictions.map((restriction) => {
@@ -226,7 +228,7 @@ export default function DietaryRestrictionsStep({
               <Input
                 value={otherRestriction}
                 onChange={(e) => setOtherRestriction(e.target.value)}
-                placeholder="Add custom dietary restriction"
+                placeholder={t("dietaryRestrictions.customPlaceholder")}
                 className="h-9 text-sm"
                 onKeyPress={(e) => e.key === "Enter" && addOtherRestriction()}
               />

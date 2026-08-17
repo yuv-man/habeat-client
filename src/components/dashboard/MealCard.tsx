@@ -26,6 +26,7 @@ import {
   getHealthScoreColor,
 } from "@/lib/nutritionHelpers";
 import { EatingModeCard } from "@/components/cbt/EatingModeCard";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 type MealStatus = "past" | "current" | "future";
 
@@ -56,6 +57,7 @@ const MealCard = ({
   const displayName = formatMealName(meal.name);
   const { user, updateFavorite } = useAuthStore();
   const { completeMeal, todayProgress } = useProgressStore();
+  const showMacros = useShowMacros();
   const startMealMoodLink = useCBTStore((state) => state.startMealMoodLink);
   // Auto-expand if current meal (but never for snacks), otherwise start collapsed
   const [isExpanded, setIsExpanded] = useState(
@@ -197,11 +199,15 @@ const MealCard = ({
                 <Clock className="w-3 h-3" />
                 <span>{mealTime}</span>
               </div>
-              <span>•</span>
-              <div className="flex items-center gap-1">
-                <Flame className="w-3 h-3 text-orange-500" />
-                <span>{meal.calories} kcal</span>
-              </div>
+              {showMacros && (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-orange-500" />
+                    <span>{meal.calories} kcal</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -271,7 +277,7 @@ const MealCard = ({
       <div className={`flex items-start gap-3`}>
         {/* Meal Image - Make bigger */}
         <img
-          src={getMealImageVite(meal.name, meal.icon)}
+          src={getMealImageVite(meal.nameEn || meal.name, meal.icon)}
           alt={displayName}
           className={`rounded-lg object-cover flex-shrink-0 ${
             isPast ? "w-16 h-16" : isCurrent ? "w-20 h-20" : "w-[72px] h-[72px]"
@@ -310,11 +316,15 @@ const MealCard = ({
               <Clock className="w-4 h-4" />
               <span>{mealTime}</span>
             </div>
-            <span>•</span>
-            <div className="flex items-center gap-1">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <span>{meal.calories} kcal</span>
-            </div>
+            {showMacros && (
+              <>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <Flame className="w-4 h-4 text-orange-500" />
+                  <span>{meal.calories} kcal</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -403,7 +413,7 @@ const MealCard = ({
           </div>
           {/* Nutrition Details */}
           <div className="space-y-3">
-            {meal.macros && (
+            {showMacros && meal.macros && (
               <div className="flex items-center gap-4 text-sm text-gray-600 justify-center">
                 <span>Protein: {meal.macros.protein}g</span>
                 <span>•</span>

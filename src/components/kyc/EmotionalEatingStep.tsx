@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from "react-i18next";
 import { KYCData, FOOD_RELATIONSHIP_OPTIONS, EMOTIONAL_TRIGGERS } from "./types";
 import KycLayout from "./KycLayout";
 
@@ -22,6 +23,7 @@ export default function EmotionalEatingStep({
   currentStep,
   totalSteps,
 }: EmotionalEatingStepProps) {
+  const { t } = useTranslation("onboarding");
   const selectedRelationship = kycData.foodRelationship ?? "";
   const selectedTriggers = kycData.emotionalTriggers ?? [];
   const isUnsure = selectedRelationship === "unsure";
@@ -48,30 +50,29 @@ export default function EmotionalEatingStep({
 
   return (
     <KycLayout
-      title="Your Eating Story"
+      title={t("emotionalEating.title")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       submitDisabled={!selectedRelationship}
       currentStep={currentStep}
       totalSteps={totalSteps}
     >
       {/* Empathy banner */}
-      <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-l-4 border-orange-400 rounded-xl p-4 mb-6">
+      <div className="bg-gradient-to-br from-orange-50 to-amber-50 border-s-4 border-orange-400 rounded-xl p-4 mb-6">
         <p className="text-sm text-amber-900 leading-relaxed">
-          Most apps track <em>what</em> you eat. Habeat also cares about{" "}
-          <em>why</em>. A few quick questions help us understand your eating story.
+          <Trans i18nKey="emotionalEating.empathyBanner" t={t} components={{ em: <em /> }} />
         </p>
       </div>
 
       {/* Self-assessment */}
       <div className="mb-6">
         <h3 className="text-sm font-bold text-gray-900 mb-1">
-          How would you describe your relationship with food?
+          {t("emotionalEating.relationshipQuestion")}
         </h3>
-        <p className="text-xs text-gray-400 mb-3">Choose one</p>
+        <p className="text-xs text-gray-400 mb-3">{t("emotionalEating.chooseOne")}</p>
         <div className="space-y-2">
           {FOOD_RELATIONSHIP_OPTIONS.map((opt) => {
             const selected = selectedRelationship === opt.id;
@@ -105,18 +106,18 @@ export default function EmotionalEatingStep({
           <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
             <div className="text-3xl mb-2">🌱</div>
             <p className="text-sm font-semibold text-green-800 mb-1">
-              That's okay — we'll learn together
+              {t("emotionalEating.unsureTitle")}
             </p>
             <p className="text-xs text-green-700 leading-relaxed">
-              Habeat will help you notice patterns over time. No pressure to have it figured out now.
+              {t("emotionalEating.unsureDescription")}
             </p>
           </div>
         ) : (
           <div>
             <h3 className="text-sm font-bold text-gray-900 mb-1">
-              What tends to make you reach for food?
+              {t("emotionalEating.triggersQuestion")}
             </h3>
-            <p className="text-xs text-gray-400 mb-3">Select all that apply · optional</p>
+            <p className="text-xs text-gray-400 mb-3">{t("emotionalEating.triggersHint")}</p>
             <div className="flex flex-wrap gap-2">
               {EMOTIONAL_TRIGGERS.map((trigger) => {
                 const active = selectedTriggers.includes(trigger.id);

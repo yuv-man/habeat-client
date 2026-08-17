@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Progress } from "@/components/ui/progress";
 import { IDailyPlan } from '@/types/interfaces';
+import { useShowMacros } from '@/hooks/useShowMacros';
 
 interface MealProgressProps {
   dayPlan: IDailyPlan;
@@ -17,12 +18,13 @@ const calculateMealProgress = (meals: IDailyPlan['meals']) => {
 
 const MealProgress = memo(({ dayPlan, isToday }: MealProgressProps) => {
   const progress = calculateMealProgress(dayPlan.meals);
-  
+  const showMacros = useShowMacros();
+
   return (
     <div className={`grid-cell border-l ${isToday ? 'today' : ''}`}>
       <div className="flex justify-between text-xs mb-1">
         <span>{progress}%</span>
-        <span className="text-gray-500">{dayPlan.netCalories}</span>
+        {showMacros && <span className="text-gray-500">{dayPlan.netCalories}</span>}
       </div>
       <Progress 
         value={progress}

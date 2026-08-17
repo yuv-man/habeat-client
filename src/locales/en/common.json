@@ -1,0 +1,15 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading...",
+    "close": "Close"
+  },
+  "language": {
+    "english": "English",
+    "hebrew": "Hebrew"
+  }
+}

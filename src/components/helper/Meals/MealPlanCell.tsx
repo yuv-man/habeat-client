@@ -8,6 +8,7 @@ import "@/styles/mealPlanCell.css";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "@/stores/authStore";
 import { formatMealName } from "@/lib/formatters";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 interface MealPlanCellProps {
   meal: IMeal;
@@ -31,6 +32,7 @@ const MealPlanCell = memo(
     const isPastDate = date < now;
     const [isCompleted, setIsCompleted] = useState(meal.done);
     const { user, plan, updateMealInPlan } = useAuthStore();
+    const showMacros = useShowMacros();
 
     const onComplete = useCallback(
       (e: React.MouseEvent) => {
@@ -71,10 +73,12 @@ const MealPlanCell = memo(
           )}
         </button>
         <div className="flex flex-row justify-between">
-          <div className="info-container calories">
-            <img src={fireIcon} alt="fire" />
-            <p>{meal.calories}</p>
-          </div>
+          {showMacros && (
+            <div className="info-container calories">
+              <img src={fireIcon} alt="fire" />
+              <p>{meal.calories}</p>
+            </div>
+          )}
           {meal.category?.toLowerCase() !== "snack" && (
             <div className="info-container time">
               <img src={clockIcon} alt="clock" />

@@ -1,4 +1,5 @@
 import { ReactNode, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import NavBar from "@/components/ui/navbar";
 import BottomNav from "@/components/ui/BottomNav";
@@ -12,6 +13,7 @@ import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradeProm
 import { MoodCheckInPrompt } from "@/components/cbt";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 import { toast } from "sonner";
+import { useLanguageStore } from "@/stores/languageStore";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -28,6 +30,7 @@ const DashboardLayout = ({
   bgColor = "bg-gray-50",
   hidePlanBanner = false,
 }: DashboardLayoutProps) => {
+  const { t } = useTranslation("navigation");
   const navigate = useNavigate();
   const location = useLocation();
   const { plan, loading } = useAuthStore();
@@ -68,6 +71,7 @@ const DashboardLayout = ({
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const { user, generateMealPlan } = useAuthStore();
+  const language = useLanguageStore((state) => state.language);
 
   const handleGeneratePlan = () => {
     setShowPlanSelector(true);
@@ -80,7 +84,7 @@ const DashboardLayout = ({
       await generateMealPlan(
         user,
         "My Plan",
-        "en",
+        language,
         planTemplateId === "custom" ? undefined : planTemplateId,
       );
       setShowPlanSelector(false);
@@ -94,8 +98,8 @@ const DashboardLayout = ({
         rawMsg.toLowerCase().includes("temporarily busy");
       toast.error(
         isAiBusy
-          ? "Our AI is temporarily busy — please try again in a few minutes. Your dietary preferences will be fully applied."
-          : "Failed to generate meal plan. Please try again.",
+          ? t("errors.aiBusy")
+          : t("errors.generateFailed"),
         { duration: 8000 }
       );
       console.error("Failed to generate meal plan:", error);
@@ -123,13 +127,13 @@ const DashboardLayout = ({
               <div>
                 <p className="font-bold text-orange-900 text-sm md:text-base">
                   {!plan || !plan.weeklyPlan
-                    ? "You don't have a meal plan yet"
-                    : "Your meal plan has expired"}
+                    ? t("planBanner.noPlanTitle")
+                    : t("planBanner.expiredTitle")}
                 </p>
                 <p className="text-orange-700 text-xs md:text-sm mt-0.5">
                   {!plan || !plan.weeklyPlan
-                    ? "Generate a meal plan to start tracking your nutrition"
-                    : "Generate a new plan to continue tracking your meals"}
+                    ? t("planBanner.noPlanSubtitle")
+                    : t("planBanner.expiredSubtitle")}
                 </p>
               </div>
             </div>
@@ -140,8 +144,8 @@ const DashboardLayout = ({
               size="sm"
             >
               <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">Generate Plan</span>
-              <span className="sm:hidden">Generate</span>
+              <span className="hidden sm:inline">{t("planBanner.generatePlan")}</span>
+              <span className="sm:hidden">{t("planBanner.generate")}</span>
             </Button>
           </div>
         </div>

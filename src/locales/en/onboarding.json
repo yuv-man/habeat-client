@@ -1,0 +1,125 @@
+{
+  "signup": {
+    "title": "Get Started",
+    "loading": "Loading...",
+    "continueWithGoogle": "Continue with Google",
+    "orWithEmail": "Or with email",
+    "namePlaceholder": "Full Name",
+    "emailPlaceholder": "Email",
+    "passwordPlaceholder": "Password",
+    "signUp": "Sign Up",
+    "alreadyHaveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "errors": {
+      "fillAllFields": "Please fill all fields",
+      "signupFailed": "Failed to sign up. Please try again.",
+      "googleSignupFailed": "Google signup failed. Please try again.",
+      "accountExistsTitle": "Account already exists",
+      "accountExistsDesc": "This email is already registered. Please sign in instead."
+    }
+  },
+  "emotionalEating": {
+    "title": "Your Eating Story",
+    "empathyBanner": "Most apps track <em>what</em> you eat. Habeat also cares about <em>why</em>. A few quick questions help us understand your eating story.",
+    "relationshipQuestion": "How would you describe your relationship with food?",
+    "chooseOne": "Choose one",
+    "unsureTitle": "That's okay — we'll learn together",
+    "unsureDescription": "Habeat will help you notice patterns over time. No pressure to have it figured out now.",
+    "triggersQuestion": "What tends to make you reach for food?",
+    "triggersHint": "Select all that apply · optional"
+  },
+  "diet": {
+    "title": "Diet Goal",
+    "description": "Select your health and fitness goal.",
+    "goalQuestion": "What's your goal?",
+    "chooseOne": "Choose one"
+  },
+  "dietaryRestrictions": {
+    "title": "Dietary Restrictions",
+    "description": "Select any dietary restrictions or preferences (optional).",
+    "question": "Any dietary restrictions?",
+    "selectAllOptional": "Select all that apply (optional)",
+    "customPlaceholder": "Add custom dietary restriction"
+  },
+  "fastingHours": {
+    "title": "Fasting Schedule",
+    "description": "Configure your intermittent fasting window (8-16 hours).",
+    "durationLabel": "Fasting Duration",
+    "durationHint": "Select between 8-16 hours of fasting",
+    "hoursUnit": "hrs",
+    "startTimeLabel": "Start Time",
+    "startTimeHint": "When do you start your fasting period?",
+    "scheduleHeading": "Your Fasting Schedule:",
+    "fastingLabel": "Fasting:",
+    "eatingWindowLabel": "Eating Window:"
+  },
+  "profile": {
+    "title": "Your Profile",
+    "description": "Help us personalize your plans by telling us a bit about yourself.",
+    "weight": "Weight",
+    "weightUnit": "kg",
+    "height": "Height",
+    "heightUnit": "cm",
+    "age": "Age",
+    "ageUnit": "years",
+    "gender": "Gender",
+    "genderSelectPlaceholder": "Select gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "errors": {
+      "fillAllFields": "Please fill all fields"
+    }
+  },
+  "fitness": {
+    "title": "Fitness Goal",
+    "description": "Help us tailor your plans by letting us know your weekly workout frequency.",
+    "timesPerWeek": "times/week",
+    "question": "How many times a week do you plan to work out?"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "description": "Select all that apply to personalize your meal and workout plans.",
+    "allergies": "Allergies",
+    "allergyPlaceholder": "Add custom allergy...",
+    "dislikes": "Dislikes",
+    "dislikePlaceholder": "Add custom dislike...",
+    "foodPreferences": "Food Preferences",
+    "foodPreferencePlaceholder": "Add food preference...",
+    "add": "Add"
+  },
+  "healthProfile": {
+    "title": "Health Profile",
+    "description": "Based on your information, here are your personalized metrics",
+    "bmrLabel": "Basal Metabolic Rate",
+    "bmrHint": "Calories your body burns at rest",
+    "tdeeLabel": "Total Daily Energy Expenditure",
+    "tdeeHint": "Total calories you burn per day",
+    "idealWeightLabel": "Ideal Weight Range",
+    "idealWeightHint": "Recommended weight for your height",
+    "kcalPerDay": "kcal/day",
+    "kgUnit": "kg",
+    "errors": {
+      "sessionExpired": "Session expired. Please sign up again.",
+      "notAuthenticated": "User not authenticated. Please try signing in again.",
+      "sessionExpiredRetry": "Session expired. Please sign up again to continue.",
+      "aiBusy": "Your profile was saved! Our AI is temporarily busy — please tap 'Generate Plan' from the home screen in a few minutes. Your dietary preferences will be fully applied.",
+      "completeFailed": "Failed to complete registration"
+    }
+  },
+  "complete": {
+    "title": "All Set!",
+    "description": "Your profile is complete and personalized plans are ready.",
+    "goToDashboard": "Go to Dashboard"
+  },
+  "kyc": {
+    "errors": {
+      "selectDietType": "Please select a diet type",
+      "fastingSchedule": "Please set your fasting schedule"
+    }
+  },
+  "layout": {
+    "goBack": "Go back",
+    "stepOf": "Step {{current}} of {{total}}",
+    "completeRegistration": "Complete Registration"
+  }
+}

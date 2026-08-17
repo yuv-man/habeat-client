@@ -1,0 +1,15 @@
+{
+  "buttons": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "continue": "המשך",
+    "back": "חזור",
+    "next": "הבא",
+    "loading": "טוען...",
+    "close": "סגור"
+  },
+  "language": {
+    "english": "אנגלית",
+    "hebrew": "עברית"
+  }
+}

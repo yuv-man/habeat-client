@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthData } from "./types";
 import GoogleIcon from "@/assets/icons/google";
 import MealLoader from "@/components/helper/MealLoader";
@@ -24,6 +25,7 @@ export default function SignupStep({
   onGoogleSignup,
 }: SignupStepProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation("onboarding");
 
   // Let the parent (Kyc.tsx) handle Google OAuth initialization and triggering
   // This prevents duplicate initialization that causes credential to be ignored
@@ -40,7 +42,7 @@ export default function SignupStep({
           <div className="flex justify-center mb-4">
             <img src={logo} alt="Habeats" className="w-20 h-20 object-contain" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Get Started</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("signup.title")}</h1>
           <p className="text-gray-500 text-sm max-w-sm mx-auto">{SLOGAN_EAT_WELL}</p>
         </div>
 
@@ -57,7 +59,7 @@ export default function SignupStep({
             className="w-full mb-6 bg-white border-2 border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 text-gray-700 font-semibold py-4 px-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-3 shadow-sm"
           >
             <GoogleIcon />
-            {loading ? "Loading..." : "Continue with Google"}
+            {loading ? t("signup.loading") : t("signup.continueWithGoogle")}
           </button>
 
           <div className="relative my-8">
@@ -65,14 +67,14 @@ export default function SignupStep({
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or with email</span>
+              <span className="px-2 bg-white text-gray-500">{t("signup.orWithEmail")}</span>
             </div>
           </div>
 
           <div className="space-y-4">
             <input
               type="text"
-              placeholder="Full Name"
+              placeholder={t("signup.namePlaceholder")}
               value={authData.name}
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, name: e.target.value }))
@@ -81,7 +83,7 @@ export default function SignupStep({
             />
             <input
               type="email"
-              placeholder="Email"
+              placeholder={t("signup.emailPlaceholder")}
               value={authData.email}
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, email: e.target.value }))
@@ -90,7 +92,7 @@ export default function SignupStep({
             />
             <input
               type="password"
-              placeholder="Password"
+              placeholder={t("signup.passwordPlaceholder")}
               value={authData.password}
               onChange={(e) =>
                 setAuthData((prev) => ({ ...prev, password: e.target.value }))
@@ -105,20 +107,20 @@ export default function SignupStep({
               {loading ? (
                 <MealLoader size="small" />
               ) : (
-                "Sign Up"
+                t("signup.signUp")
               )}
             </button>
           </div>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{" "}
+            {t("signup.alreadyHaveAccount")}{" "}
             <button
               type="button"
               onClick={() => navigate("/")}
               disabled={loading}
               className="font-semibold text-green-600 hover:text-green-700 disabled:opacity-50"
             >
-              Sign in
+              {t("signup.signIn")}
             </button>
           </div>
         </div>

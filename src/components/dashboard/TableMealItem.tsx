@@ -3,6 +3,7 @@ import { IMeal } from "@/types/interfaces";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import { formatMealName } from "@/lib/formatters";
 import { useNavigate } from "react-router-dom";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 interface TableMealItemProps {
   meal: IMeal;
@@ -22,7 +23,8 @@ const TableMealItem = ({
   dayStatus,
 }: TableMealItemProps) => {
   const navigate = useNavigate();
-  
+  const showMacros = useShowMacros();
+
   const getTextColor = () => {
     if (dayStatus === "past") return "text-gray-500";
     if (dayStatus === "current") return "text-gray-900";
@@ -48,10 +50,12 @@ const TableMealItem = ({
           <div className={`flex items-center gap-3 mt-1 text-xs ${
             dayStatus === "past" ? "text-gray-400" : "text-gray-500"
           }`}>
-            <span className="flex items-center gap-1">
-              <span>🔥</span>
-              {meal.calories} kcal
-            </span>
+            {showMacros && (
+              <span className="flex items-center gap-1">
+                <span>🔥</span>
+                {meal.calories} kcal
+              </span>
+            )}
             {mealType !== "snacks" && meal.prepTime > 0 && (
               <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />

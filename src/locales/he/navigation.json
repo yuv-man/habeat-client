@@ -1,0 +1,31 @@
+{
+  "brand": "Habeats",
+  "nav": {
+    "today": "היום",
+    "weeklyPlan": "תוכנית שבועית",
+    "favoriteRecipes": "מתכונים מועדפים",
+    "shoppingList": "רשימת קניות",
+    "mindfulness": "מיינדפולנס",
+    "settings": "הגדרות",
+    "plan": "תוכנית",
+    "mind": "נפש",
+    "progress": "התקדמות",
+    "community": "קהילה"
+  },
+  "aria": {
+    "healthyCoins": "מטבעות בריאות",
+    "profile": "פרופיל"
+  },
+  "planBanner": {
+    "noPlanTitle": "עדיין אין לך תוכנית תזונה",
+    "expiredTitle": "תוכנית התזונה שלך פגה",
+    "noPlanSubtitle": "צור תוכנית תזונה כדי להתחיל לעקוב אחר התזונה שלך",
+    "expiredSubtitle": "צור תוכנית חדשה כדי להמשיך לעקוב אחר הארוחות שלך",
+    "generatePlan": "צור תוכנית",
+    "generate": "צור"
+  },
+  "errors": {
+    "aiBusy": "ה-AI שלנו עמוס כרגע — נסה שוב בעוד כמה דקות. ההעדפות התזונתיות שלך יוחלו במלואן.",
+    "generateFailed": "יצירת תוכנית התזונה נכשלה. נסה שוב."
+  }
+}

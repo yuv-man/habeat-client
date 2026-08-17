@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/stores/languageStore";
 import { userAPI, MealCriteria, cbtAPI, MoodMealRecommendations } from "@/services/api";
 import { useTodayMoods } from "@/stores/cbtStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
@@ -23,6 +24,7 @@ import { toast } from "sonner";
 import MealLoader from "@/components/helper/MealLoader";
 import PhotoMealTab from "@/components/meal/PhotoMealTab";
 import type { FeatureKey } from "@/lib/subscription";
+import { useShowMacros } from "@/hooks/useShowMacros";
 import {
   hasFeatureAccessForUser,
   requireFeatureOrRedirect,
@@ -95,6 +97,8 @@ const ChangeMealModal = ({
     favoriteMealsLoaded,
     fetchFavoriteMeals: fetchFavoritesFromStore,
   } = useAuthStore();
+  const showMacros = useShowMacros();
+  const language = useLanguageStore((state) => state.language);
   const isLoadingFavorites = !favoriteMealsLoaded;
 
   // Fetch favorite meals when switching to favorites tab (only if not already loaded)
@@ -295,6 +299,7 @@ const ChangeMealModal = ({
         user._id,
         mealCriteria,
         aiRules || undefined,
+        language,
       );
       const suggestions = response.data?.meals || [];
       if (suggestions.length === 0) {
@@ -967,11 +972,13 @@ const ChangeMealModal = ({
                               {formatMealName(meal.name)}
                             </div>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <span className="text-sm text-gray-500">
-                                {meal.calories} cal • {meal.macros?.protein || 0}g
-                                protein • {meal.macros?.carbs || 0}g carbs •{" "}
-                                {meal.macros?.fat || 0}g fat
-                              </span>
+                              {showMacros && (
+                                <span className="text-sm text-gray-500">
+                                  {meal.calories} cal • {meal.macros?.protein || 0}g
+                                  protein • {meal.macros?.carbs || 0}g carbs •{" "}
+                                  {meal.macros?.fat || 0}g fat
+                                </span>
+                              )}
                               {aiSuggestionSources[meal._id] && (
                                 <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
                                   aiSuggestionSources[meal._id] === 'USDA'
@@ -1005,7 +1012,7 @@ const ChangeMealModal = ({
                           className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <img
-                            src={getMealImageVite(meal.name)}
+                            src={getMealImageVite(meal.nameEn || meal.name)}
                             alt={formatMealName(meal.name)}
                             className="w-14 h-14 rounded-lg object-cover"
                           />
@@ -1016,10 +1023,12 @@ const ChangeMealModal = ({
                             >
                               {formatMealName(meal.name)}
                             </div>
-                            <div className="text-sm text-gray-500">
-                              {meal.calories} cal • {meal.macros?.protein || 0}g
-                              protein
-                            </div>
+                            {showMacros && (
+                              <div className="text-sm text-gray-500">
+                                {meal.calories} cal • {meal.macros?.protein || 0}g
+                                protein
+                              </div>
+                            )}
                           </div>
                           <Heart className="w-5 h-5 text-red-500 fill-red-500 flex-shrink-0" />
                         </button>

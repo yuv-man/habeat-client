@@ -3,6 +3,7 @@ import checkedIcon from '@/assets/full_check.svg';
 import uncheckedIcon from '@/assets/empty_check.svg';
 import '@/styles/mealPlanCell.css'
 import { useState } from 'react';
+import { useShowMacros } from '@/hooks/useShowMacros';
 
   interface SimpleSnack {
     name: string;
@@ -25,6 +26,7 @@ import { useState } from 'react';
   }: SnacksPlanCellProps) => {
     const now = new Date();
     const isPastDate = date < now;
+    const showMacros = useShowMacros();
     const [snacksCompleted, setSnacksCompleted] = useState(snacks.map(() => false));
 
     const onComplete = (index: number) => {
@@ -48,10 +50,12 @@ import { useState } from 'react';
                 {snack.name}
             </p>
             <div className="flex flex-row justify-between">
-              <div className="info-container calories snacks">
-                  <img src={fireIcon} alt="fire" />
-                  <p>{snack.calories}</p>
-              </div>
+              {showMacros && (
+                <div className="info-container calories snacks">
+                    <img src={fireIcon} alt="fire" />
+                    <p>{snack.calories}</p>
+                </div>
+              )}
               <button className="complete-button" onClick={() => onComplete(index)}>
                   {snacksCompleted[index] ? <img src={checkedIcon} alt="complete" className="w-4 h-4" /> : <img src={uncheckedIcon} alt="complete" className="w-4 h-4" />}
               </button>

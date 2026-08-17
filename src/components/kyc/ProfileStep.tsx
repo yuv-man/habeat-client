@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { KYCData } from "./types";
 import KycLayout from "./KycLayout";
 
@@ -22,18 +23,19 @@ export default function ProfileStep({
   currentStep,
   totalSteps,
 }: ProfileStepProps) {
+  const { t } = useTranslation("onboarding");
   const isValid =
     kycData.weight && kycData.height && kycData.age && kycData.gender;
 
   return (
     <KycLayout
-      title="Your Profile"
-      description="Help us personalize your plans by telling us a bit about yourself."
+      title={t("profile.title")}
+      description={t("profile.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       submitDisabled={!isValid}
       currentStep={currentStep}
       totalSteps={totalSteps}
@@ -41,7 +43,7 @@ export default function ProfileStep({
       <div className="space-y-6">
         <div>
           <label className="block text-base font-semibold mb-3 text-gray-900">
-            Weight
+            {t("profile.weight")}
           </label>
           <div className="relative">
             <input
@@ -50,17 +52,17 @@ export default function ProfileStep({
               onChange={(e) =>
                 setKycData((prev) => ({ ...prev, weight: e.target.value }))
               }
-              className="w-full px-4 py-3 pr-12 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
+              className="w-full px-4 py-3 pe-12 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
-              kg
+            <div className="absolute end-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
+              {t("profile.weightUnit")}
             </div>
           </div>
         </div>
 
         <div>
           <label className="block text-base font-semibold mb-3 text-gray-900">
-            Height
+            {t("profile.height")}
           </label>
           <div className="relative">
             <input
@@ -69,17 +71,17 @@ export default function ProfileStep({
               onChange={(e) =>
                 setKycData((prev) => ({ ...prev, height: e.target.value }))
               }
-              className="w-full px-4 py-3 pr-12 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
+              className="w-full px-4 py-3 pe-12 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
-              cm
+            <div className="absolute end-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
+              {t("profile.heightUnit")}
             </div>
           </div>
         </div>
 
         <div>
           <label className="block text-base font-semibold mb-3 text-gray-900">
-            Age
+            {t("profile.age")}
           </label>
           <div className="relative">
             <input
@@ -88,17 +90,17 @@ export default function ProfileStep({
               onChange={(e) =>
                 setKycData((prev) => ({ ...prev, age: e.target.value }))
               }
-              className="w-full px-4 py-3 pr-16 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
+              className="w-full px-4 py-3 pe-16 rounded-xl text-center text-lg transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
-              years
+            <div className="absolute end-4 top-1/2 -translate-y-1/2 pointer-events-none font-semibold text-gray-500">
+              {t("profile.ageUnit")}
             </div>
           </div>
         </div>
 
         <div>
           <label className="block text-base font-semibold mb-3 text-gray-900">
-            Gender
+            {t("profile.gender")}
           </label>
           <select
             value={kycData.gender}
@@ -107,9 +109,9 @@ export default function ProfileStep({
             }
             className="w-full px-4 py-3 rounded-xl text-base transition-all border-2 border-gray-300 bg-white text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 focus:outline-none"
           >
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
+            <option value="">{t("profile.genderSelectPlaceholder")}</option>
+            <option value="male">{t("profile.genderMale")}</option>
+            <option value="female">{t("profile.genderFemale")}</option>
           </select>
         </div>
       </div>

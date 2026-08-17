@@ -42,6 +42,7 @@ import { formatMealName } from "@/lib/formatters";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 const MOOD_EMOJI: Record<string, string> = {
   happy: "😊",
@@ -170,13 +171,14 @@ const MealItem = ({
   dayStatus?: "past" | "current" | "future";
 }) => {
   const navigate = useNavigate();
+  const showMacros = useShowMacros();
   const style = getMealStyle(isSnack ? "snack" : mealType);
   const MealIcon = style.icon;
 
   // Resolve a real food photo; if none matches (or it fails to load) we render
   // the icon tile instead of a broken/placeholder image. The error flag is
   // reset whenever the meal changes so switching days re-attempts the image.
-  const imageSrc = getMealImageVite(meal.name);
+  const imageSrc = getMealImageVite(meal.nameEn || meal.name);
   const hasRealImage = !!imageSrc && !imageSrc.includes("via.placeholder");
   const [imgFailed, setImgFailed] = useState(false);
   useEffect(() => {
@@ -233,7 +235,7 @@ const MealItem = ({
             dayStatus === "past" ? "text-gray-400" : "text-gray-500"
           }`}
         >
-          <span>{meal.calories} kcal</span>
+          {showMacros && <span>{meal.calories} kcal</span>}
           {!isSnack && meal.prepTime > 0 && (
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" /> {meal.prepTime} min
@@ -379,6 +381,9 @@ const NutritionSummary = ({
     fat?: number;
   };
 }) => {
+  const showMacros = useShowMacros();
+  if (!showMacros) return null;
+
   const items = [
     {
       label: "Cals",

@@ -1052,14 +1052,15 @@ export interface MealCriteria {
 const getAIMealSuggestions = async (
   userId: string,
   mealCriteria: MealCriteria,
-  aiRules?: string
+  aiRules?: string,
+  language?: string
 ): Promise<ApiResponse<{ meals: IMeal[] }>> => {
   return withErrorHandling(async () => {
     const response = await mealGenerationClient.post<
       ApiResponse<{ meals: IMeal[] }>
     >(
       `/generate/meal-suggestions/${userId}`,
-      { mealCriteria, aiRules },
+      { mealCriteria, aiRules, language },
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -1097,7 +1098,8 @@ const getRescueMeal = async (
   date: string,
   mealType: "breakfast" | "lunch" | "dinner",
   targetCalories: number,
-  targetMacros?: { protein: number; carbs: number; fat: number }
+  targetMacros?: { protein: number; carbs: number; fat: number },
+  language?: string
 ): Promise<ApiResponse<{ rescueMeal: IMeal; originalMealName: string }>> => {
   return withErrorHandling(async () => {
     const response = await mealGenerationClient.post<
@@ -1109,6 +1111,7 @@ const getRescueMeal = async (
         mealType,
         targetCalories,
         targetMacros,
+        language,
       },
       { headers: getAuthHeaders() }
     );

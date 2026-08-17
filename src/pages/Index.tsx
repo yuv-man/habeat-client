@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,9 +25,13 @@ import { isNativePlatform } from "@/lib/platform";
 import MealLoader from "@/components/helper/MealLoader";
 
 const Index = () => {
+  const { t } = useTranslation("landing");
   const navigate = useNavigate();
   const { user, token, loading } = useAuthStore();
   const isMobile = isNativePlatform();
+  const featureItems = t("features.items", {
+    returnObjects: true,
+  }) as { title: string; description: string }[];
 
   // Check authentication status on mount (mobile only)
   useEffect(() => {
@@ -64,7 +69,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <MealLoader customMessages={["Loading..."]} />
+          <MealLoader customMessages={[t("common:buttons.loading")]} />
         </div>
       </div>
     );
@@ -75,7 +80,7 @@ const Index = () => {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <MealLoader customMessages={["Loading..."]} />
+          <MealLoader customMessages={[t("common:buttons.loading")]} />
         </div>
       </div>
     );
@@ -93,9 +98,9 @@ const Index = () => {
 
           {/* Heading */}
           <h1 className="text-3xl font-bold text-gray-900 text-center mb-3 leading-tight">
-            Nourish Your Body,
+            {t("mobile.heading1")}
             <br />
-            Elevate Your Mind.
+            {t("mobile.heading2")}
           </h1>
           <p className="text-center text-gray-600 text-base mb-8 max-w-sm mx-auto">
             {HABEAT_SLOGAN}
@@ -105,12 +110,12 @@ const Index = () => {
           <div className="space-y-4 mb-12">
             <div className="flex items-center gap-3">
               <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-              <span className="text-gray-700">Build Healthy Eating Habits</span>
+              <span className="text-gray-700">{t("mobile.featureHabits")}</span>
             </div>
             <div className="flex items-center gap-3">
               <Target className="w-5 h-5 text-gray-500 flex-shrink-0" />
               <span className="text-gray-700">
-                Mindful Nutrition, Simplified
+                {t("mobile.featureMindful")}
               </span>
             </div>
           </div>
@@ -127,7 +132,7 @@ const Index = () => {
               className="w-full bg-emerald-400 hover:bg-emerald-500 text-white font-semibold py-6 rounded-full text-lg"
               onClick={() => navigate("/register")}
             >
-              Create Account
+              {t("mobile.createAccount")}
             </Button>
             <AuthModal onSuccess={() => navigate("/daily-tracker")}>
               <Button
@@ -135,7 +140,7 @@ const Index = () => {
                 variant="outline"
                 className="w-full border-2 border-emerald-400 text-emerald-500 hover:bg-emerald-50 font-semibold py-6 rounded-full text-lg"
               >
-                Sign In
+                {t("mobile.signIn")}
               </Button>
             </AuthModal>
           </div>
@@ -156,7 +161,7 @@ const Index = () => {
           <div className="relative z-10 container mx-auto px-6 py-20">
             <div className="max-w-4xl mx-auto text-center">
               <h1 className="text-5xl md:text-6xl font-bold mb-6">
-                Welcome to <span className="text-yellow-300">Habeats</span>
+                {t("hero.welcomeTo")} <span className="text-yellow-300">Habeats</span>
               </h1>
               <p
                 className="text-xl md:text-2xl mb-8 text-white font-bold max-w-3xl mx-auto"
@@ -170,11 +175,11 @@ const Index = () => {
                   className="bg-white text-primary hover:bg-white/90 font-semibold"
                   onClick={() => navigate("/register")}
                 >
-                  Start Your Journey <ArrowRight className="ml-2 h-5 w-5" />
+                  {t("hero.startJourney")} <ArrowRight className="ms-2 h-5 w-5 rtl:-scale-x-100" />
                 </Button>
                 <AuthModal onSuccess={() => navigate("/daily-tracker")}>
                   <div className="text-gray-900 hover:text-green-500 cursor-pointer">
-                    Sign In
+                    {t("hero.signIn")}
                   </div>
                 </AuthModal>
               </div>
@@ -187,7 +192,7 @@ const Index = () => {
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold mb-4">
-                Everything you need to succeed
+                {t("features.heading")}
               </h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                 {SLOGAN_EAT_WELL}
@@ -206,11 +211,11 @@ const Index = () => {
                         <feature.icon className="h-6 w-6" />
                       </div>
                     </div>
-                    <CardTitle className="text-xl">{feature.title}</CardTitle>
+                    <CardTitle className="text-xl">{featureItems[index]?.title ?? feature.title}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base">
-                      {feature.description}
+                      {featureItems[index]?.description ?? feature.description}
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -223,10 +228,9 @@ const Index = () => {
         <section className="py-20 bg-gray-50">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl font-bold mb-4">Choose Your Path</h2>
+              <h2 className="text-4xl font-bold mb-4">{t("paths.heading")}</h2>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Whether you want to lose weight, gain muscle, or maintain a
-                healthy lifestyle, we have a path for you
+                {t("paths.description")}
               </p>
             </div>
           </div>
@@ -238,15 +242,15 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-4xl font-bold mb-2">10,000+</div>
-                <div className="text-white/80">Happy Users</div>
+                <div className="text-white/80">{t("stats.users")}</div>
               </div>
               <div>
                 <div className="text-4xl font-bold mb-2">50,000+</div>
-                <div className="text-white/80">Meals Tracked</div>
+                <div className="text-white/80">{t("stats.meals")}</div>
               </div>
               <div>
                 <div className="text-4xl font-bold mb-2">95%</div>
-                <div className="text-white/80">Success Rate</div>
+                <div className="text-white/80">{t("stats.successRate")}</div>
               </div>
             </div>
           </div>
@@ -258,25 +262,25 @@ const Index = () => {
             <Card className="max-w-3xl mx-auto text-center bg-gradient-primary text-white border-0">
               <CardContent className="p-12">
                 <h2 className="text-3xl font-bold mb-4">
-                  Ready to transform your health?
+                  {t("cta.heading")}
                 </h2>
                 <p className="text-xl mb-8 text-white/90">
                   {SLOGAN_HABITS}
                 </p>
-                <div className="flex items-center justify-center space-x-4 mb-8">
+                <div className="flex items-center justify-center space-x-4 rtl:space-x-reverse mb-8">
                   <CheckCircle className="h-5 w-5" />
-                  <span>Personalized meal plans</span>
+                  <span>{t("cta.mealPlans")}</span>
                   <CheckCircle className="h-5 w-5" />
-                  <span>Progress tracking</span>
+                  <span>{t("cta.progressTracking")}</span>
                   <CheckCircle className="h-5 w-5" />
-                  <span>Community support</span>
+                  <span>{t("cta.community")}</span>
                 </div>
                 <Button
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold"
                   onClick={() => navigate("/register")}
                 >
-                  Get Started Now <ArrowRight className="ml-2 h-5 w-5" />
+                  {t("cta.getStarted")} <ArrowRight className="ms-2 h-5 w-5 rtl:-scale-x-100" />
                 </Button>
               </CardContent>
             </Card>
@@ -291,24 +295,24 @@ const Index = () => {
               <p className="text-gray-400 mb-4 max-w-xl mx-auto">
                 {SLOGAN_NO_GUILT}
               </p>
-              <div className="flex justify-center space-x-6">
+              <div className="flex justify-center space-x-6 rtl:space-x-reverse">
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Privacy
+                  {t("footer.privacy")}
                 </a>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Terms
+                  {t("footer.terms")}
                 </a>
                 <a
                   href="#"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
-                  Support
+                  {t("footer.support")}
                 </a>
               </div>
             </div>

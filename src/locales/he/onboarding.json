@@ -1,0 +1,125 @@
+{
+  "signup": {
+    "title": "בואו נתחיל",
+    "loading": "טוען...",
+    "continueWithGoogle": "המשך עם Google",
+    "orWithEmail": "או עם אימייל",
+    "namePlaceholder": "שם מלא",
+    "emailPlaceholder": "אימייל",
+    "passwordPlaceholder": "סיסמה",
+    "signUp": "הרשמה",
+    "alreadyHaveAccount": "כבר יש לך חשבון?",
+    "signIn": "התחבר",
+    "errors": {
+      "fillAllFields": "אנא מלא את כל השדות",
+      "signupFailed": "ההרשמה נכשלה. נסה שוב.",
+      "googleSignupFailed": "ההרשמה עם Google נכשלה. נסה שוב.",
+      "accountExistsTitle": "החשבון כבר קיים",
+      "accountExistsDesc": "כתובת האימייל הזו כבר רשומה. אנא התחבר במקום זאת."
+    }
+  },
+  "emotionalEating": {
+    "title": "הסיפור שלך עם האוכל",
+    "empathyBanner": "רוב האפליקציות עוקבות אחרי <em>מה</em> אתם אוכלים. Habeat גם מתעניינת ב<em>למה</em>. כמה שאלות קצרות יעזרו לנו להבין את הסיפור שלכם עם האוכל.",
+    "relationshipQuestion": "איך היית מתאר את היחסים שלך עם האוכל?",
+    "chooseOne": "בחר אפשרות אחת",
+    "unsureTitle": "זה בסדר גמור — נלמד יחד",
+    "unsureDescription": "Habeat תעזור לך לזהות דפוסים עם הזמן. אין לחץ להבין הכל כבר עכשיו.",
+    "triggersQuestion": "מה בדרך כלל גורם לך להגיע לאוכל?",
+    "triggersHint": "בחר את כל מה שמתאים · אופציונלי"
+  },
+  "diet": {
+    "title": "יעד תזונתי",
+    "description": "בחר את יעד הבריאות והכושר שלך.",
+    "goalQuestion": "מה היעד שלך?",
+    "chooseOne": "בחר אפשרות אחת"
+  },
+  "dietaryRestrictions": {
+    "title": "הגבלות תזונתיות",
+    "description": "בחר הגבלות או העדפות תזונתיות (אופציונלי).",
+    "question": "יש לך הגבלות תזונתיות?",
+    "selectAllOptional": "בחר את כל מה שמתאים (אופציונלי)",
+    "customPlaceholder": "הוסף הגבלה תזונתית מותאמת אישית"
+  },
+  "fastingHours": {
+    "title": "לוח זמנים לצום",
+    "description": "הגדר את חלון הצום לסירוגין שלך (8-16 שעות).",
+    "durationLabel": "משך הצום",
+    "durationHint": "בחר בין 8-16 שעות צום",
+    "hoursUnit": "שעות",
+    "startTimeLabel": "שעת התחלה",
+    "startTimeHint": "מתי אתה מתחיל את תקופת הצום?",
+    "scheduleHeading": "לוח הזמנים שלך לצום:",
+    "fastingLabel": "צום:",
+    "eatingWindowLabel": "חלון אכילה:"
+  },
+  "profile": {
+    "title": "הפרופיל שלך",
+    "description": "עזור לנו להתאים אישית את התוכניות שלך על ידי שיתוף כמה פרטים על עצמך.",
+    "weight": "משקל",
+    "weightUnit": "ק\"ג",
+    "height": "גובה",
+    "heightUnit": "ס\"מ",
+    "age": "גיל",
+    "ageUnit": "שנים",
+    "gender": "מגדר",
+    "genderSelectPlaceholder": "בחר מגדר",
+    "genderMale": "זכר",
+    "genderFemale": "נקבה",
+    "errors": {
+      "fillAllFields": "אנא מלא את כל השדות"
+    }
+  },
+  "fitness": {
+    "title": "יעד כושר",
+    "description": "עזור לנו להתאים את התוכניות שלך על ידי שיתוף תדירות האימונים השבועית שלך.",
+    "timesPerWeek": "פעמים בשבוע",
+    "question": "כמה פעמים בשבוע אתה מתכנן להתאמן?"
+  },
+  "preferences": {
+    "title": "העדפות",
+    "description": "בחר את כל מה שמתאים כדי להתאים אישית את תוכניות הארוחות והאימונים שלך.",
+    "allergies": "אלרגיות",
+    "allergyPlaceholder": "הוסף אלרגיה מותאמת אישית...",
+    "dislikes": "מאכלים לא אהובים",
+    "dislikePlaceholder": "הוסף מאכל לא אהוב...",
+    "foodPreferences": "העדפות אוכל",
+    "foodPreferencePlaceholder": "הוסף העדפת אוכל...",
+    "add": "הוסף"
+  },
+  "healthProfile": {
+    "title": "פרופיל בריאותי",
+    "description": "בהתבסס על הנתונים שלך, הנה המדדים המותאמים אישית שלך",
+    "bmrLabel": "קצב חילוף חומרים בסיסי",
+    "bmrHint": "קלוריות שהגוף שלך שורף במנוחה",
+    "tdeeLabel": "סך הוצאה קלורית יומית",
+    "tdeeHint": "סך הקלוריות שאתה שורף ביום",
+    "idealWeightLabel": "טווח משקל אידיאלי",
+    "idealWeightHint": "המשקל המומלץ עבור הגובה שלך",
+    "kcalPerDay": "קלוריות ליום",
+    "kgUnit": "ק\"ג",
+    "errors": {
+      "sessionExpired": "פג תוקף ההתחברות. אנא הירשם שוב.",
+      "notAuthenticated": "המשתמש אינו מחובר. אנא נסה להתחבר שוב.",
+      "sessionExpiredRetry": "פג תוקף ההתחברות. אנא הירשם שוב כדי להמשיך.",
+      "aiBusy": "הפרופיל שלך נשמר! ה-AI שלנו עמוס כרגע — אנא לחץ על 'צור תוכנית' ממסך הבית בעוד כמה דקות. ההעדפות התזונתיות שלך יוחלו במלואן.",
+      "completeFailed": "השלמת ההרשמה נכשלה"
+    }
+  },
+  "complete": {
+    "title": "הכל מוכן!",
+    "description": "הפרופיל שלך הושלם והתוכניות המותאמות אישית שלך מוכנות.",
+    "goToDashboard": "עבור ללוח הבקרה"
+  },
+  "kyc": {
+    "errors": {
+      "selectDietType": "אנא בחר סוג תזונה",
+      "fastingSchedule": "אנא הגדר את לוח הזמנים לצום שלך"
+    }
+  },
+  "layout": {
+    "goBack": "חזרה",
+    "stepOf": "שלב {{current}} מתוך {{total}}",
+    "completeRegistration": "השלם הרשמה"
+  }
+}

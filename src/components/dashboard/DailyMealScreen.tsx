@@ -18,6 +18,7 @@ import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
 import { formatTime12Hour, formatDisplayDate } from "@/lib/dateUtils";
 import FastingClock from "./FastingClock";
 import { LevelUpCelebration } from "@/components/engagement";
+import { useShowMacros } from "@/hooks/useShowMacros";
 import { ChallengesBanner, ChallengeClaimCelebration } from "@/components/challenges";
 import { DeleteWorkoutModal } from "./DeleteWorkoutModal";
 import { ExpiredPlanCard } from "./ExpiredPlanCard";
@@ -39,6 +40,7 @@ const DailyMealScreen = () => {
   const userId = useAuthStore((state) => state.user?._id);
   const user = useAuthStore((state) => state.user);
   const plan = useAuthStore((state) => state.plan);
+  const showMacros = useShowMacros();
 
   const todayProgress = useProgressStore((state) => state.todayProgress);
   const progressLoading = useProgressStore((state) => state.loading);
@@ -359,11 +361,19 @@ const DailyMealScreen = () => {
                           />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-xl font-bold text-habeat">
-                            {remaining.toLocaleString()}
-                          </span>
+                          {showMacros ? (
+                            <span className="text-xl font-bold text-habeat">
+                              {remaining.toLocaleString()}
+                            </span>
+                          ) : (
+                            <span className="text-xl font-bold text-habeat">
+                              {overallPct}%
+                            </span>
+                          )}
                           <Flame className="w-4 h-4 fill-orange-500 text-orange-500 mb-1" />
-                          <span className="text-[10px] uppercase tracking-widest text-gray-400 leading-none">Left</span>
+                          <span className="text-[10px] uppercase tracking-widest text-gray-400 leading-none">
+                            {showMacros ? "Left" : "of Goal"}
+                          </span>
                         </div>
                       </div>
 
@@ -373,8 +383,14 @@ const DailyMealScreen = () => {
                           <div className="flex justify-between items-end mb-1">
                             <span className="text-xs font-semibold text-gray-500">Protein</span>
                             <span className="text-sm font-bold text-gray-900">
-                              {proteinConsumed}g{" "}
-                              <span className="text-xs font-normal text-gray-400">/ {proteinGoal}g</span>
+                              {showMacros ? (
+                                <>
+                                  {proteinConsumed}g{" "}
+                                  <span className="text-xs font-normal text-gray-400">/ {proteinGoal}g</span>
+                                </>
+                              ) : (
+                                `${proteinPct}%`
+                              )}
                             </span>
                           </div>
                           <div className="h-2.5 bg-purple-100 rounded-full overflow-hidden">
@@ -385,8 +401,14 @@ const DailyMealScreen = () => {
                           <div className="flex justify-between items-end mb-1">
                             <span className="text-xs font-semibold text-gray-500">Carbs</span>
                             <span className="text-sm font-bold text-gray-900">
-                              {carbsConsumed}g{" "}
-                              <span className="text-xs font-normal text-gray-400">/ {carbsGoal}g</span>
+                              {showMacros ? (
+                                <>
+                                  {carbsConsumed}g{" "}
+                                  <span className="text-xs font-normal text-gray-400">/ {carbsGoal}g</span>
+                                </>
+                              ) : (
+                                `${carbsPct}%`
+                              )}
                             </span>
                           </div>
                           <div className="h-2.5 bg-teal-100 rounded-full overflow-hidden">
@@ -397,8 +419,14 @@ const DailyMealScreen = () => {
                           <div className="flex justify-between items-end mb-1">
                             <span className="text-xs font-semibold text-gray-500">Fats</span>
                             <span className="text-sm font-bold text-gray-900">
-                              {fatConsumed}g{" "}
-                              <span className="text-xs font-normal text-gray-400">/ {fatGoal}g</span>
+                              {showMacros ? (
+                                <>
+                                  {fatConsumed}g{" "}
+                                  <span className="text-xs font-normal text-gray-400">/ {fatGoal}g</span>
+                                </>
+                              ) : (
+                                `${fatPct}%`
+                              )}
                             </span>
                           </div>
                           <div className="h-2.5 bg-orange-100 rounded-full overflow-hidden">

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {
   KYCData,
   CustomInputs,
@@ -35,22 +36,23 @@ export default function PreferencesStep({
   currentStep,
   totalSteps,
 }: PreferencesStepProps) {
+  const { t } = useTranslation("onboarding");
   return (
     <KycLayout
-      title="Preferences"
-      description="Select all that apply to personalize your meal and workout plans."
+      title={t("preferences.title")}
+      description={t("preferences.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       currentStep={currentStep}
       totalSteps={totalSteps}
     >
       <div className="space-y-8">
         {/* Allergies */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Allergies</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3">{t("preferences.allergies")}</h3>
           <div className="flex flex-wrap gap-2 mb-3">
             {allergies.map((item) => (
               <button
@@ -69,7 +71,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Add custom allergy..."
+              placeholder={t("preferences.allergyPlaceholder")}
               value={customInputs.allergy}
               onChange={(e) =>
                 setCustomInputs((prev) => ({
@@ -86,7 +88,7 @@ export default function PreferencesStep({
               onClick={() => onAddCustomItem("allergies", "allergy")}
               className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition text-sm"
             >
-              Add
+              {t("preferences.add")}
             </button>
           </div>
           {kycData.allergies.length > 0 && (
@@ -106,7 +108,7 @@ export default function PreferencesStep({
 
         {/* Dislikes */}
         <div>
-          <h3 className="text-lg font-bold text-gray-900 mb-3">Dislikes</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-3">{t("preferences.dislikes")}</h3>
           <div className="flex flex-wrap gap-2 mb-3">
             {dislikes.map((item) => (
               <button
@@ -125,7 +127,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Add custom dislike..."
+              placeholder={t("preferences.dislikePlaceholder")}
               value={customInputs.dislike}
               onChange={(e) =>
                 setCustomInputs((prev) => ({
@@ -142,7 +144,7 @@ export default function PreferencesStep({
               onClick={() => onAddCustomItem("dislikes", "dislike")}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition text-sm"
             >
-              Add
+              {t("preferences.add")}
             </button>
           </div>
           {kycData.dislikes.length > 0 && (
@@ -163,7 +165,7 @@ export default function PreferencesStep({
         {/* Food Preferences */}
         <div>
           <h3 className="text-lg font-bold text-gray-900 mb-3">
-            Food Preferences
+            {t("preferences.foodPreferences")}
           </h3>
           <div className="flex flex-wrap gap-2 mb-3">
             {foodPreferences.map((item) => (
@@ -183,7 +185,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Add food preference..."
+              placeholder={t("preferences.foodPreferencePlaceholder")}
               value={customInputs.foodPreference}
               onChange={(e) =>
                 setCustomInputs((prev) => ({
@@ -203,7 +205,7 @@ export default function PreferencesStep({
               }
               className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition text-sm"
             >
-              Add
+              {t("preferences.add")}
             </button>
           </div>
           {kycData.foodPreferences.length > 0 && (

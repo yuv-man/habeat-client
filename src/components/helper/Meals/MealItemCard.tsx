@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Plus } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { userAPI } from "@/services/api";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 interface MealItemCardProps {
   item: {
@@ -30,6 +31,7 @@ interface MealItemCardProps {
 
 const MealItemCard = ({ item, mealType, onComplete }: MealItemCardProps) => {
   const { user, updateFavorite } = useAuthStore();
+  const showMacros = useShowMacros();
   const [isCompleted, setIsCompleted] = useState(item.done);
   const [isFavorite, setIsFavorite] = useState(
     user.favoriteMeals.includes(item._id)
@@ -147,27 +149,31 @@ const MealItemCard = ({ item, mealType, onComplete }: MealItemCardProps) => {
         </div>
       </div>
 
-      {/* Snack Calories */}
-      <div className="mealItemCardCalories flex flex-row gap-1">
-        <FireIcon className="w-4 h-4" />
-        {item.calories} cal
-      </div>
+      {showMacros && (
+        <>
+          {/* Snack Calories */}
+          <div className="mealItemCardCalories flex flex-row gap-1">
+            <FireIcon className="w-4 h-4" />
+            {item.calories} cal
+          </div>
 
-      {/* Snack Macros */}
-      <div className="flex gap-4 text-xs text-gray-400">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-          <span>Carbs: {item.macros.carbs}g</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-          <span>Protein: {item.macros.protein}g</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-          <span>Fat: {item.macros.fat}g</span>
-        </div>
-      </div>
+          {/* Snack Macros */}
+          <div className="flex gap-4 text-xs text-gray-400">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>Carbs: {item.macros.carbs}g</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>Protein: {item.macros.protein}g</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <span>Fat: {item.macros.fat}g</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

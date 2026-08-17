@@ -16,6 +16,7 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import { getRecipeNote } from "@/mocks/mockRecipeData";
 import { formatIngredientName, formatMealName } from "@/lib/formatters";
+import { useShowMacros } from "@/hooks/useShowMacros";
 
 interface RecipeDetailProps {
   recipe: IRecipe;
@@ -25,6 +26,7 @@ interface RecipeDetailProps {
 const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const showMacros = useShowMacros();
   const { isMealFavorite, toggleFavoriteMeal } = useFavoritesStore();
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(
     new Set()
@@ -81,7 +83,7 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
       {/* Hero Image with Overlay */}
       <div className="relative h-72 sm:h-80">
         <img
-          src={getMealImageVite(recipe.mealName)}
+          src={getMealImageVite(recipe.mealNameEn || recipe.mealName)}
           alt={recipe.mealName}
           className="w-full h-full object-cover"
         />
@@ -162,56 +164,58 @@ const RecipeDetail = ({ recipe, onBack }: RecipeDetailProps) => {
       {/* Content */}
       <div className="px-4 py-6 pb-32">
         {/* Nutrition Stats Card */}
-        <div className="bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">
-            Nutrition Stats
-          </h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                <Flame className="w-5 h-5 text-orange-500" />
+        {showMacros && (
+          <div className="bg-gray-50 rounded-2xl p-5 mb-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">
+              Nutrition Stats
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Flame className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Calories</p>
+                  <p className="font-bold text-gray-900">{calories} kcal</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Calories</p>
-                <p className="font-bold text-gray-900">{calories} kcal</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-500 font-bold text-sm">P</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-500 font-bold text-sm">P</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Protein</p>
+                  <p className="font-bold text-gray-900">
+                    {recipe.macros.protein}g
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Protein</p>
-                <p className="font-bold text-gray-900">
-                  {recipe.macros.protein}g
-                </p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                <span className="text-yellow-600 font-bold text-sm">F</span>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-600 font-bold text-sm">F</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Fats</p>
+                  <p className="font-bold text-gray-900">{recipe.macros.fat}g</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Fats</p>
-                <p className="font-bold text-gray-900">{recipe.macros.fat}g</p>
-              </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <span className="text-green-600 font-bold text-sm">C</span>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Carbs</p>
-                <p className="font-bold text-gray-900">
-                  {recipe.macros.carbs}g
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-green-600 font-bold text-sm">C</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Carbs</p>
+                  <p className="font-bold text-gray-900">
+                    {recipe.macros.carbs}g
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Radio Buttons Toggle */}
         {(ingredients.length > 0 || instructions.length > 0) && (

@@ -10,6 +10,8 @@ import { clearExpiredCacheSync } from "@/lib/cache";
 import BackNavigationHandler from "@/components/navigation/BackNavigationHandler";
 import WatchPermissionModal from "@/components/watch/WatchPermissionModal";
 import { useWatchStore } from "@/stores/watchStore";
+import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/stores/languageStore";
 
 // Eagerly loaded pages (critical path)
 import Index from "./pages/Index";
@@ -52,6 +54,16 @@ const App = () => {
     clearExpiredCacheSync();
     useWatchStore.getState().initialize();
   }, []);
+
+  // Signed-in user's saved language preference is the cross-device source
+  // of truth - reconcile it into the local store (and i18next) once known.
+  const userLanguage = useAuthStore((state) => state.user?.language);
+  const { language, setLanguage } = useLanguageStore();
+  useEffect(() => {
+    if (userLanguage && userLanguage !== language) {
+      setLanguage(userLanguage);
+    }
+  }, [userLanguage, language, setLanguage]);
 
   return (
     <ErrorBoundary>

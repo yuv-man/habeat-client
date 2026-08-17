@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Calendar,
   BookOpen,
@@ -20,6 +21,7 @@ interface NavBarProps {
 }
 
 const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
+  const { t } = useTranslation("navigation");
   const location = useLocation();
   const { user } = useAuthStore();
 
@@ -37,7 +39,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               alt="logo"
               className="w-12 h-auto md:w-16 md:h-16"
             />
-            <div className="logo-text text-lg font-semibold">Habeats</div>
+            <div className="logo-text text-lg font-semibold">{t("brand")}</div>
           </div>
           <div className="flex items-center gap-1 md:gap-2">
             <Link
@@ -47,7 +49,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               to="/daily-tracker"
             >
               <Home className="w-5 h-5" />
-              <div className="nav-link-text">Today</div>
+              <div className="nav-link-text">{t("nav.today")}</div>
             </Link>
             <Link
               className={`nav-link ${
@@ -56,14 +58,14 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               to="/weekly-overview"
             >
               <Calendar className="w-5 h-5" />
-              <div className="nav-link-text">Weekly Plan</div>
+              <div className="nav-link-text">{t("nav.weeklyPlan")}</div>
             </Link>
             <Link
               to="/recipes"
               className={`nav-link ${isActive("/recipes") ? "active" : ""}`}
             >
               <Heart className="w-5 h-5" />
-              <div className="nav-link-text">Favorite Recipes</div>
+              <div className="nav-link-text">{t("nav.favoriteRecipes")}</div>
             </Link>
 
             <Link
@@ -73,7 +75,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               }`}
             >
               <ShoppingCart className="w-5 h-5" />
-              <div className="nav-link-text">Shopping List</div>
+              <div className="nav-link-text">{t("nav.shoppingList")}</div>
             </Link>
 
             <Link
@@ -83,7 +85,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
               }`}
             >
               <Brain className="w-5 h-5" />
-              <div className="nav-link-text">Mindfulness</div>
+              <div className="nav-link-text">{t("nav.mindfulness")}</div>
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -108,7 +110,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
                 {user?.profilePicture ? (
                   <img
                     src={user.profilePicture}
-                    alt="Profile"
+                    alt={t("aria.profile")}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -117,7 +119,7 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
                   </div>
                 )}
               </div>
-              <div className="nav-link-text">Settings</div>
+              <div className="nav-link-text">{t("nav.settings")}</div>
             </Link>
           </div>
           <div className="mobile-view-toggle">

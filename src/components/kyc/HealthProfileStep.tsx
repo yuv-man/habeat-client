@@ -1,4 +1,5 @@
 import { Flame, Activity, Target } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { KYCData } from "./types";
 import {
   calculateBMR,
@@ -26,6 +27,7 @@ export default function HealthProfileStep({
   currentStep,
   totalSteps,
 }: HealthProfileStepProps) {
+  const { t } = useTranslation("onboarding");
   const userDataForCalc = {
     weight: parseFloat(kycData.weight) || 0,
     height: parseFloat(kycData.height) || 0,
@@ -39,13 +41,13 @@ export default function HealthProfileStep({
 
   return (
     <KycLayout
-      title="Health Profile"
-      description="Based on your information, here are your personalized metrics"
+      title={t("healthProfile.title")}
+      description={t("healthProfile.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Complete Registration"
+      submitText={t("layout.completeRegistration")}
       currentStep={currentStep}
       totalSteps={totalSteps}
     >
@@ -57,15 +59,15 @@ export default function HealthProfileStep({
               <Flame className="w-5 h-5" />
             </div>
             <div className="text-sm font-semibold opacity-95">
-              Basal Metabolic Rate
+              {t("healthProfile.bmrLabel")}
             </div>
           </div>
           <div className="text-4xl font-bold mb-1">
             {Math.round(bmr)}{" "}
-            <span className="text-sm font-normal opacity-80">kcal/day</span>
+            <span className="text-sm font-normal opacity-80">{t("healthProfile.kcalPerDay")}</span>
           </div>
           <div className="text-xs opacity-70 mt-1">
-            Calories your body burns at rest
+            {t("healthProfile.bmrHint")}
           </div>
         </div>
 
@@ -76,15 +78,15 @@ export default function HealthProfileStep({
               <Activity className="w-5 h-5" />
             </div>
             <div className="text-sm font-semibold opacity-95">
-              Total Daily Energy Expenditure
+              {t("healthProfile.tdeeLabel")}
             </div>
           </div>
           <div className="text-4xl font-bold mb-1">
             {Math.round(tdee)}{" "}
-            <span className="text-sm font-normal opacity-80">kcal/day</span>
+            <span className="text-sm font-normal opacity-80">{t("healthProfile.kcalPerDay")}</span>
           </div>
           <div className="text-xs opacity-70 mt-1">
-            Total calories you burn per day
+            {t("healthProfile.tdeeHint")}
           </div>
         </div>
 
@@ -95,15 +97,15 @@ export default function HealthProfileStep({
               <Target className="w-5 h-5" />
             </div>
             <div className="text-sm font-semibold opacity-95">
-              Ideal Weight Range
+              {t("healthProfile.idealWeightLabel")}
             </div>
           </div>
           <div className="text-4xl font-bold mb-1">
             {Math.round(idealWeight)}{" "}
-            <span className="text-sm font-normal opacity-80">kg</span>
+            <span className="text-sm font-normal opacity-80">{t("healthProfile.kgUnit")}</span>
           </div>
           <div className="text-xs opacity-70 mt-1">
-            Recommended weight for your height
+            {t("healthProfile.idealWeightHint")}
           </div>
         </div>
       </div>

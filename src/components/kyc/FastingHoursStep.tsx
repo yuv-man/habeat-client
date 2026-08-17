@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { KYCData } from "./types";
 import KycLayout from "./KycLayout";
 
@@ -23,6 +24,7 @@ export default function FastingHoursStep({
   currentStep,
   totalSteps,
 }: FastingHoursStepProps) {
+  const { t } = useTranslation("onboarding");
   const [fastingHours, setFastingHours] = useState(
     kycData.fastingHours?.toString() || "16"
   );
@@ -47,13 +49,13 @@ export default function FastingHoursStep({
 
   return (
     <KycLayout
-      title="Fasting Schedule"
-      description="Configure your intermittent fasting window (8-16 hours)."
+      title={t("fastingHours.title")}
+      description={t("fastingHours.description")}
       onBack={onBack}
       onSubmit={handleSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       submitDisabled={!isValid}
       currentStep={currentStep}
       totalSteps={totalSteps}
@@ -62,7 +64,7 @@ export default function FastingHoursStep({
         {/* Fasting Hours */}
         <div>
           <label className="block text-base font-semibold text-gray-900 mb-3">
-            Fasting Duration
+            {t("fastingHours.durationLabel")}
           </label>
           <div className="flex items-center gap-4">
             <input
@@ -77,18 +79,18 @@ export default function FastingHoursStep({
               <span className="text-3xl font-bold text-gray-900">
                 {fastingHours}
               </span>
-              <span className="text-sm text-gray-600 ml-1">hrs</span>
+              <span className="text-sm text-gray-600 ms-1">{t("fastingHours.hoursUnit")}</span>
             </div>
           </div>
           <p className="text-xs text-gray-500 mt-2">
-            Select between 8-16 hours of fasting
+            {t("fastingHours.durationHint")}
           </p>
         </div>
 
         {/* Fasting Start Time */}
         <div>
           <label className="block text-base font-semibold text-gray-900 mb-3">
-            Start Time
+            {t("fastingHours.startTimeLabel")}
           </label>
           <input
             type="time"
@@ -97,18 +99,18 @@ export default function FastingHoursStep({
             className="w-full h-14 px-4 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none text-lg text-gray-900 bg-white"
           />
           <p className="text-xs text-gray-500 mt-2">
-            When do you start your fasting period?
+            {t("fastingHours.startTimeHint")}
           </p>
         </div>
 
         {/* Preview */}
         <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
           <div className="text-sm font-semibold text-gray-900 mb-3">
-            Your Fasting Schedule:
+            {t("fastingHours.scheduleHeading")}
           </div>
           <div className="text-sm text-gray-700 space-y-2">
             <div>
-              <span className="font-medium">Fasting:</span> {fastingStartTime} →{" "}
+              <span className="font-medium">{t("fastingHours.fastingLabel")}</span> {fastingStartTime} →{" "}
               {(() => {
                 const [hours, minutes] = fastingStartTime
                   .split(":")
@@ -125,7 +127,7 @@ export default function FastingHoursStep({
               })()}
             </div>
             <div>
-              <span className="font-medium">Eating Window:</span>{" "}
+              <span className="font-medium">{t("fastingHours.eatingWindowLabel")}</span>{" "}
               {(() => {
                 const [hours, minutes] = fastingStartTime
                   .split(":")

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { KYCData } from "./types";
 import KycLayout from "./KycLayout";
 
@@ -22,15 +23,16 @@ export default function FitnessStep({
   currentStep,
   totalSteps,
 }: FitnessStepProps) {
+  const { t } = useTranslation("onboarding");
   return (
     <KycLayout
-      title="Fitness Goal"
-      description="Help us tailor your plans by letting us know your weekly workout frequency."
+      title={t("fitness.title")}
+      description={t("fitness.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       currentStep={currentStep}
       totalSteps={totalSteps}
     >
@@ -43,11 +45,11 @@ export default function FitnessStep({
           </div>
         </div>
         <p className="text-center text-gray-600 mb-8 font-semibold">
-          times/week
+          {t("fitness.timesPerWeek")}
         </p>
 
         <p className="text-center text-gray-700 font-semibold mb-4">
-          How many times a week do you plan to work out?
+          {t("fitness.question")}
         </p>
         <input
           type="range"

@@ -1,0 +1,31 @@
+{
+  "brand": "Habeats",
+  "nav": {
+    "today": "Today",
+    "weeklyPlan": "Weekly Plan",
+    "favoriteRecipes": "Favorite Recipes",
+    "shoppingList": "Shopping List",
+    "mindfulness": "Mindfulness",
+    "settings": "Settings",
+    "plan": "Plan",
+    "mind": "Mind",
+    "progress": "Progress",
+    "community": "Community"
+  },
+  "aria": {
+    "healthyCoins": "Healthy Coins",
+    "profile": "Profile"
+  },
+  "planBanner": {
+    "noPlanTitle": "You don't have a meal plan yet",
+    "expiredTitle": "Your meal plan has expired",
+    "noPlanSubtitle": "Generate a meal plan to start tracking your nutrition",
+    "expiredSubtitle": "Generate a new plan to continue tracking your meals",
+    "generatePlan": "Generate Plan",
+    "generate": "Generate"
+  },
+  "errors": {
+    "aiBusy": "Our AI is temporarily busy — please try again in a few minutes. Your dietary preferences will be fully applied.",
+    "generateFailed": "Failed to generate meal plan. Please try again."
+  }
+}

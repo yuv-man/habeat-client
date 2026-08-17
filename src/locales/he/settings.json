@@ -1,0 +1,164 @@
+{
+  "title": "הגדרות",
+  "loading": "טוען הגדרות...",
+  "goBack": "חזרה",
+  "success": "ההגדרות נשמרו בהצלחה!",
+  "genericSaveError": "שמירת ההגדרות נכשלה. נסה שוב.",
+  "profileInfo": {
+    "heading": "פרטי פרופיל",
+    "uploadHint": "לחץ על סמל המצלמה כדי להעלות תמונת פרופיל",
+    "uploadConstraints": "גודל מקסימלי: 5MB • JPG, PNG, GIF",
+    "name": "שם",
+    "email": "אימייל",
+    "phone": "טלפון (אופציונלי)",
+    "invalidFileType": "סוג קובץ לא תקין",
+    "invalidFileTypeDesc": "אנא בחר קובץ תמונה",
+    "fileTooLarge": "הקובץ גדול מדי",
+    "fileTooLargeDesc": "אנא בחר תמונה שגודלה עד 5MB",
+    "readErrorTitle": "שגיאה בקריאת הקובץ",
+    "readErrorDesc": "קריאת קובץ התמונה נכשלה. נסה שוב."
+  },
+  "physicalAttributes": {
+    "heading": "נתונים פיזיים",
+    "weight": "משקל (ק\"ג)",
+    "height": "גובה (ס\"מ)",
+    "age": "גיל",
+    "gender": "מגדר",
+    "genderSelectPlaceholder": "בחר",
+    "genderMale": "זכר",
+    "genderFemale": "נקבה",
+    "genderOther": "אחר"
+  },
+  "dietType": {
+    "heading": "סוג תזונה"
+  },
+  "mealTimes": {
+    "heading": "שעות ארוחות",
+    "breakfast": "ארוחת בוקר",
+    "lunch": "ארוחת צהריים",
+    "dinner": "ארוחת ערב",
+    "snacks": "חטיפים"
+  },
+  "language": {
+    "heading": "שפה",
+    "description": "בחר את שפת האפליקציה ותוכניות התזונה שנוצרות על ידי ה-AI"
+  },
+  "appFeatures": {
+    "heading": "יכולות האפליקציה",
+    "healthData": "נתוני בריאות",
+    "healthDataConnected": "דופק, שינה ופעילות מחוברים",
+    "healthDataUnavailable": "זמין באפליקציה לנייד",
+    "healthDataDisconnected": "התחבר כדי לשפר את תובנות האכילה",
+    "disconnect": "נתק",
+    "mobileOnly": "לנייד בלבד",
+    "connect": "התחבר",
+    "sensoryProfile": "פרופיל חושי ושגרתי",
+    "sensoryProfileActive": "פעיל — הארוחות מסוננות לפי ההעדפות שלך",
+    "sensoryProfileInactive": "התאם אישית ארוחות לפי מרקם, שגרה ומאכלים בטוחים",
+    "edit": "ערוך",
+    "setUp": "הגדר"
+  },
+  "nutritionDisplay": {
+    "heading": "מספרי תזונה",
+    "description": "הצג קלוריות ומאקרו-נוטריינטים מדויקים (חלבון, פחמימות, שומן) בארוחות ובמתכונים.",
+    "toggleLabel": "הצג קלוריות ומאקרו"
+  },
+  "preferences": {
+    "heading": "העדפות",
+    "dietaryRestrictions": "הגבלות תזונתיות",
+    "addCustomDietaryRestriction": "הוסף הגבלה תזונתית מותאמת אישית",
+    "allergies": "אלרגיות",
+    "addCustomAllergy": "הוסף אלרגיה מותאמת אישית",
+    "dislikes": "מאכלים לא אהובים",
+    "addCustomDislike": "הוסף מאכל לא אהוב מותאם אישית",
+    "foodPreferences": "העדפות אוכל",
+    "addCustomFoodPreference": "הוסף העדפת אוכל מותאמת אישית"
+  },
+  "buttons": {
+    "cancel": "ביטול",
+    "saving": "שומר...",
+    "save": "שמור"
+  },
+  "account": {
+    "heading": "חשבון",
+    "description": "התנתק מהחשבון שלך במכשיר זה.",
+    "logOut": "התנתק"
+  },
+  "notifications": {
+    "heading": "התראות",
+    "webOnly": "לאתר בלבד",
+    "permissionNeeded": "נדרשת הרשאה",
+    "enablePrompt": "אפשר התראות כדי לקבל תזכורות לארוחות ולהישאר בקצב לעבר היעדים שלך.",
+    "enableButton": "אפשר התראות",
+    "enableAll": "אפשר את כל ההתראות",
+    "mealReminders": "תזכורות ארוחות",
+    "streakAlerts": "התראות רצף",
+    "dailyReminder": "תזכורת יומית",
+    "challengeUpdates": "עדכוני אתגרים",
+    "whenCompleted": "בסיום",
+    "beforeExpiring": "לפני תפוגה",
+    "achievements": "הישגים",
+    "levelUp": "עליית רמה",
+    "badgeEarned": "קבלת תג",
+    "motivationalMessages": "הודעות מוטיבציה",
+    "frequency": {
+      "daily": "יומי",
+      "weekly": "שבועי",
+      "occasional": "מדי פעם"
+    },
+    "quietHours": "שעות שקטות",
+    "quietHoursLabel": "ללא התראות בין",
+    "to": "עד",
+    "saving": "שומר...",
+    "saveButton": "שמור הגדרות התראות"
+  },
+  "profile": {
+    "header": {
+      "title": "פרופיל",
+      "subtitle": "נהל את ההגדרות והמועדפים שלך"
+    },
+    "loading": "טוען פרופיל...",
+    "loadError": {
+      "title": "לא הצלחנו לטעון את הפרופיל שלך",
+      "description": "בדוק את החיבור שלך ונסה שוב.",
+      "retry": "נסה שוב"
+    },
+    "tabs": {
+      "settings": "הגדרות",
+      "favorites": "ארוחות מועדפות"
+    },
+    "preferences": {
+      "allergyPlaceholder": "הוסף אלרגיה",
+      "dislikePlaceholder": "הוסף מאכל לא אהוב",
+      "foodPreferencePlaceholder": "הוסף העדפת אוכל"
+    },
+    "favorites": {
+      "heading": "ארוחות מועדפות",
+      "mealCount_one": "ארוחה אחת",
+      "mealCount_other": "{{count}} ארוחות",
+      "noFavoritesTitle": "עדיין אין מתכונים מועדפים",
+      "noFavoritesDescription": "התחל להוסיף מתכונים למועדפים כדי לראות אותם כאן",
+      "browseRecipes": "עיין במתכונים",
+      "removedToast": "הוסר מהמועדפים",
+      "addedToast": "❤️ נוסף למועדפים!",
+      "updateFailedToast": "עדכון המועדף נכשל"
+    },
+    "subscription": {
+      "heading": "מנוי",
+      "planSuffix": "תוכנית",
+      "free": "חינם",
+      "tier": {
+        "free": "חינם",
+        "plus": "פלוס",
+        "premium": "פרימיום"
+      },
+      "basicFeatures": "תכונות בסיסיות",
+      "upgrade": "שדרג",
+      "manage": "נהל",
+      "unlockPremium": "פתח תכונות פרימיום עם Plus או Premium",
+      "perkMealPlans": "כל תוכניות הארוחות בהשראת כוכבים",
+      "perkGroceryLists": "רשימות קניות חכמות",
+      "perkInsights": "תובנות מותאמות אישית"
+    }
+  }
+}

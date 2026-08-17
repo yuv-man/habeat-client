@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Loader2, Flame, Target, Calendar, Send, Trophy, ImagePlus, Brain, XCircle } from "lucide-react";
 import { useEngagementStore } from "@/stores/engagementStore";
@@ -93,6 +93,16 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, initialMode }: Create
     setMode(initialMode || "mood");
     onClose();
   };
+
+  // The modal component itself never unmounts between opens (only the inner
+  // motion.div is conditionally rendered), so `mode`'s useState initializer
+  // only ever runs once - without this, reopening with a different
+  // initialMode shows stale content from the previous open.
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode || "mood");
+    }
+  }, [isOpen, initialMode]);
 
   const handlePickImage = async () => {
     setIsPickingImage(true);

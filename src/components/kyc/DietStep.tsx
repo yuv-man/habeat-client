@@ -6,6 +6,7 @@ import {
   Timer,
   Scale,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { KYCData, dietGoals } from "./types";
 import KycLayout from "./KycLayout";
 
@@ -74,6 +75,7 @@ export default function DietStep({
   currentStep,
   totalSteps,
 }: DietStepProps) {
+  const { t } = useTranslation("onboarding");
   // Single selection for diet goal
   const selectDietGoal = (goalId: string) => {
     setKycData((prev) => ({
@@ -87,13 +89,13 @@ export default function DietStep({
 
   return (
     <KycLayout
-      title="Diet Goal"
-      description="Select your health and fitness goal."
+      title={t("diet.title")}
+      description={t("diet.description")}
       onBack={onBack}
       onSubmit={onSubmit}
       loading={loading}
       error={error}
-      submitText="Continue"
+      submitText={t("common:buttons.continue")}
       submitDisabled={!hasGoalSelection}
       currentStep={currentStep}
       totalSteps={totalSteps}
@@ -101,9 +103,9 @@ export default function DietStep({
       {/* Diet Goals Section - Single Select */}
       <div>
         <h3 className="text-lg font-bold text-gray-900 mb-3">
-          What's your goal?
+          {t("diet.goalQuestion")}
         </h3>
-        <p className="text-sm text-gray-500 mb-4">Choose one</p>
+        <p className="text-sm text-gray-500 mb-4">{t("diet.chooseOne")}</p>
         <div className="grid grid-cols-2 gap-3">
           {dietGoals.map((goal) => {
             const selected = isGoalSelected(goal.id);

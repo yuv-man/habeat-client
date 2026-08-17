@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Bell, Clock, Flame, Trophy, Zap, Moon, ChevronDown, ChevronUp } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ interface NotificationSettingsProps {
 }
 
 export function NotificationSettings({ className }: NotificationSettingsProps) {
+  const { t } = useTranslation("settings");
   const {
     preferences,
     loading,
@@ -86,14 +88,14 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
       >
         <div className="flex items-center gap-2">
           <Bell className="w-4 h-4 text-purple-500" />
-          <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
+          <h2 className="text-sm font-semibold text-gray-900">{t("notifications.heading")}</h2>
         </div>
         <div className="flex items-center gap-2">
           {!isNative && (
-            <span className="text-xs text-gray-400">Web only</span>
+            <span className="text-xs text-gray-400">{t("notifications.webOnly")}</span>
           )}
           {isNative && !permissionGranted && (
-            <span className="text-xs text-orange-500">Permission needed</span>
+            <span className="text-xs text-orange-500">{t("notifications.permissionNeeded")}</span>
           )}
           {expanded ? (
             <ChevronUp className="w-4 h-4 text-gray-400" />
@@ -110,14 +112,14 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
           {isNative && !permissionGranted && (
             <div className="mt-3 p-3 bg-orange-50 rounded-lg">
               <p className="text-xs text-orange-700 mb-2">
-                Enable notifications to get meal reminders and stay on track with your goals.
+                {t("notifications.enablePrompt")}
               </p>
               <Button
                 size="sm"
                 onClick={handleRequestPermission}
                 className="h-7 text-xs bg-orange-500 hover:bg-orange-600"
               >
-                Enable Notifications
+                {t("notifications.enableButton")}
               </Button>
             </div>
           )}
@@ -125,7 +127,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
           {/* Master Toggle */}
           <div className="flex items-center justify-between py-3 mt-2">
             <Label htmlFor="notifications-enabled" className="text-sm font-medium">
-              Enable All Notifications
+              {t("notifications.enableAll")}
             </Label>
             <Switch
               id="notifications-enabled"
@@ -143,9 +145,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               <div className="border-t border-gray-100 pt-3 mt-2">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="text-xs font-medium text-gray-700">Meal Reminders</span>
+                  <span className="text-xs font-medium text-gray-700">{t("notifications.mealReminders")}</span>
                 </div>
-                <div className="space-y-2 pl-5">
+                <div className="space-y-2 ps-5">
                   {(["breakfast", "lunch", "dinner", "snacks"] as const).map((meal) => (
                     <div key={meal} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -162,8 +164,8 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                             })
                           }
                         />
-                        <Label htmlFor={`meal-${meal}`} className="text-xs capitalize">
-                          {meal}
+                        <Label htmlFor={`meal-${meal}`} className="text-xs">
+                          {t(`mealTimes.${meal}`)}
                         </Label>
                       </div>
                       <Input
@@ -190,9 +192,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               <div className="border-t border-gray-100 pt-3 mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Flame className="w-3.5 h-3.5 text-orange-500" />
-                  <span className="text-xs font-medium text-gray-700">Streak Alerts</span>
+                  <span className="text-xs font-medium text-gray-700">{t("notifications.streakAlerts")}</span>
                 </div>
-                <div className="flex items-center justify-between pl-5">
+                <div className="flex items-center justify-between ps-5">
                   <div className="flex items-center gap-2">
                     <Switch
                       id="streak-alerts"
@@ -205,7 +207,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="streak-alerts" className="text-xs">
-                      Daily reminder
+                      {t("notifications.dailyReminder")}
                     </Label>
                   </div>
                   <Input
@@ -227,9 +229,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               <div className="border-t border-gray-100 pt-3 mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-xs font-medium text-gray-700">Challenge Updates</span>
+                  <span className="text-xs font-medium text-gray-700">{t("notifications.challengeUpdates")}</span>
                 </div>
-                <div className="space-y-2 pl-5">
+                <div className="space-y-2 ps-5">
                   <div className="flex items-center gap-2">
                     <Switch
                       id="challenge-complete"
@@ -242,7 +244,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="challenge-complete" className="text-xs">
-                      When completed
+                      {t("notifications.whenCompleted")}
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
@@ -257,7 +259,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="challenge-expiring" className="text-xs">
-                      Before expiring
+                      {t("notifications.beforeExpiring")}
                     </Label>
                   </div>
                 </div>
@@ -267,9 +269,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               <div className="border-t border-gray-100 pt-3 mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="w-3.5 h-3.5 text-purple-500" />
-                  <span className="text-xs font-medium text-gray-700">Achievements</span>
+                  <span className="text-xs font-medium text-gray-700">{t("notifications.achievements")}</span>
                 </div>
-                <div className="space-y-2 pl-5">
+                <div className="space-y-2 ps-5">
                   <div className="flex items-center gap-2">
                     <Switch
                       id="level-up"
@@ -282,7 +284,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="level-up" className="text-xs">
-                      Level up
+                      {t("notifications.levelUp")}
                     </Label>
                   </div>
                   <div className="flex items-center gap-2">
@@ -297,7 +299,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="badge-earned" className="text-xs">
-                      Badge earned
+                      {t("notifications.badgeEarned")}
                     </Label>
                   </div>
                 </div>
@@ -318,7 +320,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="motivational" className="text-xs">
-                      Motivational messages
+                      {t("notifications.motivationalMessages")}
                     </Label>
                   </div>
                   <Select
@@ -335,9 +337,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="occasional">Sometimes</SelectItem>
+                      <SelectItem value="daily">{t("notifications.frequency.daily")}</SelectItem>
+                      <SelectItem value="weekly">{t("notifications.frequency.weekly")}</SelectItem>
+                      <SelectItem value="occasional">{t("notifications.frequency.occasional")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -347,9 +349,9 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
               <div className="border-t border-gray-100 pt-3 mt-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Moon className="w-3.5 h-3.5 text-indigo-500" />
-                  <span className="text-xs font-medium text-gray-700">Quiet Hours</span>
+                  <span className="text-xs font-medium text-gray-700">{t("notifications.quietHours")}</span>
                 </div>
-                <div className="pl-5">
+                <div className="ps-5">
                   <div className="flex items-center gap-2 mb-2">
                     <Switch
                       id="quiet-hours"
@@ -362,11 +364,11 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                       }
                     />
                     <Label htmlFor="quiet-hours" className="text-xs">
-                      No notifications during
+                      {t("notifications.quietHoursLabel")}
                     </Label>
                   </div>
                   {localPrefs.quietHours.enabled && (
-                    <div className="flex items-center gap-2 ml-6">
+                    <div className="flex items-center gap-2 ms-6">
                       <Input
                         type="time"
                         value={localPrefs.quietHours.start}
@@ -378,7 +380,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                         }
                         className="w-24 h-7 text-xs"
                       />
-                      <span className="text-xs text-gray-500">to</span>
+                      <span className="text-xs text-gray-500">{t("notifications.to")}</span>
                       <Input
                         type="time"
                         value={localPrefs.quietHours.end}
@@ -403,7 +405,7 @@ export function NotificationSettings({ className }: NotificationSettingsProps) {
                   disabled={saving}
                   className="w-full h-8 text-xs bg-purple-500 hover:bg-purple-600"
                 >
-                  {saving ? "Saving..." : "Save Notification Settings"}
+                  {saving ? t("notifications.saving") : t("notifications.saveButton")}
                 </Button>
               </div>
             </>

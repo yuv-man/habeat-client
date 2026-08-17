@@ -1,0 +1,164 @@
+{
+  "title": "Settings",
+  "loading": "Loading settings...",
+  "goBack": "Go back",
+  "success": "Settings saved successfully!",
+  "genericSaveError": "Failed to save settings. Please try again.",
+  "profileInfo": {
+    "heading": "Profile Information",
+    "uploadHint": "Click the camera icon to upload a profile picture",
+    "uploadConstraints": "Max size: 5MB • JPG, PNG, GIF",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone (Optional)",
+    "invalidFileType": "Invalid file type",
+    "invalidFileTypeDesc": "Please select an image file",
+    "fileTooLarge": "File too large",
+    "fileTooLargeDesc": "Please select an image under 5MB",
+    "readErrorTitle": "Error reading file",
+    "readErrorDesc": "Failed to read the image file. Please try again."
+  },
+  "physicalAttributes": {
+    "heading": "Physical Attributes",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "age": "Age",
+    "gender": "Gender",
+    "genderSelectPlaceholder": "Select",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "genderOther": "Other"
+  },
+  "dietType": {
+    "heading": "Diet Type"
+  },
+  "mealTimes": {
+    "heading": "Meal Times",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snacks": "Snacks"
+  },
+  "language": {
+    "heading": "Language",
+    "description": "Choose the language for the app and AI-generated meal plans"
+  },
+  "appFeatures": {
+    "heading": "App Features",
+    "healthData": "Health Data",
+    "healthDataConnected": "Heart rate, sleep & activity connected",
+    "healthDataUnavailable": "Available on the mobile app",
+    "healthDataDisconnected": "Connect to improve eating insights",
+    "disconnect": "Disconnect",
+    "mobileOnly": "Mobile only",
+    "connect": "Connect",
+    "sensoryProfile": "Sensory & Routine Profile",
+    "sensoryProfileActive": "Active — meals are filtered to your preferences",
+    "sensoryProfileInactive": "Personalise meals by texture, routine & safe foods",
+    "edit": "Edit",
+    "setUp": "Set up"
+  },
+  "nutritionDisplay": {
+    "heading": "Nutrition Numbers",
+    "description": "Show exact calories and macros (protein, carbs, fat) on meals and recipes.",
+    "toggleLabel": "Show calories & macros"
+  },
+  "preferences": {
+    "heading": "Preferences",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "addCustomDietaryRestriction": "Add custom dietary restriction",
+    "allergies": "Allergies",
+    "addCustomAllergy": "Add custom allergy",
+    "dislikes": "Dislikes",
+    "addCustomDislike": "Add custom dislike",
+    "foodPreferences": "Food Preferences",
+    "addCustomFoodPreference": "Add custom food preference"
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "save": "Save"
+  },
+  "account": {
+    "heading": "Account",
+    "description": "Sign out of your account on this device.",
+    "logOut": "Log Out"
+  },
+  "notifications": {
+    "heading": "Notifications",
+    "webOnly": "Web only",
+    "permissionNeeded": "Permission needed",
+    "enablePrompt": "Enable notifications to get meal reminders and stay on track with your goals.",
+    "enableButton": "Enable Notifications",
+    "enableAll": "Enable All Notifications",
+    "mealReminders": "Meal Reminders",
+    "streakAlerts": "Streak Alerts",
+    "dailyReminder": "Daily reminder",
+    "challengeUpdates": "Challenge Updates",
+    "whenCompleted": "When completed",
+    "beforeExpiring": "Before expiring",
+    "achievements": "Achievements",
+    "levelUp": "Level up",
+    "badgeEarned": "Badge earned",
+    "motivationalMessages": "Motivational messages",
+    "frequency": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "occasional": "Sometimes"
+    },
+    "quietHours": "Quiet Hours",
+    "quietHoursLabel": "No notifications during",
+    "to": "to",
+    "saving": "Saving...",
+    "saveButton": "Save Notification Settings"
+  },
+  "profile": {
+    "header": {
+      "title": "Profile",
+      "subtitle": "Manage your settings and favorites"
+    },
+    "loading": "Loading profile...",
+    "loadError": {
+      "title": "Couldn't load your profile",
+      "description": "Check your connection and try again.",
+      "retry": "Retry"
+    },
+    "tabs": {
+      "settings": "Settings",
+      "favorites": "Favorite Meals"
+    },
+    "preferences": {
+      "allergyPlaceholder": "Add allergy",
+      "dislikePlaceholder": "Add dislike",
+      "foodPreferencePlaceholder": "Add food preference"
+    },
+    "favorites": {
+      "heading": "Favorite Meals",
+      "mealCount_one": "{{count}} meal",
+      "mealCount_other": "{{count}} meals",
+      "noFavoritesTitle": "No favorite recipes yet",
+      "noFavoritesDescription": "Start adding recipes to your favorites to see them here",
+      "browseRecipes": "Browse Recipes",
+      "removedToast": "Removed from favorites",
+      "addedToast": "❤️ Added to favorites!",
+      "updateFailedToast": "Failed to update favorite"
+    },
+    "subscription": {
+      "heading": "Subscription",
+      "planSuffix": "Plan",
+      "free": "Free",
+      "tier": {
+        "free": "Free",
+        "plus": "Plus",
+        "premium": "Premium"
+      },
+      "basicFeatures": "Basic features",
+      "upgrade": "Upgrade",
+      "manage": "Manage",
+      "unlockPremium": "Unlock premium features with Plus or Premium",
+      "perkMealPlans": "All star-inspired meal plans",
+      "perkGroceryLists": "Smart grocery lists",
+      "perkInsights": "Personalized insights"
+    }
+  }
+}

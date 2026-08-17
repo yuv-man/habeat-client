@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/stores/languageStore";
+import { SUPPORTED_LANGUAGES, SupportedLanguage } from "@/lib/i18n";
 import { IUser, MealTimes, IRecipe } from "@/types/interfaces";
 import {
   dietTypes,
@@ -41,6 +44,7 @@ import { CBTProgressCard } from "@/components/cbt";
 import { useWatchStore } from "@/stores/watchStore";
 
 const Profile = () => {
+  const { t } = useTranslation("settings");
   const { toast: uiToast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +65,8 @@ const Profile = () => {
   } = useAuthStore();
   const { status: watchStatus, grant: grantWatch, deny: denyWatch } =
     useWatchStore();
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [activeTab, setActiveTab] = useState<"settings" | "favorites">(
     "settings"
   );
@@ -193,8 +199,8 @@ const Profile = () => {
     if (file) {
       if (!file.type.startsWith("image/")) {
         uiToast({
-          title: "Invalid file type",
-          description: "Please select an image file",
+          title: t("profileInfo.invalidFileType"),
+          description: t("profileInfo.invalidFileTypeDesc"),
           variant: "destructive",
         });
         return;
@@ -202,8 +208,8 @@ const Profile = () => {
 
       if (file.size > 5 * 1024 * 1024) {
         uiToast({
-          title: "File too large",
-          description: "Please select an image under 5MB",
+          title: t("profileInfo.fileTooLarge"),
+          description: t("profileInfo.fileTooLargeDesc"),
           variant: "destructive",
         });
         return;
@@ -217,8 +223,8 @@ const Profile = () => {
       };
       reader.onerror = () => {
         uiToast({
-          title: "Error reading file",
-          description: "Failed to read the image file. Please try again.",
+          title: t("profileInfo.readErrorTitle"),
+          description: t("profileInfo.readErrorDesc"),
           variant: "destructive",
         });
       };
@@ -262,13 +268,13 @@ const Profile = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       uiToast({
-        title: "Settings saved successfully!",
+        title: t("success"),
       });
     } catch (err: unknown) {
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to save settings. Please try again."
+          : t("genericSaveError")
       );
     } finally {
       setIsSaving(false);
@@ -357,13 +363,13 @@ const Profile = () => {
       return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center px-6">
-            <p className="text-gray-700 font-medium mb-2">Couldn't load your profile</p>
-            <p className="text-gray-500 text-sm mb-4">Check your connection and try again.</p>
+            <p className="text-gray-700 font-medium mb-2">{t("profile.loadError.title")}</p>
+            <p className="text-gray-500 text-sm mb-4">{t("profile.loadError.description")}</p>
             <button
               onClick={() => token && fetchUser(token)}
               className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium hover:bg-green-600 transition"
             >
-              Retry
+              {t("profile.loadError.retry")}
             </button>
           </div>
         </div>
@@ -374,7 +380,7 @@ const Profile = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <MealLoader />
-          <p className="text-gray-600 text-sm mt-4">Loading profile...</p>
+          <p className="text-gray-600 text-sm mt-4">{t("profile.loading")}</p>
         </div>
       </div>
     );
@@ -387,9 +393,9 @@ const Profile = () => {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Profile</h1>
+              <h1 className="text-xl font-bold text-gray-900">{t("profile.header.title")}</h1>
               <p className="text-sm text-gray-500">
-                Manage your settings and favorites
+                {t("profile.header.subtitle")}
               </p>
             </div>
           </div>
@@ -406,7 +412,7 @@ const Profile = () => {
             }`}
           >
             <SettingsIcon className="w-4 h-4" />
-            Settings
+            {t("profile.tabs.settings")}
           </button>
           <button
             onClick={() => setActiveTab("favorites")}
@@ -417,7 +423,7 @@ const Profile = () => {
             }`}
           >
             <Heart className="w-4 h-4" />
-            Favorite Meals
+            {t("profile.tabs.favorites")}
           </button>
         </div>
 
@@ -427,7 +433,7 @@ const Profile = () => {
             {/* Success/Error Messages */}
             {success && (
               <div className="bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded-lg text-sm">
-                Settings saved successfully!
+                {t("success")}
               </div>
             )}
             {error && (
@@ -439,7 +445,7 @@ const Profile = () => {
             {/* Profile Picture & Basic Info Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Profile Information
+                {t("profileInfo.heading")}
               </h2>
 
               {/* Profile Picture */}
@@ -449,7 +455,7 @@ const Profile = () => {
                     {profilePicture ? (
                       <img
                         src={profilePicture}
-                        alt="Profile"
+                        alt={t("profile.header.title")}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -458,7 +464,7 @@ const Profile = () => {
                   </div>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm hover:bg-emerald-600 transition"
+                    className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm hover:bg-emerald-600 transition"
                   >
                     <Camera className="w-3 h-3 text-white" />
                   </button>
@@ -472,10 +478,10 @@ const Profile = () => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-gray-600">
-                    Click the camera icon to upload a profile picture
+                    {t("profileInfo.uploadHint")}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Max size: 5MB • JPG, PNG, GIF
+                    {t("profileInfo.uploadConstraints")}
                   </p>
                 </div>
               </div>
@@ -483,7 +489,7 @@ const Profile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="name" className="text-xs font-medium">
-                    Name
+                    {t("profileInfo.name")}
                   </Label>
                   <Input
                     id="name"
@@ -494,7 +500,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="email" className="text-xs font-medium">
-                    Email
+                    {t("profileInfo.email")}
                   </Label>
                   <Input
                     id="email"
@@ -506,7 +512,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="phone" className="text-xs font-medium">
-                    Phone (Optional)
+                    {t("profileInfo.phone")}
                   </Label>
                   <Input
                     id="phone"
@@ -522,12 +528,12 @@ const Profile = () => {
             {/* Physical Attributes Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Physical Attributes
+                {t("physicalAttributes.heading")}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                   <Label htmlFor="weight" className="text-xs font-medium">
-                    Weight (kg)
+                    {t("physicalAttributes.weight")}
                   </Label>
                   <Input
                     id="weight"
@@ -541,7 +547,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="height" className="text-xs font-medium">
-                    Height (cm)
+                    {t("physicalAttributes.height")}
                   </Label>
                   <Input
                     id="height"
@@ -554,7 +560,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="age" className="text-xs font-medium">
-                    Age
+                    {t("physicalAttributes.age")}
                   </Label>
                   <Input
                     id="age"
@@ -567,26 +573,55 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="gender" className="text-xs font-medium">
-                    Gender
+                    {t("physicalAttributes.gender")}
                   </Label>
                   <Select value={gender} onValueChange={setGender}>
                     <SelectTrigger className="mt-1 h-9 text-sm">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder={t("physicalAttributes.genderSelectPlaceholder")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="male">Male</SelectItem>
-                      <SelectItem value="female">Female</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="male">{t("physicalAttributes.genderMale")}</SelectItem>
+                      <SelectItem value="female">{t("physicalAttributes.genderFemale")}</SelectItem>
+                      <SelectItem value="other">{t("physicalAttributes.genderOther")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </div>
 
+            {/* Language Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h2 className="text-sm font-semibold text-gray-900 mb-1">
+                {t("language.heading")}
+              </h2>
+              <p className="text-xs text-gray-500 mb-3">
+                {t("language.description")}
+              </p>
+              <Select
+                value={language}
+                onValueChange={(value) =>
+                  setLanguage(value as SupportedLanguage, user?._id)
+                }
+              >
+                <SelectTrigger className="h-9 text-sm max-w-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <SelectItem key={lang} value={lang}>
+                      {lang === "he"
+                        ? t("common:language.hebrew")
+                        : t("common:language.english")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Diet Type Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Diet Type
+                {t("dietType.heading")}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {dietTypes.map((diet) => {
@@ -612,7 +647,7 @@ const Profile = () => {
             {/* Meal Times Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Meal Times
+                {t("mealTimes.heading")}
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
@@ -620,7 +655,7 @@ const Profile = () => {
                     htmlFor="breakfast-time"
                     className="text-xs font-medium"
                   >
-                    Breakfast
+                    {t("mealTimes.breakfast")}
                   </Label>
                   <Input
                     id="breakfast-time"
@@ -634,7 +669,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="lunch-time" className="text-xs font-medium">
-                    Lunch
+                    {t("mealTimes.lunch")}
                   </Label>
                   <Input
                     id="lunch-time"
@@ -646,7 +681,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="dinner-time" className="text-xs font-medium">
-                    Dinner
+                    {t("mealTimes.dinner")}
                   </Label>
                   <Input
                     id="dinner-time"
@@ -658,7 +693,7 @@ const Profile = () => {
                 </div>
                 <div>
                   <Label htmlFor="snacks-time" className="text-xs font-medium">
-                    Snacks
+                    {t("mealTimes.snacks")}
                   </Label>
                   <Input
                     id="snacks-time"
@@ -677,7 +712,7 @@ const Profile = () => {
             {/* App Features */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-100">
               <h2 className="text-sm font-semibold text-gray-900 px-4 pt-4 pb-3">
-                App Features
+                {t("appFeatures.heading")}
               </h2>
 
               <div className="flex items-center gap-3 px-4 py-3">
@@ -695,13 +730,13 @@ const Profile = () => {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800">Health Data</p>
+                  <p className="text-sm font-medium text-gray-800">{t("appFeatures.healthData")}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {watchStatus === "granted"
-                      ? "Heart rate, sleep & activity connected"
+                      ? t("appFeatures.healthDataConnected")
                       : watchStatus === "unavailable"
-                      ? "Available on the mobile app"
-                      : "Connect to improve eating insights"}
+                      ? t("appFeatures.healthDataUnavailable")
+                      : t("appFeatures.healthDataDisconnected")}
                   </p>
                 </div>
                 {watchStatus === "granted" ? (
@@ -711,11 +746,11 @@ const Profile = () => {
                     onClick={denyWatch}
                     className="h-8 text-xs shrink-0"
                   >
-                    Disconnect
+                    {t("appFeatures.disconnect")}
                   </Button>
                 ) : watchStatus === "unavailable" ? (
                   <span className="text-xs text-gray-400 shrink-0">
-                    Mobile only
+                    {t("appFeatures.mobileOnly")}
                   </span>
                 ) : (
                   <Button
@@ -723,7 +758,7 @@ const Profile = () => {
                     onClick={grantWatch}
                     className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600"
                   >
-                    Connect
+                    {t("appFeatures.connect")}
                   </Button>
                 )}
               </div>
@@ -746,12 +781,12 @@ const Profile = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800">
-                    Sensory & Routine Profile
+                    {t("appFeatures.sensoryProfile")}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {user.sensoryProfile?.enabled
-                      ? "Active - meals are filtered to your preferences"
-                      : "Personalize meals by texture, routine & safe foods"}
+                      ? t("appFeatures.sensoryProfileActive")
+                      : t("appFeatures.sensoryProfileInactive")}
                   </p>
                 </div>
                 <button
@@ -759,7 +794,7 @@ const Profile = () => {
                   onClick={() => navigate("/sensory-profile")}
                   className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition shrink-0"
                 >
-                  {user.sensoryProfile?.enabled ? "Edit" : "Set up"}
+                  {user.sensoryProfile?.enabled ? t("appFeatures.edit") : t("appFeatures.setUp")}
                 </button>
               </div>
             </div>
@@ -767,13 +802,13 @@ const Profile = () => {
             {/* Preferences Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Preferences
+                {t("preferences.heading")}
               </h2>
 
               {/* Allergies */}
               <div className="mb-4">
                 <Label className="text-xs font-medium mb-1.5 block">
-                  Allergies
+                  {t("preferences.allergies")}
                 </Label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {allergies.map((allergy) => (
@@ -795,7 +830,7 @@ const Profile = () => {
                   <Input
                     value={newAllergy}
                     onChange={(e) => setNewAllergy(e.target.value)}
-                    placeholder="Add allergy"
+                    placeholder={t("profile.preferences.allergyPlaceholder")}
                     className="h-8 text-sm"
                     onKeyPress={(e) => e.key === "Enter" && addAllergy()}
                   />
@@ -814,7 +849,7 @@ const Profile = () => {
               {/* Dislikes */}
               <div className="mb-4">
                 <Label className="text-xs font-medium mb-1.5 block">
-                  Dislikes
+                  {t("preferences.dislikes")}
                 </Label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {dislikes.map((dislike) => (
@@ -836,7 +871,7 @@ const Profile = () => {
                   <Input
                     value={newDislike}
                     onChange={(e) => setNewDislike(e.target.value)}
-                    placeholder="Add dislike"
+                    placeholder={t("profile.preferences.dislikePlaceholder")}
                     className="h-8 text-sm"
                     onKeyPress={(e) => e.key === "Enter" && addDislike()}
                   />
@@ -855,7 +890,7 @@ const Profile = () => {
               {/* Food Preferences */}
               <div className="mb-4">
                 <Label className="text-xs font-medium mb-1.5 block">
-                  Food Preferences
+                  {t("preferences.foodPreferences")}
                 </Label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {foodPreferences.map((foodPreference) => (
@@ -877,7 +912,7 @@ const Profile = () => {
                   <Input
                     value={newFoodPreference}
                     onChange={(e) => setNewFoodPreference(e.target.value)}
-                    placeholder="Add food preference"
+                    placeholder={t("profile.preferences.foodPreferencePlaceholder")}
                     className="h-8 text-sm"
                     onKeyPress={(e) => e.key === "Enter" && addFoodPreference()}
                   />
@@ -896,7 +931,7 @@ const Profile = () => {
               {/* Dietary Restrictions */}
               <div>
                 <Label className="text-xs font-medium mb-1.5 block">
-                  Dietary Restrictions
+                  {t("preferences.dietaryRestrictions")}
                 </Label>
                 {/* Preset chips (same options as KYC) */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
@@ -948,7 +983,7 @@ const Profile = () => {
                   <Input
                     value={newDietaryRestriction}
                     onChange={(e) => setNewDietaryRestriction(e.target.value)}
-                    placeholder="Add custom dietary restriction"
+                    placeholder={t("preferences.addCustomDietaryRestriction")}
                     className="h-8 text-sm"
                     onKeyPress={(e) =>
                       e.key === "Enter" && addDietaryRestriction()
@@ -976,7 +1011,7 @@ const Profile = () => {
                 disabled={isSaving}
                 className="h-9"
               >
-                Cancel
+                {t("buttons.cancel")}
               </Button>
               <Button
                 onClick={handleSave}
@@ -987,12 +1022,12 @@ const Profile = () => {
                 {isSaving ? (
                   <>
                     <MealLoader size="small" />
-                    Saving...
+                    {t("buttons.saving")}
                   </>
                 ) : (
                   <>
-                    <Save className="w-3.5 h-3.5 mr-1.5" />
-                    Save
+                    <Save className="w-3.5 h-3.5 me-1.5" />
+                    {t("buttons.save")}
                   </>
                 )}
               </Button>
@@ -1006,7 +1041,7 @@ const Profile = () => {
             {/* Subscription Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-3">
-                Subscription
+                {t("profile.subscription.heading")}
               </h2>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -1020,11 +1055,11 @@ const Profile = () => {
                     <Crown className="w-5 h-5 text-purple-500" />
                   )}
                   <div>
-                    <p className="text-sm font-medium capitalize">
-                      {user.subscriptionTier || "Free"} Plan
+                    <p className="text-sm font-medium">
+                      {t(`profile.subscription.tier.${user.subscriptionTier || "free"}`)} {t("profile.subscription.planSuffix")}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {user.subscriptionTier === "free" && "Basic features"}
+                      {user.subscriptionTier === "free" && t("profile.subscription.basicFeatures")}
                       {user.subscriptionTier === "plus" && "$9.99/month"}
                       {user.subscriptionTier === "premium" && "$14.99/month"}
                     </p>
@@ -1038,31 +1073,31 @@ const Profile = () => {
                 >
                   {user.subscriptionTier === "free" ? (
                     <>
-                      <Crown className="w-3.5 h-3.5 mr-1.5" />
-                      Upgrade
+                      <Crown className="w-3.5 h-3.5 me-1.5" />
+                      {t("profile.subscription.upgrade")}
                     </>
                   ) : (
-                    "Manage"
+                    t("profile.subscription.manage")
                   )}
                 </Button>
               </div>
               {user.subscriptionTier === "free" && (
                 <div className="bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200 rounded-lg p-3">
                   <p className="text-xs text-gray-700 mb-2">
-                    Unlock premium features with Plus or Premium
+                    {t("profile.subscription.unlockPremium")}
                   </p>
                   <ul className="text-xs text-gray-600 space-y-1">
                     <li className="flex items-center gap-1.5">
                       <Check className="w-3 h-3 text-green-600" />
-                      <span>All star-inspired meal plans</span>
+                      <span>{t("profile.subscription.perkMealPlans")}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <Check className="w-3 h-3 text-green-600" />
-                      <span>Smart grocery lists</span>
+                      <span>{t("profile.subscription.perkGroceryLists")}</span>
                     </li>
                     <li className="flex items-center gap-1.5">
                       <Check className="w-3 h-3 text-green-600" />
-                      <span>Personalized insights</span>
+                      <span>{t("profile.subscription.perkInsights")}</span>
                     </li>
                   </ul>
                 </div>
@@ -1072,11 +1107,11 @@ const Profile = () => {
             {/* Account Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">
-                Account
+                {t("account.heading")}
               </h2>
               <div className="flex items-center justify-between">
                 <p className="text-gray-600 text-xs">
-                  Sign out of your account on this device.
+                  {t("account.description")}
                 </p>
                 <Button
                   variant="destructive"
@@ -1087,8 +1122,8 @@ const Profile = () => {
                   }}
                   className="h-8 text-xs"
                 >
-                  <LogOut className="w-3.5 h-3.5 mr-1.5" />
-                  Log Out
+                  <LogOut className="w-3.5 h-3.5 me-1.5" />
+                  {t("account.logOut")}
                 </Button>
               </div>
             </div>
@@ -1101,11 +1136,12 @@ const Profile = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Favorite Meals
+                  {t("profile.favorites.heading")}
                 </h2>
                 <span className="text-sm text-gray-500">
-                  {favoriteMealsAsRecipes.length}{" "}
-                  {favoriteMealsAsRecipes.length === 1 ? "meal" : "meals"}
+                  {t("profile.favorites.mealCount", {
+                    count: favoriteMealsAsRecipes.length,
+                  })}
                 </span>
               </div>
 
@@ -1135,11 +1171,11 @@ const Profile = () => {
                               // Refresh favorites after toggle
                               await fetchFavoriteMeals(user._id);
                               if (isFavorite) {
-                                toast.success("Removed from favorites", {
+                                toast.success(t("profile.favorites.removedToast"), {
                                   duration: 2000,
                                 });
                               } else {
-                                toast.success("❤️ Added to favorites!", {
+                                toast.success(t("profile.favorites.addedToast"), {
                                   duration: 2000,
                                 });
                               }
@@ -1148,7 +1184,7 @@ const Profile = () => {
                                 "Failed to update favorite:",
                                 error
                               );
-                              toast.error("Failed to update favorite");
+                              toast.error(t("profile.favorites.updateFailedToast"));
                             }
                           }
                         }}
@@ -1160,16 +1196,16 @@ const Profile = () => {
                 <div className="text-center py-12">
                   <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    No favorite recipes yet
+                    {t("profile.favorites.noFavoritesTitle")}
                   </h3>
                   <p className="text-gray-500 text-sm mb-4">
-                    Start adding recipes to your favorites to see them here
+                    {t("profile.favorites.noFavoritesDescription")}
                   </p>
                   <Button
                     onClick={() => navigate("/recipes")}
                     className="bg-green-500 hover:bg-green-600 text-white"
                   >
-                    Browse Recipes
+                    {t("profile.favorites.browseRecipes")}
                   </Button>
                 </div>
               )}

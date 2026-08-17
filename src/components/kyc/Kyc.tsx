@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import SignupStep from "./SignupStep";
 import EmotionalEatingStep from "./EmotionalEatingStep";
 import DietStep from "./DietStep";
@@ -36,6 +37,7 @@ export default function KYCFlow() {
   const navigate = useNavigate();
   const authStore = useAuthStore();
   const { toast } = useToast();
+  const { t } = useTranslation("onboarding");
   const [step, setStep] = useState("signup");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -165,7 +167,7 @@ export default function KYCFlow() {
   const handleSignupEmail = async () => {
     setError("");
     if (!authData.email || !authData.password || !authData.name) {
-      setError("Please fill all fields");
+      setError(t("signup.errors.fillAllFields"));
       return;
     }
     setLoading(true);
@@ -177,7 +179,7 @@ export default function KYCFlow() {
       setAuthData((prev) => ({ ...prev, authMethod: "email" }));
       setStep("emotionalEating");
     } catch (err: unknown) {
-      setError(getErrorMessage(err, "Failed to sign up. Please try again."));
+      setError(getErrorMessage(err, t("signup.errors.signupFailed")));
     } finally {
       setLoading(false);
     }
@@ -206,14 +208,14 @@ export default function KYCFlow() {
         setStep("emotionalEating");
       }
     } catch (err: unknown) {
-      const message = getErrorMessage(err, "Google signup failed. Please try again.");
+      const message = getErrorMessage(err, t("signup.errors.googleSignupFailed"));
       const accountExists =
         /already|exists|registered|sign in instead/i.test(message);
 
       if (accountExists) {
         toast({
-          title: "Account already exists",
-          description: "This email is already registered. Please sign in instead.",
+          title: t("signup.errors.accountExistsTitle"),
+          description: t("signup.errors.accountExistsDesc"),
           variant: "destructive",
         });
         navigate("/", { replace: true });
@@ -230,7 +232,7 @@ export default function KYCFlow() {
 
   const submitDietType = async () => {
     if (!kycData.dietType) {
-      setError("Please select a diet type");
+      setError(t("kyc.errors.selectDietType"));
       return;
     }
     // Always go to dietary restrictions step after selecting diet type
@@ -249,7 +251,7 @@ export default function KYCFlow() {
 
   const submitFastingHours = async () => {
     if (!kycData.fastingHours || !kycData.fastingStartTime) {
-      setError("Please set your fasting schedule");
+      setError(t("kyc.errors.fastingSchedule"));
       return;
     }
     setStep("profile");
@@ -257,7 +259,7 @@ export default function KYCFlow() {
 
   const submitProfile = async () => {
     if (!kycData.weight || !kycData.height || !kycData.age || !kycData.gender) {
-      setError("Please fill all fields");
+      setError(t("profile.errors.fillAllFields"));
       return;
     }
     setStep("fitness");
@@ -317,6 +319,9 @@ export default function KYCFlow() {
         dislikes: kycData.dislikes,
         foodRelationship: kycData.foodRelationship ?? "",
         emotionalTriggers: kycData.emotionalTriggers ?? [],
+        // Default numeric calorie/macro display off for users who flagged a difficult
+        // relationship with food; everyone else sees numbers by default and can toggle in Settings.
+        showMacros: kycData.foodRelationship !== "very-emotional",
         subscriptionTier: "free",
       };
 
@@ -335,7 +340,7 @@ export default function KYCFlow() {
         // Account already created at signup — just update profile + generate plan
         const currentUser = authStore.user;
         if (!currentUser?._id) {
-          throw new Error("Session expired. Please sign up again.");
+          throw new Error(t("healthProfile.errors.sessionExpired"));
         }
         await authStore.updateProfile(currentUser._id, userData);
         await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
@@ -343,9 +348,7 @@ export default function KYCFlow() {
         // User already authenticated via Google OAuth - update profile and generate plan
         const currentUser = authStore.user;
         if (!currentUser?._id) {
-          throw new Error(
-            "User not authenticated. Please try signing in again."
-          );
+          throw new Error(t("healthProfile.errors.notAuthenticated"));
         }
         // Update user profile with KYC data
         await authStore.updateProfile(currentUser._id, userData);
@@ -356,7 +359,7 @@ export default function KYCFlow() {
         localStorage.removeItem(STORAGE_KEYS.AUTH_DATA);
         localStorage.removeItem(STORAGE_KEYS.CURRENT_STEP);
         setStep("signup");
-        throw new Error("Session expired. Please sign up again to continue.");
+        throw new Error(t("healthProfile.errors.sessionExpiredRetry"));
       }
 
       // Mark KYC as completed on the backend
@@ -389,8 +392,8 @@ export default function KYCFlow() {
         rawMsg.toLowerCase().includes("temporarily busy");
       setError(
         isAiBusy
-          ? "Your profile was saved! Our AI is temporarily busy — please tap 'Generate Plan' from the home screen in a few minutes. Your dietary preferences will be fully applied."
-          : getErrorMessage(err, "Failed to complete registration")
+          ? t("healthProfile.errors.aiBusy")
+          : getErrorMessage(err, t("healthProfile.errors.completeFailed"))
       );
     } finally {
       setLoading(false);

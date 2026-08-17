@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Calendar, BarChart3, Brain, Users } from "lucide-react";
 
 const BottomNav = () => {
+  const { t } = useTranslation("navigation");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -94,13 +96,13 @@ const BottomNav = () => {
         <NavButton
           path="/daily-tracker"
           icon={Home}
-          label="Today"
+          label={t("nav.today")}
           isMain={true}
         />
-        <NavButton path="/weekly-overview" icon={Calendar} label="Plan" />
-        <NavButton path="/mindfulness" icon={Brain} label="Mind" />
-        <NavButton path="/progress" icon={BarChart3} label="Progress" />
-        <NavButton path="/community" icon={Users} label="Community" />
+        <NavButton path="/weekly-overview" icon={Calendar} label={t("nav.plan")} />
+        <NavButton path="/mindfulness" icon={Brain} label={t("nav.mind")} />
+        <NavButton path="/progress" icon={BarChart3} label={t("nav.progress")} />
+        <NavButton path="/community" icon={Users} label={t("nav.community")} />
       </div>
     </nav>
   );

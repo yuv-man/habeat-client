@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
+import { useLanguageStore } from "@/stores/languageStore";
+import { SUPPORTED_LANGUAGES, SupportedLanguage } from "@/lib/i18n";
 import { IUser, MealTimes } from "@/types/interfaces";
 import {
   dietTypes,
@@ -12,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -37,6 +41,7 @@ import { NotificationSettings } from "@/components/settings";
 import { useWatchStore } from "@/stores/watchStore";
 
 const Settings = () => {
+  const { t } = useTranslation("settings");
   const { toast } = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +55,8 @@ const Settings = () => {
     setMealTimes: setStoreMealTimes,
   } = useAuthStore();
   const { status: watchStatus, grant: grantWatch, deny: denyWatch } = useWatchStore();
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -81,6 +88,9 @@ const Settings = () => {
 
   // Diet type
   const [dietType, setDietType] = useState("");
+
+  // Nutrition display
+  const [showMacros, setShowMacros] = useState(true);
 
   // Map path to diet type name
   const pathToDietType: Record<string, string> = {
@@ -125,6 +135,7 @@ const Settings = () => {
     setDislikes(user.dislikes || []);
     setFoodPreferences(user.foodPreferences || []);
     setDietaryRestrictions(user.dietaryRestrictions || []);
+    setShowMacros(user.showMacros !== false);
     // Map user.path to diet type name
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
 
@@ -140,8 +151,8 @@ const Settings = () => {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         toast({
-          title: "Invalid file type",
-          description: "Please select an image file",
+          title: t("profileInfo.invalidFileType"),
+          description: t("profileInfo.invalidFileTypeDesc"),
           variant: "destructive",
         });
         return;
@@ -150,8 +161,8 @@ const Settings = () => {
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast({
-          title: "File too large",
-          description: "Please select an image under 5MB",
+          title: t("profileInfo.fileTooLarge"),
+          description: t("profileInfo.fileTooLargeDesc"),
           variant: "destructive",
         });
         return;
@@ -166,8 +177,8 @@ const Settings = () => {
       };
       reader.onerror = () => {
         toast({
-          title: "Error reading file",
-          description: "Failed to read the image file. Please try again.",
+          title: t("profileInfo.readErrorTitle"),
+          description: t("profileInfo.readErrorDesc"),
           variant: "destructive",
         });
       };
@@ -200,6 +211,7 @@ const Settings = () => {
         dislikes,
         foodPreferences,
         dietaryRestrictions,
+        showMacros,
         // Map diet type name back to path
         path: dietTypeToPath[dietType] || user.path || "healthy",
       };
@@ -216,11 +228,11 @@ const Settings = () => {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
       toast({
-        title: "Settings saved successfully!",
+        title: t("success"),
       });
       navigate("/daily-tracker");
     } catch (err: any) {
-      setError(err.message || "Failed to save settings. Please try again.");
+      setError(err.message || t("genericSaveError"));
     } finally {
       setIsSaving(false);
     }
@@ -308,7 +320,7 @@ const Settings = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <MealLoader />
-          <p className="text-gray-600 text-sm mt-4">Loading settings...</p>
+          <p className="text-gray-600 text-sm mt-4">{t("loading")}</p>
         </div>
       </div>
     );
@@ -322,17 +334,17 @@ const Settings = () => {
           <button
             onClick={() => navigate(-1)}
             className="p-1.5 hover:bg-gray-100 rounded-full transition"
-            aria-label="Go back"
+            aria-label={t("goBack")}
           >
-            <ArrowLeft className="w-4 h-4 text-gray-600" />
+            <ArrowLeft className="w-4 h-4 text-gray-600 rtl:-scale-x-100" />
           </button>
-          <h1 className="text-lg font-bold text-gray-900">Settings</h1>
+          <h1 className="text-lg font-bold text-gray-900">{t("title")}</h1>
         </div>
 
         {/* Success/Error Messages */}
         {success && (
           <div className="bg-green-50 border border-green-200 text-green-600 px-3 py-2 rounded-lg mb-4 text-sm">
-            Settings saved successfully!
+            {t("success")}
           </div>
         )}
         {error && (
@@ -345,7 +357,7 @@ const Settings = () => {
           {/* Profile Picture & Basic Info Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Profile Information
+              {t("profileInfo.heading")}
             </h2>
 
             {/* Profile Picture */}
@@ -364,7 +376,7 @@ const Settings = () => {
                 </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm hover:bg-emerald-600 transition"
+                  className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm hover:bg-emerald-600 transition"
                 >
                   <Camera className="w-3 h-3 text-white" />
                 </button>
@@ -378,10 +390,10 @@ const Settings = () => {
               </div>
               <div className="flex-1">
                 <p className="text-xs text-gray-600">
-                  Click the camera icon to upload a profile picture
+                  {t("profileInfo.uploadHint")}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Max size: 5MB • JPG, PNG, GIF
+                  {t("profileInfo.uploadConstraints")}
                 </p>
               </div>
             </div>
@@ -389,7 +401,7 @@ const Settings = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="name" className="text-xs font-medium">
-                  Name
+                  {t("profileInfo.name")}
                 </Label>
                 <Input
                   id="name"
@@ -400,7 +412,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="email" className="text-xs font-medium">
-                  Email
+                  {t("profileInfo.email")}
                 </Label>
                 <Input
                   id="email"
@@ -412,7 +424,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="phone" className="text-xs font-medium">
-                  Phone (Optional)
+                  {t("profileInfo.phone")}
                 </Label>
                 <Input
                   id="phone"
@@ -428,12 +440,12 @@ const Settings = () => {
           {/* Physical Attributes Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Physical Attributes
+              {t("physicalAttributes.heading")}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <Label htmlFor="weight" className="text-xs font-medium">
-                  Weight (kg)
+                  {t("physicalAttributes.weight")}
                 </Label>
                 <Input
                   id="weight"
@@ -447,7 +459,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="height" className="text-xs font-medium">
-                  Height (cm)
+                  {t("physicalAttributes.height")}
                 </Label>
                 <Input
                   id="height"
@@ -460,7 +472,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="age" className="text-xs font-medium">
-                  Age
+                  {t("physicalAttributes.age")}
                 </Label>
                 <Input
                   id="age"
@@ -473,18 +485,71 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="gender" className="text-xs font-medium">
-                  Gender
+                  {t("physicalAttributes.gender")}
                 </Label>
                 <Select value={gender} onValueChange={setGender}>
                   <SelectTrigger className="mt-1 h-9 text-sm">
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={t("physicalAttributes.genderSelectPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="male">{t("physicalAttributes.genderMale")}</SelectItem>
+                    <SelectItem value="female">{t("physicalAttributes.genderFemale")}</SelectItem>
+                    <SelectItem value="other">{t("physicalAttributes.genderOther")}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Language Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-sm font-semibold text-gray-900 mb-1">
+              {t("language.heading")}
+            </h2>
+            <p className="text-xs text-gray-500 mb-3">
+              {t("language.description")}
+            </p>
+            <Select
+              value={language}
+              onValueChange={(value) =>
+                setLanguage(value as SupportedLanguage, user?._id)
+              }
+            >
+              <SelectTrigger className="h-9 text-sm max-w-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <SelectItem key={lang} value={lang}>
+                    {lang === "he"
+                      ? t("common:language.hebrew")
+                      : t("common:language.english")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Nutrition Display Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  {t("nutritionDisplay.heading")}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {t("nutritionDisplay.description")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Label htmlFor="show-macros" className="text-xs font-medium sr-only">
+                  {t("nutritionDisplay.toggleLabel")}
+                </Label>
+                <Switch
+                  id="show-macros"
+                  checked={showMacros}
+                  onCheckedChange={setShowMacros}
+                />
               </div>
             </div>
           </div>
@@ -492,7 +557,7 @@ const Settings = () => {
           {/* Diet Type Section - Redesigned as horizontal chips */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Diet Type
+              {t("dietType.heading")}
             </h2>
             <div className="flex flex-wrap gap-2">
               {dietTypes.map((diet) => {
@@ -518,12 +583,12 @@ const Settings = () => {
           {/* Meal Times Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Meal Times
+              {t("mealTimes.heading")}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
                 <Label htmlFor="breakfast-time" className="text-xs font-medium">
-                  Breakfast
+                  {t("mealTimes.breakfast")}
                 </Label>
                 <Input
                   id="breakfast-time"
@@ -535,7 +600,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="lunch-time" className="text-xs font-medium">
-                  Lunch
+                  {t("mealTimes.lunch")}
                 </Label>
                 <Input
                   id="lunch-time"
@@ -547,7 +612,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="dinner-time" className="text-xs font-medium">
-                  Dinner
+                  {t("mealTimes.dinner")}
                 </Label>
                 <Input
                   id="dinner-time"
@@ -559,7 +624,7 @@ const Settings = () => {
               </div>
               <div>
                 <Label htmlFor="snacks-time" className="text-xs font-medium">
-                  Snacks
+                  {t("mealTimes.snacks")}
                 </Label>
                 <Input
                   id="snacks-time"
@@ -577,7 +642,7 @@ const Settings = () => {
 
           {/* App Features */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 divide-y divide-gray-100">
-            <h2 className="text-sm font-semibold text-gray-900 px-4 pt-4 pb-3">App Features</h2>
+            <h2 className="text-sm font-semibold text-gray-900 px-4 pt-4 pb-3">{t("appFeatures.heading")}</h2>
 
             {/* Health Data */}
             <div className="flex items-center gap-3 px-4 py-3">
@@ -587,24 +652,24 @@ const Settings = () => {
                 <Activity className={`w-4 h-4 ${watchStatus === 'granted' ? 'text-green-600' : 'text-gray-400'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">Health Data</p>
+                <p className="text-sm font-medium text-gray-800">{t("appFeatures.healthData")}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {watchStatus === 'granted'
-                    ? 'Heart rate, sleep & activity connected'
+                    ? t("appFeatures.healthDataConnected")
                     : watchStatus === 'unavailable'
-                    ? 'Available on the mobile app'
-                    : 'Connect to improve eating insights'}
+                    ? t("appFeatures.healthDataUnavailable")
+                    : t("appFeatures.healthDataDisconnected")}
                 </p>
               </div>
               {watchStatus === 'granted' ? (
                 <Button variant="outline" size="sm" onClick={denyWatch} className="h-8 text-xs shrink-0">
-                  Disconnect
+                  {t("appFeatures.disconnect")}
                 </Button>
               ) : watchStatus === 'unavailable' ? (
-                <span className="text-xs text-gray-400 shrink-0">Mobile only</span>
+                <span className="text-xs text-gray-400 shrink-0">{t("appFeatures.mobileOnly")}</span>
               ) : (
                 <Button size="sm" onClick={grantWatch} className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600">
-                  Connect
+                  {t("appFeatures.connect")}
                 </Button>
               )}
             </div>
@@ -617,18 +682,18 @@ const Settings = () => {
                 <span className={`text-base ${user.sensoryProfile?.enabled ? '' : 'grayscale opacity-50'}`}>🌿</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800">Sensory & Routine Profile</p>
+                <p className="text-sm font-medium text-gray-800">{t("appFeatures.sensoryProfile")}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {user.sensoryProfile?.enabled
-                    ? 'Active — meals are filtered to your preferences'
-                    : 'Personalise meals by texture, routine & safe foods'}
+                    ? t("appFeatures.sensoryProfileActive")
+                    : t("appFeatures.sensoryProfileInactive")}
                 </p>
               </div>
               <button
                 onClick={() => navigate('/sensory-profile')}
                 className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 transition shrink-0"
               >
-                {user.sensoryProfile?.enabled ? 'Edit' : 'Set up'}
+                {user.sensoryProfile?.enabled ? t("appFeatures.edit") : t("appFeatures.setUp")}
               </button>
             </div>
           </div>
@@ -636,13 +701,13 @@ const Settings = () => {
           {/* Preferences Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Preferences
+              {t("preferences.heading")}
             </h2>
 
             {/* Dietary Restrictions */}
             <div className="mb-4">
               <Label className="text-xs font-medium mb-1.5 block">
-                Dietary Restrictions
+                {t("preferences.dietaryRestrictions")}
               </Label>
               {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -694,7 +759,7 @@ const Settings = () => {
                 <Input
                   value={newDietaryRestriction}
                   onChange={(e) => setNewDietaryRestriction(e.target.value)}
-                  placeholder="Add custom dietary restriction"
+                  placeholder={t("preferences.addCustomDietaryRestriction")}
                   className="h-8 text-sm"
                   onKeyPress={(e) =>
                     e.key === "Enter" && addDietaryRestriction()
@@ -715,7 +780,7 @@ const Settings = () => {
             {/* Allergies */}
             <div className="mb-4">
               <Label className="text-xs font-medium mb-1.5 block">
-                Allergies
+                {t("preferences.allergies")}
               </Label>
               {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -760,7 +825,7 @@ const Settings = () => {
                 <Input
                   value={newAllergy}
                   onChange={(e) => setNewAllergy(e.target.value)}
-                  placeholder="Add custom allergy"
+                  placeholder={t("preferences.addCustomAllergy")}
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addAllergy()}
                 />
@@ -779,7 +844,7 @@ const Settings = () => {
             {/* Dislikes */}
             <div className="mb-4">
               <Label className="text-xs font-medium mb-1.5 block">
-                Dislikes
+                {t("preferences.dislikes")}
               </Label>
               {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -824,7 +889,7 @@ const Settings = () => {
                 <Input
                   value={newDislike}
                   onChange={(e) => setNewDislike(e.target.value)}
-                  placeholder="Add custom dislike"
+                  placeholder={t("preferences.addCustomDislike")}
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addDislike()}
                 />
@@ -843,7 +908,7 @@ const Settings = () => {
             {/* Food Preferences */}
             <div>
               <Label className="text-xs font-medium mb-1.5 block">
-                Food Preferences
+                {t("preferences.foodPreferences")}
               </Label>
               {/* Preset chips (same options as KYC) */}
               <div className="flex flex-wrap gap-1.5 mb-2">
@@ -891,7 +956,7 @@ const Settings = () => {
                 <Input
                   value={newFoodPreference}
                   onChange={(e) => setNewFoodPreference(e.target.value)}
-                  placeholder="Add custom food preference"
+                  placeholder={t("preferences.addCustomFoodPreference")}
                   className="h-8 text-sm"
                   onKeyPress={(e) => e.key === "Enter" && addFoodPreference()}
                 />
@@ -917,7 +982,7 @@ const Settings = () => {
               disabled={isSaving}
               className="h-9"
             >
-              Cancel
+              {t("buttons.cancel")}
             </Button>
             <Button
               onClick={handleSave}
@@ -928,12 +993,12 @@ const Settings = () => {
               {isSaving ? (
                 <>
                   <MealLoader size="small" />
-                  Saving...
+                  {t("buttons.saving")}
                 </>
               ) : (
                 <>
-                  <Save className="w-3.5 h-3.5 mr-1.5" />
-                  Save
+                  <Save className="w-3.5 h-3.5 me-1.5" />
+                  {t("buttons.save")}
                 </>
               )}
             </Button>
@@ -942,11 +1007,11 @@ const Settings = () => {
           {/* Account Section - Now at the end */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">
-              Account
+              {t("account.heading")}
             </h2>
             <div className="flex items-center justify-between">
               <p className="text-gray-600 text-xs">
-                Sign out of your account on this device.
+                {t("account.description")}
               </p>
               <Button
                 variant="destructive"
@@ -957,8 +1022,8 @@ const Settings = () => {
                 }}
                 className="h-8 text-xs"
               >
-                <LogOut className="w-3.5 h-3.5 mr-1.5" />
-                Log Out
+                <LogOut className="w-3.5 h-3.5 me-1.5" />
+                {t("account.logOut")}
               </Button>
             </div>
           </div>

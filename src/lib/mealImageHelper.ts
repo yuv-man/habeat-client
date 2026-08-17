@@ -161,6 +161,7 @@ const availableImages = [
   "cottage-cheese-herb-frittata",
   "thyme-butter-salmon-courgette",
   "peanut-butter-chia-oats",
+  "roasted-walnut-bowl",
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -558,7 +559,7 @@ const keywordMappings: { [key: string]: string[] } = {
   oats: ["oatmeal-bowl-with-fruits", "porridge-with-cinnamon-and-apples", "peanut-butter-chia-oats"],
   overnight: ["oatmeal-bowl-with-fruits", "chia-pudding"],
   shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi", "tropical-mango-and-pineapple-smoothie-bowl"],
-  snack: ["cottage-cheese-with-pineapple"],
+  snack: ["cottage-cheese-with-pineapple", "roasted-walnut-bowl"],
 
   // Sandwiches & Wraps
   sandwich: [

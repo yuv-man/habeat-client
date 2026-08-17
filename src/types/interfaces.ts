@@ -41,12 +41,18 @@ export interface IUser {
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
   sensoryProfile?: ISensoryProfile | null;
   kycCompleted?: boolean;
+  language?: "en" | "he";
+  workoutFrequency?: number;
+  foodRelationship?: string; // fuel | sometimes-emotional | very-emotional | unsure
+  emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
+  showMacros?: boolean; // whether numeric calories/macros are displayed; defaults to true unless foodRelationship flags a difficult relationship with food
 }
 
 export interface IMeal {
   _id: string;
   icon?: string;
   name: string;
+  nameEn?: string; // English reference name, used for image matching when `name` is localized
   // Format: "ingredient_name|portion|unit" (e.g., "chicken_breast|200|g")
   ingredients?: string[];
   calories: number;
@@ -292,6 +298,7 @@ export interface IRecipe {
   _id?: string;
   mealId: string;
   mealName: string;
+  mealNameEn?: string; // English reference name, used for image matching when `mealName` is localized
   category: string;
   servings?: number;
   prepTime?: number;

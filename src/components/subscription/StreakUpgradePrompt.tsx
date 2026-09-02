@@ -16,6 +16,10 @@ import { Flame, Crown, Check, X } from "lucide-react";
 
 const STREAK_PROMPT_KEY = "habeat_streak_upgrade_prompt_seen";
 
+/** How long the user gets to look at their own screen before being sold to.
+ *  A product decision as much as a UX one — tune freely. */
+const ARRIVAL_GRACE_MS = 6000;
+
 export function StreakUpgradePrompt() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -26,12 +30,35 @@ export function StreakUpgradePrompt() {
     const hasSeenPrompt = localStorage.getItem(STREAK_PROMPT_KEY) === "true";
     const shouldShow = shouldShowStreakUpgradePromptForUser(user, currentStreak, hasSeenPrompt);
 
-    if (shouldShow) {
-      setIsOpen(true);
-    } else {
+    if (!shouldShow) {
       // Close immediately if already open but user no longer qualifies (e.g. just upgraded)
       setIsOpen(false);
+      return;
     }
+
+    // Don't interrupt the arrival.
+    //
+    // This used to open the moment the layout mounted, so opening the app on a
+    // qualifying streak meant a full-screen upgrade page *before* you saw a
+    // single thing you came for. The offer is the same either way; the
+    // difference is whether the user has been allowed to look at their own day
+    // first. Wait for them to settle, and let any real interaction pre-empt it
+    // so it never lands mid-tap.
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      setIsOpen(true);
+    }, ARRIVAL_GRACE_MS);
+
+    const cancelOnInteraction = () => {
+      if (!settled) clearTimeout(timer);
+    };
+    window.addEventListener("pointerdown", cancelOnInteraction, { once: true });
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pointerdown", cancelOnInteraction);
+    };
   }, [user, currentStreak]);
 
   const handleClose = () => {

@@ -28,19 +28,40 @@ const dayInitial = (isoDate: string) =>
   DAY_INITIALS[new Date(`${isoDate}T00:00:00`).getDay()];
 
 /** "14 Jul" — used when naming the analysed period. */
-const fmtDate = (isoDate: string) =>
-  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-  });
+/** Null rather than the string "Invalid Date" when the input isn't a date.
+ *  The period bounds can come back empty, and printing the failure verbatim
+ *  put "Invalid Date–Invalid Date" in front of the user. */
+const fmtDate = (isoDate: string | undefined | null): string | null => {
+  if (!isoDate) return null;
+  const d = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+};
+
+/** "3 Aug–10 Aug", or null when either bound is unusable — callers drop the
+ *  whole clause rather than rendering half a range. */
+const fmtRange = (
+  start: string | undefined | null,
+  end: string | undefined | null
+): string | null => {
+  const a = fmtDate(start);
+  const b = fmtDate(end);
+  return a && b ? `${a}\u2013${b}` : null;
+};
 
 /** "Mon 14 Jul" — used in the per-bar readout. */
-const dayFull = (isoDate: string) =>
-  new Date(`${isoDate}T00:00:00`).toLocaleDateString(undefined, {
+const dayFull = (isoDate: string | undefined | null): string => {
+  if (!isoDate) return "That day";
+  const d = new Date(`${isoDate}T00:00:00`);
+  // Same guard as fmtDate — this one feeds an aria-label, where "Invalid Date"
+  // would be read aloud verbatim.
+  if (Number.isNaN(d.getTime())) return "That day";
+  return d.toLocaleDateString(undefined, {
     weekday: "short",
     day: "numeric",
     month: "short",
   });
+};
 
 // ─── sub-components ──────────────────────────────────────────────────────────
 
@@ -485,6 +506,133 @@ interface Pattern {
   impact: "positive" | "negative" | "neutral";
 }
 
+/** Accepts either a 0–1 ratio or an already-scaled 0–100 percentage. */
+function toPercent(value: number | undefined | null): number {
+  if (value == null || Number.isNaN(value)) return 0;
+  return value <= 1 ? value * 100 : value;
+}
+
+const REFLECTION_LABELS: Record<string, { emoji: string; label: string }> = {
+  // hinderedBy
+  stress: { emoji: "😫", label: "Stressed" },
+  tiredness: { emoji: "😴", label: "Tired" },
+  cravings: { emoji: "🍫", label: "Cravings" },
+  "time-pressure": { emoji: "🏃", label: "Too busy" },
+  boredom: { emoji: "😑", label: "Bored" },
+  sadness: { emoji: "😢", label: "Low" },
+  anxiety: { emoji: "😰", label: "Anxious" },
+  social: { emoji: "👥", label: "Social" },
+  habit: { emoji: "🔄", label: "Habit" },
+  celebration: { emoji: "🎉", label: "Celebrating" },
+  procrastination: { emoji: "📱", label: "Putting things off" },
+  "late-night": { emoji: "🌙", label: "Late night" },
+  // easedBy
+  "had-time": { emoji: "😌", label: "Had time" },
+  "felt-good": { emoji: "❤️", label: "Felt good" },
+  "planned-ahead": { emoji: "📋", label: "Planned it" },
+  "food-ready": { emoji: "🥗", label: "Food was ready" },
+};
+
+/**
+ * Reads the daily reflection back to the user. Deliberately plain: counts and
+ * proportions, no scoring, no verdict. Both halves get the same visual weight
+ * so the page can't read as a list of failures with a footnote of wins.
+ */
+function ReflectionSummary({
+  days,
+  easedBy,
+  hinderedBy,
+}: {
+  days: number;
+  easedBy: { facilitator: string; count: number }[];
+  hinderedBy: { trigger: string; count: number }[];
+}) {
+  const hasAny = easedBy.length > 0 || hinderedBy.length > 0;
+
+  // Nothing answered yet — an invitation, not an empty-state apology.
+  if (!hasAny) {
+    return (
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)]">
+        <h3 className="text-lg font-bold text-slate-800 mb-1">What you've noticed</h3>
+        <p className="text-sm text-slate-400">
+          After you check in on the daily tracker, you can add what made eating
+          easier or harder that day. Answers show up here — even a couple of days
+          is enough to start.
+        </p>
+      </div>
+    );
+  }
+
+  const peak = Math.max(
+    ...easedBy.map((e) => e.count),
+    ...hinderedBy.map((h) => h.count)
+  );
+
+  const renderRow = (key: string, count: number, tone: "eased" | "hindered") => {
+    const meta = REFLECTION_LABELS[key] ?? { emoji: "•", label: key };
+    return (
+      <div key={key} className="flex items-center gap-2.5">
+        <span className="text-base w-5 shrink-0 text-center">{meta.emoji}</span>
+        <span className="text-sm text-slate-600 w-32 shrink-0 truncate">
+          {meta.label}
+        </span>
+        <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+          <div
+            className={cn(
+              "h-full rounded-full",
+              tone === "eased" ? "bg-teal-400" : "bg-amber-400"
+            )}
+            style={{ width: `${peak > 0 ? (count / peak) * 100 : 0}%` }}
+          />
+        </div>
+        <span className="text-xs font-semibold text-slate-400 w-6 text-right tabular-nums">
+          {count}
+        </span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)]">
+      <h3 className="text-lg font-bold text-slate-800 mb-1">What you've noticed</h3>
+      <p className="text-[11px] text-slate-400 mb-4 flex items-center gap-1.5">
+        <Info className="w-3.5 h-3.5 shrink-0" />
+        {/* Say plainly how thin the data is — a handful of days is a start,
+            not a pattern, and the copy shouldn't imply otherwise. */}
+        <span>
+          From <strong className="text-slate-500">{days}</strong> day
+          {days === 1 ? "" : "s"} you reflected on
+          {days < 3 && " — early days yet"}.
+        </span>
+      </p>
+
+      <div className="space-y-4">
+        {easedBy.length > 0 && (
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 mb-2">
+              Made it easier
+            </p>
+            <div className="space-y-2">
+              {easedBy.map((e) => renderRow(e.facilitator, e.count, "eased"))}
+            </div>
+          </div>
+        )}
+
+        {hinderedBy.length > 0 && (
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-amber-600 mb-2">
+              Made it harder
+            </p>
+            <div className="space-y-2">
+              {hinderedBy.map((h) => renderRow(h.trigger, h.count, "hindered"))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PatternsTable({
   patterns,
   isExample,
@@ -679,7 +827,12 @@ export default function EmotionalEating() {
       })()
     : undefined;
 
-  const satietyPct = insight?.satietyRate ?? 0;
+  // `satietyRate` arrives as a 0–1 ratio while every sibling metric on this
+  // page is already 0–100, so rendering it raw printed a healthy 0.6 as
+  // "0.6%" and then labelled it "Low" — inverting the meaning of the number
+  // rather than merely misformatting it. Normalise both conventions so the
+  // tile stays correct whichever the server sends.
+  const satietyPct = Math.round(toPercent(insight?.satietyRate));
   const mealsAnalyzed = insight?.totalMeals ?? 0;
 
   return (
@@ -738,7 +891,10 @@ export default function EmotionalEating() {
                       mood entr{moodHistory.length === 1 ? "y" : "ies"}
                     </>
                   )}
-                  , {fmtDate(insight.period.start)}–{fmtDate(insight.period.end)}.
+                  {(() => {
+                    const range = fmtRange(insight.period?.start, insight.period?.end);
+                    return range ? `, ${range}.` : ".";
+                  })()}
                 </span>
               ) : (
                 <span>
@@ -815,7 +971,11 @@ export default function EmotionalEating() {
                       sublabel={`${insight.emotionalEatingInstances} showed emotional eating`}
                       icon={<Brain className="w-4 h-4" />}
                       color="violet"
-                      help={`Meals you logged together with a mood check-in between ${fmtDate(insight.period.start)} and ${fmtDate(insight.period.end)}. Only these count towards your scores — meals logged without a mood aren't analysed.`}
+                      help={`Meals you logged together with a mood check-in${
+                        fmtRange(insight.period?.start, insight.period?.end)
+                          ? ` between ${fmtDate(insight.period?.start)} and ${fmtDate(insight.period?.end)}`
+                          : ""
+                      }. Only these count towards your scores — meals logged without a mood aren't analysed.`}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-6">
@@ -828,6 +988,15 @@ export default function EmotionalEating() {
               {(!insight || insight.totalMeals === 0) && (
                 <TipsSlider recommendations={[]} />
               )}
+
+              {/* Daily reflection readout. Sits above the patterns table
+                  because it needs a couple of days of data, not a couple of
+                  weeks — for most users it's the only real content here. */}
+              <ReflectionSummary
+                days={insight?.reflectionDays ?? 0}
+                easedBy={insight?.reflectionFacilitators ?? []}
+                hinderedBy={insight?.reflectionTriggers ?? []}
+              />
 
               {/* Patterns table */}
               <PatternsTable patterns={patterns} isExample={patternsAreExample} />

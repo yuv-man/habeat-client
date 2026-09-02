@@ -11,7 +11,7 @@ import {
   Brain,
 } from "lucide-react";
 import { toast } from "sonner";
-import { IMeal } from "@/types/interfaces";
+import { EatingMode, IMeal } from "@/types/interfaces";
 import { useProgressStore } from "@/stores/progressStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useCBTStore } from "@/stores/cbtStore";
@@ -27,8 +27,18 @@ import {
 } from "@/lib/nutritionHelpers";
 import { EatingModeCard } from "@/components/cbt/EatingModeCard";
 import { useShowMacros } from "@/hooks/useShowMacros";
+import {
+  MealSlot,
+  MissReason,
+  PatternEventOf,
+  usePatternStore,
+} from "@/stores/patternStore";
+import MissedMealPanel, { MISSED_ACTION_CLASS } from "./MissedMealPanel";
+import { MealMoodLink } from "@/components/cbt/MealMoodLink";
+import { LATE_NIGHT_HOUR } from "@/lib/mindfulEating";
+import { toLocalDateString } from "@/lib/dateUtils";
 
-type MealStatus = "past" | "current" | "future";
+type MealStatus = "past" | "current" | "future" | "missed";
 
 interface MealCardProps {
   meal: IMeal;
@@ -39,7 +49,15 @@ interface MealCardProps {
   onMealChange?: (newMeal: IMeal) => void;
   onViewRecipe?: () => void;
   isSnack?: boolean;
-  mealStatus?: MealStatus; // Status: past, current, or future
+  mealStatus?: MealStatus; // Status: past, current, future, or missed
+  /** Called when the user says a missed meal was skipped, with their reason.
+   *  Owned by the screen because the reason belongs on today's reflection, and
+   *  the card has no business knowing about mood entries. */
+  onMealMissed?: (mealType: MealSlot, reason: MissReason | null) => void;
+  /** Opens this snack's mood check-in expanded. Decided by the screen, which is
+   *  the only place that can see the whole list — a card acting alone would
+   *  have every unfinished snack spring open at once on a late evening. */
+  promptMoodCheck?: boolean;
 }
 
 const MealCard = ({
@@ -52,6 +70,8 @@ const MealCard = ({
   onViewRecipe,
   isSnack = false,
   mealStatus = "current",
+  onMealMissed,
+  promptMoodCheck = false,
 }: MealCardProps) => {
   const navigate = useNavigate();
   const displayName = formatMealName(meal.name);
@@ -59,6 +79,20 @@ const MealCard = ({
   const { completeMeal, todayProgress } = useProgressStore();
   const showMacros = useShowMacros();
   const startMealMoodLink = useCBTStore((state) => state.startMealMoodLink);
+  const linkMoodToMeal = useCBTStore((state) => state.linkMoodToMeal);
+  const recordPattern = usePatternStore((state) => state.record);
+  const isLateNight = new Date().getHours() >= LATE_NIGHT_HOUR;
+
+  /** Whether this meal has already been marked skipped today, so the panel can
+   *  resume where the user left it instead of starting the question over. */
+  const priorMissAnswer = usePatternStore((state) =>
+    state.events.find(
+      (e): e is PatternEventOf<"missed-meal"> =>
+        e.kind === "missed-meal" &&
+        e.mealType === mealType &&
+        e.date === toLocalDateString(date)
+    )
+  );
   // Auto-expand if current meal (but never for snacks), otherwise start collapsed
   const [isExpanded, setIsExpanded] = useState(
     !isSnack && mealStatus === "current",
@@ -108,6 +142,18 @@ const MealCard = ({
       setIsCompleting(true);
       try {
         await completeMeal(user._id, date, mealType, mealId);
+
+        // Only on the way *in* — un-ticking a snack shouldn't file a second
+        // late-night episode. The hour is read at completion time, which is
+        // when the user is telling us they ate it.
+        if (isSnack && !isCompleted && isLateNight) {
+          recordPattern({
+            kind: "late-snack",
+            date: toLocalDateString(new Date()),
+            hour: new Date().getHours(),
+          });
+        }
+
         // Success animation duration
         setTimeout(() => {
           setIsCompleting(false);
@@ -149,23 +195,50 @@ const MealCard = ({
     }
   };
 
+  /** The eating-mode answer used to live and die in the card's local state.
+   *  It now becomes a real meal-mood correlation: `comfort` and `habit` are
+   *  what the insight pipeline already means by emotional eating, and the exact
+   *  mode rides along beside it so the nuance isn't flattened to a boolean. */
+  const handleEatingMode = (mode: EatingMode) => {
+    if (!mealId) return;
+
+    linkMoodToMeal({
+      mealId,
+      mealName: displayName,
+      mealType: mealType as "breakfast" | "lunch" | "dinner" | "snacks",
+      date,
+      wasEmotionalEating: mode === "comfort" || mode === "habit",
+      eatingMode: mode,
+    }).catch(() => {
+      // A one-tap reflection is not worth interrupting the screen over; the
+      // card has already given its own "Logged as …" confirmation.
+    });
+  };
+
   // Determine card styling based on status
   // Snacks can NEVER be current - override mealStatus for snacks
   const isPast = mealStatus === "past";
   const isCurrent = !isSnack && mealStatus === "current";
+  // A missed meal is explicitly *not* `isPast`: swapping and marking it done
+  // both still make sense, and those actions are gated on `isPast`.
+  const isMissed = !isSnack && mealStatus === "missed";
 
   // Card classes based on status - make cards bigger
-  const cardClasses = isPast
-    ? "bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm opacity-75"
-    : isCurrent
-      ? "bg-white border-2 border-green-200 rounded-lg pl-2 p-5 shadow-md"
-      : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
+  const cardClasses = isMissed
+    ? // Full opacity on purpose. Fading a missed meal is what made it invisible
+      // in the first place; it needs to read as open, not concluded.
+      "bg-white border border-amber-200 border-s-4 border-s-amber-400 rounded-lg p-4 shadow-sm"
+    : isPast
+      ? "bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm opacity-75"
+      : isCurrent
+        ? "bg-white border-2 border-green-200 rounded-lg pl-2 p-5 shadow-md"
+        : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
 
   if (isSnack) {
     // Simple snack card - no fold, no recipe, compact vertical size
     return (
       <div className={cardClasses}>
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2 mb-0">
           <div className="flex-1 min-w-0">
             <h3
               onClick={() => setIsTitleExpanded(!isTitleExpanded)}
@@ -267,6 +340,21 @@ const MealCard = ({
             </button>
           </div>
         </div>
+
+        {/* The snack card was the one card with no way to attach a feeling to
+            what you ate — which meant the 9pm snack, the single episode the
+            whole emotional-eating model cares most about, was also the only
+            one it could never see. Opens expanded when the hour itself is the
+            reason to ask. */}
+        {mealId && (
+          <MealMoodLink
+            className="mt-3"
+            mealId={mealId}
+            mealType="snacks"
+            mealName={displayName}
+            defaultExpanded={promptMoodCheck}
+          />
+        )}
       </div>
     );
   }
@@ -381,6 +469,31 @@ const MealCard = ({
         </button>
       </div>
 
+      {/* Sits outside the expandable section deliberately — a recovery prompt
+          hidden behind a chevron is a recovery prompt nobody sees. */}
+      {isMissed && (
+        <MissedMealPanel
+          className="mt-3"
+          mealLabel={mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+          hasAnswered={Boolean(priorMissAnswer)}
+          answeredReason={priorMissAnswer?.reason ?? null}
+          logSomethingElseSlot={
+            <ChangeMealModal
+              currentMeal={meal}
+              mealType={mealType}
+              date={date}
+              onMealChange={handleMealChange}
+              quickMode
+            >
+              <div className={MISSED_ACTION_CLASS}>I ate something else</div>
+            </ChangeMealModal>
+          }
+          onSkipped={(reason) =>
+            onMealMissed?.(mealType as MealSlot, reason)
+          }
+        />
+      )}
+
       {/* Expandable Section */}
       {isExpanded && (
         <div className="border-t border-gray-200 pt-4 mt-4 space-y-3 animate-in slide-in-from-top-2 duration-200">
@@ -475,7 +588,7 @@ const MealCard = ({
 
             {/* Eating Mode Picker - shown after completing a meal */}
             {isCompleted && !isPast && (
-              <EatingModeCard />
+              <EatingModeCard onSelect={handleEatingMode} />
             )}
 
             {/* Other Action Buttons */}

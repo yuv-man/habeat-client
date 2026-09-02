@@ -15,9 +15,7 @@ const BottomNav = () => {
       return location.pathname === "/weekly-overview";
     }
     if (path === "/progress") {
-      return (
-        location.pathname === "/progress" || location.pathname === "/analytics"
-      );
+      return location.pathname === "/progress";
     }
     if (path === "/community") {
       return (
@@ -91,7 +89,12 @@ const BottomNav = () => {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 md:hidden z-50 shadow-lg">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-2 md:hidden z-50 shadow-lg"
+      // Sits above the home indicator rather than under it — without this the
+      // bottom row of buttons is partly covered on devices that have one.
+      style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       <div className="flex items-center justify-around max-w-md mx-auto">
         <NavButton
           path="/daily-tracker"

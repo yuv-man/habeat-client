@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Sparkles, Brain, Utensils, Heart, Filter, Star } from "lucide-react";
 import { ICBTExercise, CBTExerciseCategory, ICBTExerciseCompletion } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
@@ -9,7 +9,23 @@ interface CBTExercisesProps {
   className?: string;
   category?: CBTExerciseCategory;
   showRecommended?: boolean;
+  /** Opens straight into this exercise. Set when the user arrived from a nudge
+   *  that named a specific practice — landing them on a grid to hunt for it
+   *  loses most of the reason they tapped. */
+  autoStartId?: string;
 }
+
+/** Ids callers may deep-link to. Exported so a nudge can't name an exercise
+ *  that doesn't exist without TypeScript objecting. */
+export type CBTExerciseId =
+  | "breathing-478"
+  | "gratitude-journal"
+  | "mindful-eating"
+  | "body-scan"
+  | "cognitive-restructuring"
+  | "urge-surfing"
+  | "self-compassion"
+  | "behavioral-activation";
 
 // Built-in exercise library
 const EXERCISES: ICBTExercise[] = [
@@ -192,11 +208,23 @@ export function CBTExercises({
   className,
   category: initialCategory,
   showRecommended = true,
+  autoStartId,
 }: CBTExercisesProps) {
   const [selectedCategory, setSelectedCategory] = useState<CBTExerciseCategory | "all">(
     initialCategory || "all"
   );
-  const [activeExercise, setActiveExercise] = useState<ICBTExercise | null>(null);
+  const [activeExercise, setActiveExercise] = useState<ICBTExercise | null>(
+    () => EXERCISES.find((e) => e.id === autoStartId) ?? null
+  );
+
+  // Handles the id arriving after mount (a param read on a later render).
+  // Deliberately keyed on the id alone: re-opening the player every time this
+  // component re-rendered would trap a user who just closed it.
+  useEffect(() => {
+    if (!autoStartId) return;
+    const match = EXERCISES.find((e) => e.id === autoStartId);
+    if (match) setActiveExercise(match);
+  }, [autoStartId]);
 
   const filteredExercises = useMemo(() => {
     if (selectedCategory === "all") return EXERCISES;

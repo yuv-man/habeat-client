@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Brain, Heart, BookOpen, Dumbbell, Utensils, ChevronRight,
   Flame, TrendingUp, Sparkles, Target, Lightbulb, Award,
@@ -23,12 +23,30 @@ import wellnessImg from "@/assets/images/wellness.webp";
 // Shared "floating card" treatment matching the redesigned surfaces
 const SOFT_LIFT = "shadow-[0_10px_40px_-10px_rgba(63,102,82,0.12)]";
 
+type MindfulnessTab = "overview" | "mood" | "thoughts" | "exercises";
+
+const TABS: MindfulnessTab[] = ["overview", "mood", "thoughts", "exercises"];
+
 const Mindfulness = () => {
   const navigate = useNavigate();
   const cbtStats = useCBTStats();
   const todayMoods = useTodayMoods();
   const latestMood = useLatestMood();
-  const [activeTab, setActiveTab] = useState<"overview" | "mood" | "thoughts" | "exercises">("overview");
+
+  // `?tab=` and `?exercise=` let a nudge elsewhere in the app hand the user
+  // straight to the practice it just recommended. An unrecognised value falls
+  // back to the overview rather than rendering a blank tab.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab") as MindfulnessTab | null;
+  const requestedExercise = searchParams.get("exercise") ?? undefined;
+
+  const [activeTab, setActiveTab] = useState<MindfulnessTab>(
+    requestedExercise
+      ? "exercises"
+      : requestedTab && TABS.includes(requestedTab)
+        ? requestedTab
+        : "overview"
+  );
 
   useEffect(() => {
     useCBTStore.getState().fetchCBTStats();
@@ -485,7 +503,9 @@ const Mindfulness = () => {
             </div>
           )}
           {activeTab === "thoughts" && <ThoughtJournal />}
-          {activeTab === "exercises" && <CBTExercises />}
+          {activeTab === "exercises" && (
+            <CBTExercises autoStartId={requestedExercise} />
+          )}
         </div>
       </div>
     </DashboardLayout>

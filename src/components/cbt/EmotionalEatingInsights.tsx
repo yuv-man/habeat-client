@@ -30,11 +30,17 @@ export function EmotionalEatingInsights({
 
   const triggerChartData = useMemo(() => {
     if (!insight?.commonTriggers) return [];
-    return insight.commonTriggers.slice(0, 5).map((t, i) => ({
-      name: t.trigger,
-      value: t.count,
-      fill: COLORS[i % COLORS.length],
-    }));
+    // Onboarding answers arrive at count 0 when nothing's been observed yet.
+    // Charting them would present what someone told us at signup as a measured
+    // pattern, so they're left out until there's real data behind them.
+    return insight.commonTriggers
+      .filter((t) => t.source === "observed" && t.count > 0)
+      .slice(0, 5)
+      .map((t, i) => ({
+        name: t.trigger,
+        value: t.count,
+        fill: COLORS[i % COLORS.length],
+      }));
   }, [insight]);
 
   const emotionChartData = useMemo(() => {

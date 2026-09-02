@@ -150,6 +150,20 @@ const login = async (email: string, password: string): Promise<string> => {
   }, "Failed to login. Please try again.");
 };
 
+/**
+ * Tells the server to revoke this session's token (bumps the user's
+ * tokenVersion), so a discarded token can't be replayed if it was captured or
+ * the device is later compromised. Best-effort: the caller clears local state
+ * regardless, so logging out still works offline.
+ */
+const logout = async (): Promise<void> => {
+  try {
+    await userClient.post("/auth/logout", {}, { headers: getAuthHeaders() });
+  } catch {
+    // Non-fatal — local sign-out proceeds even if the server can't be reached.
+  }
+};
+
 const signup = async (
   email: string,
   password: string,
@@ -2391,6 +2405,7 @@ export const userAPI = {
   updateUser,
   deleteUser,
   login,
+  logout,
   signup,
   fetchUser,
   oauthAuth,

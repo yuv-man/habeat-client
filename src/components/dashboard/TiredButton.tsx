@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
+import { usePatternStore } from "@/stores/patternStore";
 import { userAPI } from "@/services/api";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
@@ -30,6 +31,7 @@ const TiredButton = ({
   const [isLoading, setIsLoading] = useState(false);
   const { user, plan } = useAuthStore();
   const language = useLanguageStore((state) => state.language);
+  const recordPattern = usePatternStore((state) => state.record);
 
   const handleTiredClick = async () => {
     if (!user?._id || !plan?._id) {
@@ -61,6 +63,15 @@ const TiredButton = ({
 
       if (response.data && response.data?.rescueMeal) {
         const newMeal = response.data.rescueMeal;
+
+        // Reaching for the rescue is itself the signal worth keeping — one swap
+        // is a busy evening, but a run of them says the plan is asking for more
+        // time than this user's week actually has.
+        recordPattern({
+          kind: "rescue-swap",
+          date: dateString,
+          mealType,
+        });
 
         // Trigger callback to update UI
         onMealChange(newMeal);

@@ -2,7 +2,13 @@ import { useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MoodCategory, MoodLevel } from "@/types/interfaces";
+import {
+  EatingFacilitator,
+  EatingTrigger,
+  IDailyReflection,
+  MoodCategory,
+  MoodLevel,
+} from "@/types/interfaces";
 
 const MOOD_OPTIONS: {
   value: MoodCategory;
@@ -22,14 +28,70 @@ const MOOD_OPTIONS: {
   { value: "sad",      label: "Sad",      emoji: "😢", level: 1, ringColor: "ring-cyan-300",   activeBg: "bg-cyan-50"   },
 ];
 
+const EASED_BY_OPTIONS: { value: EatingFacilitator; label: string; emoji: string }[] = [
+  { value: "had-time",      label: "Had time",     emoji: "😌" },
+  { value: "felt-good",     label: "Felt good",    emoji: "❤️" },
+  { value: "planned-ahead", label: "Planned it",   emoji: "📋" },
+  { value: "food-ready",    label: "Food was ready", emoji: "🥗" },
+];
+
+const HINDERED_BY_OPTIONS: { value: EatingTrigger; label: string; emoji: string }[] = [
+  { value: "stress",        label: "Stressed",  emoji: "😫" },
+  { value: "tiredness",     label: "Tired",     emoji: "😴" },
+  { value: "cravings",      label: "Cravings",  emoji: "🍫" },
+  { value: "time-pressure", label: "Too busy",  emoji: "🏃" },
+];
+
+/** The card identifies a mood by its position in the row, so anything wanting
+ *  to restore a previously logged mood needs the reverse lookup. */
+export const moodIndexOf = (category: MoodCategory): number | null => {
+  const i = MOOD_OPTIONS.findIndex((m) => m.value === category);
+  return i === -1 ? null : i;
+};
+
 interface MoodCheckInCardProps {
   firstName?: string;
   selectedIndex: number | null;
   onSelect: (index: number, category: MoodCategory, level: MoodLevel) => void;
+  /** Null until a mood is logged — the reflection is the card's second beat. */
+  reflection?: IDailyReflection | null;
+  onReflectionChange?: (next: IDailyReflection) => void;
+  /** Whether there is any eating yet to reflect on. The card can't know this,
+   *  so the screen decides. Defaults to false: a missing prop should cost the
+   *  reflection, never put an unanswerable question in front of someone. */
+  showReflection?: boolean;
 }
 
-export function MoodCheckInCard({ firstName, selectedIndex, onSelect }: MoodCheckInCardProps) {
+export function MoodCheckInCard({
+  firstName,
+  selectedIndex,
+  onSelect,
+  reflection,
+  onReflectionChange,
+  showReflection = false,
+}: MoodCheckInCardProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const easedBy = reflection?.easedBy ?? [];
+  const hinderedBy = reflection?.hinderedBy ?? [];
+
+  const toggleEasedBy = (value: EatingFacilitator) => {
+    onReflectionChange?.({
+      easedBy: easedBy.includes(value)
+        ? easedBy.filter((v) => v !== value)
+        : [...easedBy, value],
+      hinderedBy,
+    });
+  };
+
+  const toggleHinderedBy = (value: EatingTrigger) => {
+    onReflectionChange?.({
+      easedBy,
+      hinderedBy: hinderedBy.includes(value)
+        ? hinderedBy.filter((v) => v !== value)
+        : [...hinderedBy, value],
+    });
+  };
 
   return (
     <section
@@ -100,6 +162,100 @@ export function MoodCheckInCard({ firstName, selectedIndex, onSelect }: MoodChec
           );
         })}
       </div>
+
+      {/* ── Second beat: why the day went the way it did ──────────────
+          Only appears once a feeling is logged AND there is eating to look
+          back on, and stays optional — the mood on its own is already saved
+          by the time this renders.
+
+          The eating gate matters more than it looks. "What shaped your eating
+          today?" asked of someone who woke up ten minutes ago is a question
+          with no answer, and being asked one turns a two-second check-in into
+          a form to escape. Someone logging a mood before breakfast should get
+          the same thing they came for: their feeling, saved, and nothing
+          else. */}
+      <AnimatePresence>
+        {selectedIndex !== null && onReflectionChange && showReflection && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="pt-4 mt-4 border-t border-gray-100 space-y-3">
+              <div>
+                <h3 className="text-sm font-bold text-gray-800">
+                  What shaped your eating today?
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Optional — pick any that fit
+                </p>
+              </div>
+
+              <ReflectionRow
+                label="Made it easier"
+                options={EASED_BY_OPTIONS}
+                selected={easedBy}
+                onToggle={toggleEasedBy}
+                activeClass="border-habeat bg-habeat/10 text-habeat font-semibold"
+              />
+
+              <ReflectionRow
+                label="Made it harder"
+                options={HINDERED_BY_OPTIONS}
+                selected={hinderedBy}
+                onToggle={toggleHinderedBy}
+                activeClass="border-amber-400 bg-amber-50 text-amber-700 font-semibold"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
+  );
+}
+
+interface ReflectionRowProps<T extends string> {
+  label: string;
+  options: { value: T; label: string; emoji: string }[];
+  selected: T[];
+  onToggle: (value: T) => void;
+  activeClass: string;
+}
+
+function ReflectionRow<T extends string>({
+  label,
+  options,
+  selected,
+  onToggle,
+  activeClass,
+}: ReflectionRowProps<T>) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-gray-400 mb-1.5">{label}</p>
+      <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
+        {options.map((option) => {
+          const isActive = selected.includes(option.value);
+          return (
+            <motion.button
+              key={option.value}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => onToggle(option.value)}
+              aria-pressed={isActive}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition-all duration-150",
+                isActive
+                  ? activeClass
+                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+              )}
+            >
+              <span>{option.emoji}</span>
+              <span>{option.label}</span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </div>
   );
 }

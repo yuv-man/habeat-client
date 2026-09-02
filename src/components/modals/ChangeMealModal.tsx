@@ -12,9 +12,11 @@ import {
   Brain,
   Lock,
 } from "lucide-react";
-import { IMeal } from "@/types/interfaces";
+import { IMeal, MealSource } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
+import { usePatternStore, MealSlot } from "@/stores/patternStore";
+import MealSourcePicker from "@/components/meals/MealSourcePicker";
 import { userAPI, MealCriteria, cbtAPI, MoodMealRecommendations } from "@/services/api";
 import { useTodayMoods } from "@/stores/cbtStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
@@ -70,6 +72,12 @@ const ChangeMealModal = ({
     protein: 20,
     prepTime: 15,
   });
+
+  // Where the food came from. Only asked when the user is logging what they
+  // actually ate — asking it while swapping a *planned* meal would be asking
+  // about a meal that hasn't happened yet.
+  const [mealSource, setMealSource] = useState<MealSource | null>(null);
+  const recordPattern = usePatternStore((state) => state.record);
 
   // AI suggestion state
   const [aiRules, setAiRules] = useState("");
@@ -168,6 +176,7 @@ const ChangeMealModal = ({
     setAiError(null);
     setActiveTab(null as any);
     setShowAllOptions(false);
+    setMealSource(null);
     if (currentMeal) {
       setManualMeal({
         name: currentMeal.name,
@@ -189,6 +198,26 @@ const ChangeMealModal = ({
     setError(null);
     setAiError(null);
     setNutritionLookupError(null);
+    setMealSource(null);
+  };
+
+  /** Stamps the answer onto the meal. No answer means no field — an unanswered
+   *  question must not become a data point. */
+  const withSource = (meal: IMeal): IMeal =>
+    mealSource ? { ...meal, source: mealSource } : meal;
+
+  /** Files the answer locally so the dashboard can speak to the pattern today
+   *  rather than waiting on the next insights aggregation. Called only after
+   *  the save succeeds — a meal that failed to save isn't a meal that happened,
+   *  and counting it would let a flaky connection manufacture a pattern. */
+  const recordSource = () => {
+    if (!mealSource) return;
+    recordPattern({
+      kind: "meal-source",
+      date: toLocalDateString(date),
+      mealType: mealType as MealSlot,
+      source: mealSource,
+    });
   };
 
   // API call to change the meal in the plan
@@ -215,7 +244,7 @@ const ChangeMealModal = ({
   };
 
   const handleSaveManual = async () => {
-    const newMeal: IMeal = {
+    const newMeal: IMeal = withSource({
       _id: `manual-${Date.now()}`,
       name: manualMeal.name,
       calories: manualMeal.calories,
@@ -228,13 +257,14 @@ const ChangeMealModal = ({
       ingredients: [],
       prepTime: manualMeal.prepTime,
       done: false,
-    };
+    });
 
     setIsSaving(true);
     setError(null);
 
     try {
       await changeMealAPI(newMeal);
+      recordSource();
       onMealChange(newMeal);
       toast.success("Meal changed successfully!");
       handleClose();
@@ -406,9 +436,12 @@ const ChangeMealModal = ({
     setIsSaving(true);
     setError(null);
 
+    const photoMeal = withSource(meal);
+
     try {
-      await changeMealAPI(meal);
-      onMealChange(meal);
+      await changeMealAPI(photoMeal);
+      recordSource();
+      onMealChange(photoMeal);
       toast.success("Meal changed successfully!");
       handleClose();
     } catch (err: any) {
@@ -535,6 +568,16 @@ const ChangeMealModal = ({
                       : "Upgrade to recognize meals from photos"}
                   </p>
                 </button>
+
+                {/* Sits below the two actions so it never stands between the
+                    user and logging the meal. It applies to whichever path
+                    they take from here. */}
+                <MealSourcePicker
+                  value={mealSource}
+                  onChange={setMealSource}
+                  disabled={isSaving}
+                  className="pt-2"
+                />
               </div>
             )}
 
@@ -775,6 +818,12 @@ const ChangeMealModal = ({
                         className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:bg-gray-100"
                       />
                     </div>
+
+                    <MealSourcePicker
+                      value={mealSource}
+                      onChange={setMealSource}
+                      disabled={isSaving}
+                    />
 
                     <button
                       onClick={handleSaveManual}

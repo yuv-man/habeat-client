@@ -4,8 +4,16 @@ import "@/styles/dailyScreen.css";
 import { Trash2, Check, Droplet, ArrowRight, Flame } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStore";
-import { IDailyProgress, WorkoutData, IMeal, MoodCategory, MoodLevel } from "@/types/interfaces";
-import { MoodCheckInCard } from "@/components/cbt/MoodCheckInCard";
+import {
+  IDailyProgress,
+  WorkoutData,
+  IMeal,
+  MoodCategory,
+  MoodLevel,
+  IDailyReflection,
+  EatingTrigger,
+} from "@/types/interfaces";
+import { MoodCheckInCard, moodIndexOf } from "@/components/cbt/MoodCheckInCard";
 import MealLoader from "../helper/MealLoader";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
@@ -15,7 +23,9 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useEngagementStore } from "@/stores/engagementStore";
 import { useCBTStore } from "@/stores/cbtStore";
 import { getWorkoutImageVite } from "@/lib/workoutImageHelper";
-import { formatTime12Hour, formatDisplayDate } from "@/lib/dateUtils";
+import { formatTime12Hour, formatDisplayDate, toLocalDateString } from "@/lib/dateUtils";
+import { usePatternStore, MealSlot, MissReason } from "@/stores/patternStore";
+import { LATE_NIGHT_HOUR } from "@/lib/mindfulEating";
 import FastingClock from "./FastingClock";
 import { LevelUpCelebration } from "@/components/engagement";
 import { useShowMacros } from "@/hooks/useShowMacros";
@@ -25,6 +35,8 @@ import { ExpiredPlanCard } from "./ExpiredPlanCard";
 import FloatingActionButton from "./FloatingActionButton";
 import AddSnackModal from "@/components/modals/AddSnackModal";
 import WorkoutModal from "@/components/modals/WorkoutModal";
+import PatternObservationCard from "./PatternObservationCard";
+import SectionErrorBoundary from "@/components/SectionErrorBoundary";
 
 const CIRCUMFERENCE = 314.16; // 2 * Math.PI * 50
 
@@ -56,7 +68,48 @@ const DailyMealScreen = () => {
   const engagementLoading = useEngagementStore((state) => state.loading);
 
   const logMood = useCBTStore((state) => state.logMood);
+  const updateMood = useCBTStore((state) => state.updateMood);
   const [selectedMoodIndex, setSelectedMoodIndex] = useState<number | null>(null);
+  const [moodEntryId, setMoodEntryId] = useState<string | null>(null);
+  const [reflection, setReflection] = useState<IDailyReflection | null>(null);
+  const reflectionSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordPattern = usePatternStore((state) => state.record);
+  /** Skip reasons given before any mood was logged today. The daily reflection
+   *  hangs off a mood entry, so without one there is nothing to attach to —
+   *  rather than drop the answer, it waits here and flushes on the next
+   *  check-in. Losing it would silently penalise exactly the users who skip
+   *  meals *and* check-ins, who are the ones this is for. */
+  const pendingSkipTriggersRef = useRef<EatingTrigger[]>([]);
+
+  const todayMoodEntries = useCBTStore((state) => state.todayMoodEntries);
+
+  /**
+   * Restore a mood already logged today.
+   *
+   * Without this the card comes back blank every time the screen remounts, so
+   * a user who checked in at breakfast and returns at lunch sees an unanswered
+   * question and logs the same feeling twice. It also strands the reflection:
+   * the follow-up only attaches to a mood entry the screen is holding, so
+   * forgetting the entry means the only way back to it is a duplicate log.
+   *
+   * Date-filtered because the store persists these across sessions, and
+   * yesterday's mood is not today's answer.
+   */
+  useEffect(() => {
+    if (selectedMoodIndex !== null) return;
+    const today = toLocalDateString(new Date());
+    const latest = [...todayMoodEntries]
+      .reverse()
+      .find((entry) => entry.date === today);
+    if (!latest) return;
+
+    const index = moodIndexOf(latest.moodCategory);
+    if (index === null) return;
+
+    setSelectedMoodIndex(index);
+    setMoodEntryId(latest._id ?? null);
+    if (latest.reflection) setReflection(latest.reflection);
+  }, [todayMoodEntries, selectedMoodIndex]);
 
   const isPlanExpired = useMemo(() => {
     if (!plan?.weeklyPlan) return false;
@@ -107,12 +160,57 @@ const DailyMealScreen = () => {
     return formatTime12Hour(time);
   };
 
-  const getMealStatus = (meal: IMeal, mealType: string): "past" | "current" | "future" => {
+  // Derive which meal slots are active given the user's fasting schedule.
+  // A slot with an empty mealTimes entry is outside the eating window.
+  const activeSlots = useMemo<Set<string>>(() => {
+    if (user?.fastingHours && user?.fastingStartTime) {
+      const active = new Set<string>();
+      const [fh, fm] = user.fastingStartTime.split(":").map(Number);
+      const fastStartMin = (fh ?? 0) * 60 + (fm ?? 0);
+      const eatStartMin = (fastStartMin + user.fastingHours * 60) % 1440;
+      const eatEndMin = fastStartMin;
+      const SLOT_TIMES: Record<string, number> = {
+        breakfast: 8 * 60,
+        lunch: 12 * 60 + 30,
+        snacks: 15 * 60,
+        dinner: 18 * 60 + 30,
+      };
+      const inWindow = (t: number) =>
+        eatStartMin < eatEndMin
+          ? t >= eatStartMin && t < eatEndMin
+          : t >= eatStartMin || t < eatEndMin;
+      Object.entries(SLOT_TIMES).forEach(([slot, t]) => {
+        if (inWindow(t)) active.add(slot);
+      });
+      return active;
+    }
+    return new Set(["breakfast", "lunch", "dinner", "snacks"]);
+  }, [user?.fastingHours, user?.fastingStartTime]);
+
+  /**
+   * `missed` is the state the screen was previously unable to express: a meal
+   * whose window has closed with nothing logged against it. It used to collapse
+   * into `past`, which made "I ate it and marked it done" and "lunch never
+   * happened" render identically — the second one being the case actually worth
+   * a word.
+   *
+   * Only ever returned for today. On a day that's already over there is nothing
+   * to recover and no reason to re-litigate it.
+   */
+  const getMealStatus = (
+    meal: IMeal,
+    mealType: string
+  ): "past" | "current" | "future" | "missed" => {
     if (mealType === "snacks") return meal.done ? "past" : "future";
     if (meal.done) return "past";
 
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes();
+    const isToday = dailyProgress?.date
+      ? toLocalDateString(dailyProgress.date) === toLocalDateString(now)
+      : false;
+    // Reached only when the meal is not done, so a closed window means missed.
+    const closed = (): "past" | "missed" => (isToday ? "missed" : "past");
 
     const parseTime = (key: string, fallback: number) => {
       const t = mealTimes[key as keyof typeof mealTimes];
@@ -121,33 +219,84 @@ const DailyMealScreen = () => {
       return h * 60 + m;
     };
 
-    const breakfastTime = parseTime("breakfast", 8 * 60);
-    const lunchTime = parseTime("lunch", 12 * 60 + 30);
-    const dinnerTime = parseTime("dinner", 19 * 60);
+    // Build the ordered list of active main-meal slots (snacks handled above).
+    // For fasting users breakfast may not be active, so we must not gate lunch
+    // on breakfast's status.
+    const orderedMainSlots = (["breakfast", "lunch", "dinner"] as const).filter(
+      (s) => activeSlots.has(s)
+    );
+
+    const slotTime: Record<string, number> = {
+      breakfast: parseTime("breakfast", 8 * 60),
+      lunch: parseTime("lunch", 12 * 60 + 30),
+      dinner: parseTime("dinner", 19 * 60),
+    };
     const midnight = 24 * 60;
 
-    const breakfastDone = dailyProgress?.meals?.breakfast?.done || false;
-    const lunchDone = dailyProgress?.meals?.lunch?.done || false;
-    const breakfastPast = breakfastDone || currentTime >= lunchTime - 60;
-    const lunchPast = lunchDone || currentTime >= dinnerTime - 60;
+    const idx = orderedMainSlots.indexOf(mealType as "breakfast" | "lunch" | "dinner");
+    if (idx === -1) return "future";
 
-    if (mealType === "breakfast") {
-      if (currentTime < breakfastTime) return "future";
-      if (currentTime < lunchTime - 60) return "current";
-      return "past";
-    }
-    if (mealType === "lunch") {
-      if (breakfastPast) return currentTime < dinnerTime - 60 ? "current" : "past";
-      if (currentTime < lunchTime) return "future";
-      return currentTime < dinnerTime - 60 ? "current" : "past";
-    }
-    if (mealType === "dinner") {
-      if (lunchPast) return currentTime < midnight ? "current" : "past";
-      if (currentTime < dinnerTime) return "future";
-      return currentTime < midnight ? "current" : "past";
-    }
-    return "future";
+    const thisTime = slotTime[mealType];
+    const nextSlot = orderedMainSlots[idx + 1];
+    const nextTime = nextSlot ? slotTime[nextSlot] : midnight;
+
+    // Previous slot is done or its window has closed
+    const prevSlot = orderedMainSlots[idx - 1];
+    const prevDone = prevSlot
+      ? (dailyProgress?.meals?.[prevSlot]?.done || currentTime >= nextTime - 60)
+      : true; // no previous slot → always "past"
+
+    if (prevDone) return currentTime < nextTime - 60 ? "current" : closed();
+    if (currentTime < thisTime) return "future";
+    return currentTime < nextTime - 60 ? "current" : closed();
   };
+
+  /**
+   * Which snack, if any, opens its mood check-in expanded.
+   *
+   * Late evening is when a snack is most worth a second's thought, but only one
+   * card should say so — every unfinished snack springing open at 10pm would be
+   * nagging, not noticing. The last unfinished snack is the one most likely to
+   * be the one in hand.
+   */
+  const promptMoodCheckOnSnackIndex = useMemo(() => {
+    if (new Date().getHours() < LATE_NIGHT_HOUR) return -1;
+    const snacks = dailyProgress?.meals?.snacks;
+    if (!snacks?.length) return -1;
+    for (let i = snacks.length - 1; i >= 0; i--) {
+      if (!snacks[i].done) return i;
+    }
+    return -1;
+  }, [dailyProgress]);
+
+  /**
+   * Whether "What shaped your eating today?" is a question this user can
+   * actually answer yet.
+   *
+   * Two ways it becomes answerable: something has been eaten, or the day has
+   * run far enough past their own lunch time that meals have plausibly
+   * happened whether or not they were logged — in which case "too busy" is a
+   * real answer and worth capturing.
+   *
+   * Before either, it is not a question at all. Someone opening the app at
+   * 7am to log that they feel calm has eaten nothing, and asking what shaped
+   * their eating makes the app look like it isn't listening.
+   */
+  const canReflectOnEating = useMemo(() => {
+    const meals = dailyProgress?.meals;
+    const ateSomething = Boolean(
+      meals?.breakfast?.done ||
+        meals?.lunch?.done ||
+        meals?.dinner?.done ||
+        meals?.snacks?.some((snack) => snack.done)
+    );
+    if (ateSomething) return true;
+
+    const [h, m] = (mealTimes?.lunch ?? "12:30").split(":").map(Number);
+    const lunchMinutes = (Number.isFinite(h) ? h : 12) * 60 + (Number.isFinite(m) ? m : 30);
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes() >= lunchMinutes;
+  }, [dailyProgress, mealTimes]);
 
   const addWaterGlass = async () => {
     if (user?._id) await addWaterGlassToStore(user._id, currentDate.toISOString());
@@ -157,14 +306,25 @@ const DailyMealScreen = () => {
     setSelectedMoodIndex(index);
     const now = new Date();
     try {
-      await logMood({
-        date: now.toISOString().split("T")[0],
+      const entry = await logMood({
+        // Local, not UTC: an evening check-in west of Greenwich was being
+        // filed against tomorrow, leaving today looking like a missed day.
+        date: toLocalDateString(now),
         time: now.toTimeString().slice(0, 5),
         moodCategory: category,
         moodLevel: level,
         triggers: [],
         notes: "",
       });
+      // Held so the reflection can attach to this entry as the user answers
+      setMoodEntryId(entry?._id ?? null);
+
+      // Any skip reasons given earlier today now have somewhere to live.
+      if (entry?._id && pendingSkipTriggersRef.current.length > 0) {
+        mergeReflectionTriggers(pendingSkipTriggersRef.current, entry._id);
+        pendingSkipTriggersRef.current = [];
+      }
+
       // Confirmation so the user knows the feeling was saved
       const label = category.charAt(0).toUpperCase() + category.slice(1);
       toast.success(`Feeling logged: ${label}`, {
@@ -176,6 +336,77 @@ const DailyMealScreen = () => {
       setSelectedMoodIndex(null);
     }
   };
+
+  /** The reflection saves on its own, a beat after the last tap — no submit
+   *  step, and nothing is lost if the user stops partway through. */
+  const handleReflectionChange = (next: IDailyReflection) => {
+    setReflection(next);
+    if (!moodEntryId) return;
+
+    if (reflectionSaveRef.current) clearTimeout(reflectionSaveRef.current);
+    reflectionSaveRef.current = setTimeout(() => {
+      // Reflection is supplementary to the mood that's already saved; a failed
+      // write shouldn't interrupt the screen or undo the selection.
+      updateMood(moodEntryId, { reflection: next }).catch(() => {});
+    }, 700);
+  };
+
+  /** Merges triggers into today's reflection without clobbering what the user
+   *  ticked by hand, and writes through when there's an entry to write to. */
+  const mergeReflectionTriggers = (
+    triggers: EatingTrigger[],
+    entryId: string | null
+  ) => {
+    if (triggers.length === 0) return;
+
+    setReflection((prev) => {
+      const merged: IDailyReflection = {
+        easedBy: prev?.easedBy ?? [],
+        hinderedBy: Array.from(
+          new Set([...(prev?.hinderedBy ?? []), ...triggers])
+        ),
+      };
+      if (entryId) {
+        updateMood(entryId, { reflection: merged }).catch(() => {});
+      }
+      return merged;
+    });
+  };
+
+  /**
+   * A meal's window closed with nothing logged, and the user told us why.
+   *
+   * The reason goes three places, because each one answers a different
+   * question: the pattern log so today's dashboard can react, the daily
+   * reflection so it counts toward the same trigger totals as every other
+   * self-report, and — for `stress` — the panel's own offer of a breathing
+   * exercise. `not-hungry` is recorded but deliberately not filed as a
+   * trigger; not being hungry isn't a problem needing a solution.
+   */
+  const handleMealMissed = (mealType: MealSlot, reason: MissReason | null) => {
+    recordPattern({
+      kind: "missed-meal",
+      date: toLocalDateString(dailyProgress?.date ?? currentDate),
+      mealType,
+      reason,
+    });
+
+    if (!reason || reason === "not-hungry") return;
+
+    if (moodEntryId) {
+      mergeReflectionTriggers([reason], moodEntryId);
+    } else {
+      pendingSkipTriggersRef.current = Array.from(
+        new Set([...pendingSkipTriggersRef.current, reason])
+      );
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (reflectionSaveRef.current) clearTimeout(reflectionSaveRef.current);
+    };
+  }, []);
 
   const handleDeleteWorkout = async (workout: WorkoutData) => {
     if (!user?._id || !dailyProgress) return;
@@ -307,10 +538,20 @@ const DailyMealScreen = () => {
               firstName={user?.name?.split(" ")[0]}
               selectedIndex={selectedMoodIndex}
               onSelect={handleMoodSelect}
+              reflection={reflection}
+              onReflectionChange={handleReflectionChange}
+              showReflection={canReflectOnEating}
             />
 
+            {/* ── Pattern noticed ──────────────────────────────────────── */}
+            <SectionErrorBoundary label="your patterns">
+              <PatternObservationCard />
+            </SectionErrorBoundary>
+
             {/* ── Challenges Banner ────────────────────────────────────── */}
-            <ChallengesBanner className="!mb-0" />
+            <SectionErrorBoundary label="challenges">
+              <ChallengesBanner className="!mb-0" />
+            </SectionErrorBoundary>
 
             {/* ── Fasting Clock ────────────────────────────────────────── */}
             {user?.fastingHours && user?.fastingStartTime && (
@@ -452,46 +693,45 @@ const DailyMealScreen = () => {
                 </button>
               </div>
               <div className="space-y-3">
-                {dailyProgress.meals.breakfast && (
-                  <MealCard
-                    meal={dailyProgress.meals.breakfast}
-                    mealType="breakfast"
-                    mealTime={getMealTime("breakfast")}
-                    date={dailyProgress.date}
-                    mealStatus={getMealStatus(dailyProgress.meals.breakfast, "breakfast")}
-                    onMealChange={(newMeal) => {
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, breakfast: newMeal } });
-                      if (userId) syncProgressWithServer(userId);
-                    }}
-                  />
-                )}
-                {dailyProgress.meals.lunch && (
-                  <MealCard
-                    meal={dailyProgress.meals.lunch}
-                    mealType="lunch"
-                    mealTime={getMealTime("lunch")}
-                    date={dailyProgress.date}
-                    mealStatus={getMealStatus(dailyProgress.meals.lunch, "lunch")}
-                    onMealChange={(newMeal) => {
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, lunch: newMeal } });
-                      if (userId) syncProgressWithServer(userId);
-                    }}
-                  />
-                )}
-                {dailyProgress.meals.dinner && (
-                  <MealCard
-                    meal={dailyProgress.meals.dinner}
-                    mealType="dinner"
-                    mealTime={getMealTime("dinner")}
-                    date={dailyProgress.date}
-                    mealStatus={getMealStatus(dailyProgress.meals.dinner, "dinner")}
-                    onMealChange={(newMeal) => {
-                      setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, dinner: newMeal } });
-                      if (userId) syncProgressWithServer(userId);
-                    }}
-                  />
-                )}
-                {dailyProgress.meals.snacks?.length > 0 &&
+                {/* Fasting window badge — shown once at the top when any main meal is skipped */}
+                {user?.fastingHours && user?.fastingStartTime && !activeSlots.has("breakfast") && (() => {
+                  const [fh, fm] = user.fastingStartTime.split(":").map(Number);
+                  const eatStartMin = ((fh ?? 0) * 60 + (fm ?? 0) + user.fastingHours * 60) % 1440;
+                  const eatH = Math.floor(eatStartMin / 60).toString().padStart(2, "0");
+                  const eatM = (eatStartMin % 60).toString().padStart(2, "0");
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                      <span className="text-base">⏳</span>
+                      <span>
+                        Fasting until <strong>{eatH}:{eatM}</strong> · {user.fastingHours}:{24 - user.fastingHours} schedule
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {(["breakfast", "lunch", "dinner"] as const).map((slot) => {
+                  const meal = dailyProgress.meals[slot];
+                  if (!meal) return null;
+                  // Hide meals outside the fasting window
+                  if (!activeSlots.has(slot)) return null;
+                  return (
+                    <MealCard
+                      key={slot}
+                      meal={meal}
+                      mealType={slot}
+                      mealTime={getMealTime(slot)}
+                      date={dailyProgress.date}
+                      mealStatus={getMealStatus(meal, slot)}
+                      onMealMissed={handleMealMissed}
+                      onMealChange={(newMeal) => {
+                        setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, [slot]: newMeal } });
+                        if (userId) syncProgressWithServer(userId);
+                      }}
+                    />
+                  );
+                })}
+
+                {activeSlots.has("snacks") && dailyProgress.meals.snacks?.length > 0 &&
                   dailyProgress.meals.snacks.map((snack, index) => (
                     <MealCard
                       key={snack._id || index}
@@ -501,6 +741,7 @@ const DailyMealScreen = () => {
                       date={dailyProgress.date}
                       snackIndex={index}
                       isSnack
+                      promptMoodCheck={promptMoodCheckOnSnackIndex === index}
                       onMealChange={(newMeal) => {
                         const updatedSnacks = [...dailyProgress.meals.snacks];
                         updatedSnacks[index] = newMeal;

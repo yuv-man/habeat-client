@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "./authStore";
+import { asArray } from "@/lib/safe";
 
 export interface ChatProposedAction {
   type: "meal_swap" | "workout_change" | "add_snack" | "none";
@@ -76,7 +77,7 @@ export const useChatStore = create<ChatStore>()((set, get) => ({
       const response = await userAPI.getChatHistory(userId);
 
       if (response.success && response.data?.messages) {
-        const messages: ChatMessage[] = response.data.messages.map(
+        const messages: ChatMessage[] = asArray<any>(response.data?.messages).map(
           (m: {
             _id: string;
             role: "user" | "assistant";

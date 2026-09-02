@@ -46,7 +46,7 @@ const MobileHeader = () => {
     {
       icon: BarChart3,
       label: "Analytics",
-      path: "/analytics",
+      path: "/progress?tab=analytics",
     },
   ];
 

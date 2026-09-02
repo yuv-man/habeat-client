@@ -99,10 +99,18 @@ export const calculateMealProgress = (meals: {
 
 /**
  * Calculate health score for a meal based on nutrition (0-100)
- * Factors considered:
- * - Macro balance (protein, carbs, fat ratios)
- * - Calorie appropriateness
- * - Overall nutritional quality
+ * Uses continuous scoring so only meals genuinely close to nutritional
+ * ideals score high. Wide step-function bands caused most AI-generated
+ * balanced meals to all land at 100, which was not meaningful.
+ *
+ * Scoring: each macro is scored by its linear distance from the ideal
+ * centre, falling to 0 pts at the outer tolerance edge.
+ *   Protein ideal 25% of macro-kcal  (±22 pp tolerance)
+ *   Carbs   ideal 50% of macro-kcal  (±28 pp tolerance)
+ *   Fat     ideal 25% of macro-kcal  (±22 pp tolerance)
+ *
+ * Max = 35 + 35 + 30 = 100. Only meals very close to the ideal ratio
+ * across ALL three macros approach 100.
  */
 export const calculateMealHealthScore = (meal: IMeal): number => {
   if (!meal.macros || meal.calories === 0) return 50;
@@ -115,62 +123,19 @@ export const calculateMealHealthScore = (meal: IMeal): number => {
 
   if (totalMacroCal === 0) return 50;
 
-  // Divide by totalMacroCal (not meal.calories) so percentages always sum to 100%
-  // regardless of small AI rounding differences.
   const proteinPct = (proteinCal / totalMacroCal) * 100;
   const carbsPct   = (carbsCal   / totalMacroCal) * 100;
   const fatPct     = (fatCal     / totalMacroCal) * 100;
 
-  let score = 0;
+  // Linear score: full points at ideal, 0 at the tolerance edge.
+  const linearScore = (actual: number, ideal: number, tolerance: number, max: number): number =>
+    Math.round(max * Math.max(0, 1 - Math.abs(actual - ideal) / tolerance));
 
-  // 1. Protein — 35 pts
-  // Wide acceptable band so fruit smoothie bowls, oatmeal and rice dishes aren't
-  // destroyed just for having natural carb-dominant ratios.
-  // Ideal 15-35% | Good 8-40% | Acceptable 5-50%
-  if (proteinPct >= 15 && proteinPct <= 35) {
-    score += 35;
-  } else if (proteinPct >= 8 && proteinPct < 15) {
-    score += 27; // low-protein whole foods (oatmeal, grain bowls, fruit)
-  } else if (proteinPct > 35 && proteinPct <= 45) {
-    score += 28; // high-protein — still very healthy
-  } else if (proteinPct >= 5 && proteinPct < 8) {
-    score += 18; // very low — typical for pure-fruit meals
-  } else if (proteinPct > 45) {
-    score += 18; // very high protein
-  } else {
-    score += 8;  // near-zero protein
-  }
+  const proteinScore = linearScore(proteinPct, 25, 22, 35); // ideal 25%, tolerance ±22pp
+  const carbsScore   = linearScore(carbsPct,   50, 28, 35); // ideal 50%, tolerance ±28pp
+  const fatScore     = linearScore(fatPct,     25, 22, 30); // ideal 25%, tolerance ±22pp
 
-  // 2. Carbs — 35 pts
-  // Extend the "good" ceiling to 75% so fruit/grain meals score fairly.
-  // Ideal 40-65% | Good 30-75% | Acceptable 20-85%
-  if (carbsPct >= 40 && carbsPct <= 65) {
-    score += 35;
-  } else if ((carbsPct >= 30 && carbsPct < 40) || (carbsPct > 65 && carbsPct <= 75)) {
-    score += 27;
-  } else if ((carbsPct >= 20 && carbsPct < 30) || (carbsPct > 75 && carbsPct <= 85)) {
-    score += 18; // high-carb fruit meals are nutritionally sound
-  } else if (carbsPct > 85) {
-    score += 10; // very high carb (minimal fat+protein)
-  } else {
-    score += 10; // very low carb
-  }
-
-  // 3. Fat — 30 pts
-  // Allow low fat for fruit/grain meals; allow moderately high fat for nuts/avocado dishes.
-  // Ideal 20-40% | Good 10-50% | Acceptable 5-60%
-  if (fatPct >= 20 && fatPct <= 40) {
-    score += 30;
-  } else if ((fatPct >= 10 && fatPct < 20) || (fatPct > 40 && fatPct <= 50)) {
-    score += 22;
-  } else if ((fatPct >= 5 && fatPct < 10) || (fatPct > 50 && fatPct <= 60)) {
-    score += 14;
-  } else {
-    score += 6;
-  }
-
-  // Max = 35 + 35 + 30 = 100 — no normalisation needed, score IS the 0-100 value.
-  return Math.max(0, Math.min(100, Math.round(score)));
+  return Math.max(0, Math.min(100, proteinScore + carbsScore + fatScore));
 };
 
 // Get health score color and label

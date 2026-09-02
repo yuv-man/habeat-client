@@ -12,6 +12,7 @@ import PlanSelector from "@/components/dashboard/PlanSelector";
 import { StreakUpgradePrompt } from "@/components/subscription/StreakUpgradePrompt";
 import { MoodCheckInPrompt } from "@/components/cbt";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLanguageStore } from "@/stores/languageStore";
 
@@ -110,10 +111,19 @@ const DashboardLayout = ({
 
   return (
     <div
-      className={`min-h-screen ${bgColor} pb-16 md:pb-0 md:pt-16`}
-      style={{
-        paddingTop: "calc(env(safe-area-inset-top, 0px) + 3.5rem)", // 3.5rem = 56px (h-14), safe area for mobile status bar
-      }}
+      className={cn(
+        "min-h-screen",
+        bgColor,
+        // Clears the fixed MobileHeader: its h-14 (3.5rem) plus the status bar
+        // inset. Kept as a class, not an inline style — inline padding outranks
+        // every breakpoint variant, which silently killed the md: overrides.
+        "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]",
+        // Clears the fixed BottomNav, including the home-indicator inset on
+        // devices that have one.
+        "pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)]",
+        // Desktop swaps to the h-16 top navbar and drops the bottom nav.
+        "md:pt-16 md:pb-0"
+      )}
     >
       <MobileHeader />
       {showNavBar && (

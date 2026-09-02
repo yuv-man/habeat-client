@@ -1,19 +1,23 @@
 import { useState } from "react";
-import { Heart, ChevronDown, Utensils, ArrowRight, Check, Leaf } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Heart, ChevronDown, Check, Leaf, Waves } from "lucide-react";
 import { useCBTStore } from "@/stores/cbtStore";
 import { MoodLevel, MoodCategory, IMealMoodCorrelation, IMoodEntry } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { MOOD_IMAGES } from "./MoodTracker";
 import { useWatchStore } from "@/stores/watchStore";
-import { WatchSnapshot } from "@/services/watch/types";
+import { toLocalDateString } from "@/lib/dateUtils";
+import { getNudgeMessage, shouldNudge } from "@/lib/mindfulEating";
 
 interface MealMoodLinkProps {
   mealId: string;
   mealType: "breakfast" | "lunch" | "dinner" | "snacks";
   mealName: string;
-  isCompleted: boolean;
   className?: string;
+  /** Opens expanded. Used where the meal itself is the reason to check in —
+   *  a snack logged at 11pm shouldn't need a second tap to ask about. */
+  defaultExpanded?: boolean;
   onMoodLinked?: (correlation: IMealMoodCorrelation) => void;
 }
 
@@ -33,78 +37,18 @@ const HUNGER_LEVELS = [
   { value: 5, label: "Extremely hungry" },
 ];
 
-const EMOTIONAL_CATEGORIES = ["stressed", "anxious", "sad", "angry"];
-
-function calcClientScore(
-  moodCategory: MoodCategory | null,
-  hungerLevel: MoodLevel | null,
-  mealType: string,
-  snapshot: WatchSnapshot | null = null
-): number {
-  let score = 0;
-  if (hungerLevel === 1) score += 0.40;
-  else if (hungerLevel === 2) score += 0.25;
-  else if (hungerLevel === 3) score += 0.10;
-
-  const cat = moodCategory ?? "";
-  if (EMOTIONAL_CATEGORIES.includes(cat)) score += 0.25;
-  else if (cat === "tired") score += 0.15;
-
-  const hour = new Date().getHours();
-  if (mealType === "snacks" && hour >= 21) score += 0.10;
-
-  if (snapshot) {
-    if (snapshot.stressLevel === 'high') score += 0.20;
-    else if (snapshot.stressLevel === 'moderate') score += 0.10;
-
-    if (snapshot.heartRate !== undefined) {
-      const elevated =
-        snapshot.heartRate > 100 ||
-        (snapshot.restingHeartRate !== undefined && snapshot.heartRate > snapshot.restingHeartRate * 1.15);
-      if (elevated) score += 0.10;
-    }
-
-    if (snapshot.sleepQuality === 'poor') score += 0.10;
-    else if (snapshot.sleepQuality === 'fair') score += 0.05;
-
-    if (snapshot.stepCount !== undefined && snapshot.stepCount < 3000) score += 0.05;
-  }
-
-  return Math.min(1.0, score);
-}
-
-function getNudgeMessage(
-  moodCategory: MoodCategory | null,
-  hungerLevel: MoodLevel | null,
-  mealType: string
-): string {
-  const isLowHunger = (hungerLevel ?? 5) <= 2;
-  const cat = moodCategory ?? "";
-  const hour = new Date().getHours();
-
-  if (isLowHunger && (cat === "stressed" || cat === "anxious")) {
-    return `Feeling ${cat} with low hunger? Sometimes our body asks for comfort through food. A few deep breaths can help you check in with what you really need.`;
-  }
-  if (mealType === "snacks" && hour >= 21 && cat === "tired") {
-    return "Late-night snacking is super common, especially when tired. No judgment — just a moment to pause and see how you're feeling.";
-  }
-  if (cat === "sad" || cat === "anxious") {
-    return "Emotions and appetite are closely linked. Taking 30 seconds before eating can help you enjoy it more mindfully.";
-  }
-  return "Your hunger seems low right now. Checking in with yourself before eating can help you enjoy your meal more mindfully.";
-}
-
 export function MealMoodLink({
   mealId,
   mealType,
   mealName,
-  isCompleted,
   className,
+  defaultExpanded = false,
   onMoodLinked,
 }: MealMoodLinkProps) {
+  const navigate = useNavigate();
   const { linkMoodToMeal, loading } = useCBTStore();
   const watchSnapshot = useWatchStore((s) => s.snapshot);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [phase, setPhase] = useState<"before" | "after">("before");
   const [moodBefore, setMoodBefore] = useState<MoodCategory | null>(null);
   const [hungerLevel, setHungerLevel] = useState<MoodLevel | null>(null);
@@ -117,15 +61,19 @@ export function MealMoodLink({
   const showNudge =
     !nudgeDismissed &&
     phase === "before" &&
-    (moodBefore !== null || hungerLevel !== null) &&
-    calcClientScore(moodBefore, hungerLevel, mealType, watchSnapshot) > 0.6;
+    shouldNudge(moodBefore, hungerLevel, mealType, watchSnapshot);
 
   const handleLink = async () => {
     const now = new Date();
+    // Local, not UTC. `toISOString()` rolls to the next day after 19:00 in
+    // UTC-5 and after 16:00 in UTC-8, so the previous version filed exactly the
+    // late-evening snacks this feature exists to notice under tomorrow's date.
+    const today = toLocalDateString(now);
+
     const moodEntryBefore: Omit<IMoodEntry, "_id" | "userId" | "createdAt" | "updatedAt"> | undefined =
       moodBefore
         ? {
-            date: now.toISOString().split("T")[0],
+            date: today,
             time: now.toTimeString().split(" ")[0].slice(0, 5),
             moodLevel: 3,
             moodCategory: moodBefore,
@@ -137,7 +85,7 @@ export function MealMoodLink({
     const moodEntryAfter: Omit<IMoodEntry, "_id" | "userId" | "createdAt" | "updatedAt"> | undefined =
       moodAfter
         ? {
-            date: now.toISOString().split("T")[0],
+            date: today,
             time: now.toTimeString().split(" ")[0].slice(0, 5),
             moodLevel: 3,
             moodCategory: moodAfter,
@@ -150,7 +98,7 @@ export function MealMoodLink({
       mealId,
       mealName,
       mealType,
-      date: now.toISOString().split("T")[0],
+      date: today,
       moodBefore: moodEntryBefore as IMoodEntry | undefined,
       moodAfter: moodEntryAfter as IMoodEntry | undefined,
       wasEmotionalEating: isEmotionalEating,
@@ -286,18 +234,32 @@ export function MealMoodLink({
 
               {/* Mindfulness nudge */}
               {showNudge && (
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-purple-50 border border-purple-200">
-                  <Leaf className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-purple-700 leading-relaxed">
-                      {getNudgeMessage(moodBefore, hungerLevel, mealType)}
-                    </p>
+                <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+                  <div className="flex items-start gap-3">
+                    <Leaf className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-purple-700 leading-relaxed">
+                        {getNudgeMessage(moodBefore, hungerLevel, mealType)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setNudgeDismissed(true)}
+                      className="text-xs text-purple-400 hover:text-purple-600 flex-shrink-0 mt-0.5"
+                    >
+                      Got it
+                    </button>
                   </div>
+
+                  {/* The app has an exercise built for precisely this moment —
+                      it was previously only findable by browsing to it. */}
                   <button
-                    onClick={() => setNudgeDismissed(true)}
-                    className="text-xs text-purple-400 hover:text-purple-600 flex-shrink-0 mt-0.5"
+                    onClick={() =>
+                      navigate("/mindfulness?tab=exercises&exercise=urge-surfing")
+                    }
+                    className="mt-2.5 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white border border-purple-200 text-xs font-semibold text-purple-700 hover:bg-purple-100/60 transition-colors"
                   >
-                    Got it
+                    <Waves className="w-3.5 h-3.5" />
+                    Ride it out — 5 min
                   </button>
                 </div>
               )}

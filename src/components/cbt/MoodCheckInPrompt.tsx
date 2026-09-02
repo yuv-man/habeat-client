@@ -87,6 +87,7 @@ export function MoodCheckInPrompt({ className }: MoodCheckInPromptProps) {
           <MoodEntryForm
             linkedMealId={pendingLink?.mealId}
             linkedMealType={pendingLink?.mealType}
+            linkedMealName={pendingLink?.mealName}
             onComplete={() => {
               completeMealMoodLink();
             }}

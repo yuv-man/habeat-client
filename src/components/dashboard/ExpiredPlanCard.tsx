@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/authStore";
 import PlanSelector from "./PlanSelector";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { planErrorKey } from "@/lib/planErrors";
 
 interface ExpiredPlanCardProps {
   expiredDate?: string | null;
@@ -16,6 +19,7 @@ export function ExpiredPlanCard({
   className,
 }: ExpiredPlanCardProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation("navigation");
   const { user, generateMealPlan } = useAuthStore();
   const [showPlanSelector, setShowPlanSelector] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,6 +43,7 @@ export function ExpiredPlanCard({
       if (handleSubscriptionApiError(error, navigate)) {
         return;
       }
+      toast.error(t(planErrorKey(error)), { duration: 8000 });
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGenerating(false);

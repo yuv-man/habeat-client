@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useGoalsStore } from "@/stores/goalsStore";
 import { useEngagementStore } from "@/stores/engagementStore";
@@ -20,28 +20,19 @@ import {
   Activity,
 } from "lucide-react";
 import MealLoader from "@/components/helper/MealLoader";
+import EatingPatternsSection from "@/components/analytics/EatingPatternsSection";
+import SectionErrorBoundary from "@/components/SectionErrorBoundary";
+import {
+  C,
+  softLift,
+  tacticBorderPrimary,
+  tacticBorderSecondary,
+} from "@/lib/analyticsTheme";
 import { ChallengeList } from "@/components/challenges";
 import { DailySummaryCard } from "@/components/reflection";
 import SharePopup from "@/components/social/SharePopup";
 
-const C = {
-  primary:             "#274e3b",
-  primaryContainer:    "#3f6652",
-  surfaceLowest:       "#ffffff",
-  surfaceLow:          "#f4f3f1",
-  surface:             "#efeeeb",
-  onSurface:           "#1a1c1a",
-  onSurfaceVariant:    "#414843",
-  outline:             "#717973",
-  outlineVariant:      "#c1c8c2",
-  secondary:           "#5f5a80",
-  secondaryContainer:  "#d9d2ff",
-  onSecondaryContainer:"#5e597f",
-  background:          "#faf9f6",
-};
-const softLift = { boxShadow: "0 10px 40px -10px rgba(63,102,82,0.08)" };
-const tacticBorderPrimary   = { borderBottom: "4px solid rgba(63,102,82,0.2)" };
-const tacticBorderSecondary = { borderBottom: "4px solid rgba(95,90,128,0.2)" };
+
 
 const HeroRow = ({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) => (
   <div className="flex items-center gap-3">
@@ -79,6 +70,16 @@ const BentoCard = ({
   </div>
 );
 
+/** Whether an analytics payload carries the nested objects the page dereferences. */
+const isRenderableAnalytics = (a: unknown): a is IAnalyticsData => {
+  const d = a as Partial<IAnalyticsData> | null | undefined;
+  return Boolean(d && d.averages && d.targets && d.totals && d.goalPercentages);
+};
+
+type ProgressTab = "goals" | "analytics" | "challenges";
+
+const PROGRESS_TABS: ProgressTab[] = ["goals", "analytics", "challenges"];
+
 const Progress = () => {
   const navigate = useNavigate();
   const { user, loading, token } = useAuthStore();
@@ -92,9 +93,14 @@ const Progress = () => {
   const [analytics, setAnalytics] = useState<IAnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "goals" | "analytics" | "challenges"
-  >("goals");
+  // `?tab=` lets anything elsewhere in the app link straight to a tab. Without
+  // it a link named "Analytics" lands the user on Goals and leaves them to find
+  // the rest themselves. An unrecognised value falls back to the default.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab") as ProgressTab | null;
+  const [activeTab, setActiveTab] = useState<ProgressTab>(
+    requestedTab && PROGRESS_TABS.includes(requestedTab) ? requestedTab : "goals"
+  );
 
   // Share popup state
   const [sharePopupOpen, setSharePopupOpen] = useState(false);
@@ -129,7 +135,12 @@ const Progress = () => {
 
       try {
         const response = await userAPI.getAnalytics(user._id, period);
-        setAnalytics(response.data);
+        // Truthiness isn't enough of a check: the render path reaches straight
+        // into `averages.calories`, `targets.protein` and friends, so a payload
+        // that is merely *present* but missing those objects threw during
+        // render and took the whole page down. Treat a malformed shape as no
+        // data, which the page already knows how to display.
+        setAnalytics(isRenderableAnalytics(response.data) ? response.data : null);
       } catch (err: any) {
         setError(err.message || "Failed to load analytics");
       } finally {
@@ -301,7 +312,7 @@ const Progress = () => {
                     </div>
                   </div>
                   <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl" style={{ background: "rgba(255,255,255,0.05)" }} />
-                  <div className="absolute bottom-0 right-0 p-4 opacity-10">
+                  <div className="absolute bottom-16 right-20 p-4 opacity-10 size-16">
                     <TrendingUp className="w-28 h-28 text-white" />
                   </div>
                 </section>
@@ -336,8 +347,13 @@ const Progress = () => {
                   </div>
                 </section>
 
+                {/* Eating Patterns */}
+                <SectionErrorBoundary label="eating patterns">
+                  <EatingPatternsSection period={period} />
+                </SectionErrorBoundary>
+
                 {/* Daily Breakdown */}
-                {analytics.dailyData.length > 0 && (
+                {analytics.dailyData?.length > 0 && (
                   <section className="space-y-3">
                     <h2 className="text-lg font-bold px-1" style={{ color: C.onSurface }}>Daily Breakdown</h2>
                     <div className="space-y-3">

@@ -162,6 +162,17 @@ const availableImages = [
   "thyme-butter-salmon-courgette",
   "peanut-butter-chia-oats",
   "roasted-walnut-bowl",
+  "ginger-sesame-chicken-stir-fry",
+  "greek-yogurt-berry-bowl",
+  "maple-glazed-chicken-skillet",
+  "smoked-salmon-yogurt-bowl",
+  "garlic-turkey-soft-tacos",
+  "salmon-herb-pita",
+  "turkey-mustard-dill-salad",
+  "spiced-salmon-stew",
+  "beef-quesadilla",
+  "thyme-butter-chicken-pasta",
+  "thyme-beef-patty-plate"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -189,8 +200,12 @@ const keywordMappings: { [key: string]: string[] } = {
     "mediterranean-chickpea-bowl",
     "spanish-egg-and-potato-omelette",
     "roasted-padron-peppers",
+    "spiced-salmon-stew",
     "croquetas",
     "coconut-curry-tuna-stir-fry",
+    "ginger-sesame-chicken-stir-fry",
+    "maple-glazed-chicken-skillet",
+    "turkey-mustard-dill-salad"
   ],
   minestrone: ["vegetable-soup"],
   tomato: ["tomato-soup-and-crusty-bread", "spaghetti-in-tomato-sauce"],
@@ -217,6 +232,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "quinoa-salad-with-avocado",
     "fruit-salad",
     "vermicelli-salad",
+    "turkey-mustard-dill-salad"
   ],
   caesar: ["caesar-salad"],
   quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
@@ -243,6 +259,10 @@ const keywordMappings: { [key: string]: string[] } = {
     "chicken-teriyaki-bowl-with-brown-rice",
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
     "grilled-salmon-quinoa-salad-with-avocado",
+    "ginger-sesame-chicken-stir-fry",
+    "garlic-turkey-soft-tacos",
+    "turkey-mustard-dill-salad",
+    "thyme-butter-chicken-pasta",
   ],
   wings: ["barbeque-chicken-wings"],
   curry: [
@@ -267,6 +287,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "baked-salmon-with-roasted-sweet-potatoes",
     "salmon-with-grill-aspargus-and-brocolli",
     "grilled-salmon-quinoa-salad-with-avocado",
+    "smoked-salmon-yogurt-bowl",
+    "salmon-herb-pita",
+    "spiced-salmon-stew",
   ],
   fish: [
     "fish-buns",
@@ -281,6 +304,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "red-tuna-sashimi",
     "salmon-with-grill-aspargus-and-brocolli",
     "seafood-soup",
+    "smoked-salmon-yogurt-bowl",
+    "salmon-herb-pita",
+    "spiced-salmon-stew",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -301,6 +327,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-and-avocado-toast",
     "spanish-egg-and-potato-omelette",
   ],
+  stew: ["spiced-salmon-stew", "beef-and-bean-chili"],
   eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach", "spanish-egg-and-potato-omelette"],
   scrambled: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
   omelette: ["veggie-omelette", "spanish-egg-and-potato-omelette"],
@@ -354,6 +381,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "ravioli-with-sauce",
     "gnocchi-in-mushroom-sauce",
     "chilli-lime-beef-pasta",
+    "thyme-butter-chicken-pasta",
   ],
   spaghetti: [
     "pasta-limone",
@@ -362,6 +390,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "spaghetti-bolognese",
     "spaghetti-in-tomato-sauce",
     "pasta",
+    "thyme-butter-chicken-pasta",
   ],
   bolognese: ["spaghetti-bolognese"],
   carbonara: ["pasta", "spaghetti-aglio-e-olio"],
@@ -414,6 +443,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "miso-glazed-noodles-with-shrimp-and-broccoli",
     "thai-peanut-tofu-bowl",
     "coconut-curry-tuna-stir-fry",
+    "ginger-sesame-chicken-stir-fry",
+    "maple-glazed-chicken-skillet",
   ],
   noodles: [
     "tofu-and-rice-noodles",
@@ -430,6 +461,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "turkey-stirfry",
     "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
     "coconut-curry-tuna-stir-fry",
+    "ginger-sesame-chicken-stir-fry",
+    "maple-glazed-chicken-skillet",
   ],
   ramen: ["ramen-bowl"],
   sushi: ["sushi-bowl", "sushi-rolls"],
@@ -439,7 +472,7 @@ const keywordMappings: { [key: string]: string[] } = {
   // Mexican
   burrito: ["breakfast-burrito", "burrito-bowl"],
   tacos: ["fish-tacos", "tacos-with-cheese-and-guacamole"],
-  taco: ["fish-tacos", "tacos-with-cheese-and-guacamole"],
+  taco: ["fish-tacos", "tacos-with-cheese-and-guacamole", "garlic-turkey-soft-tacos"],
   nachos: ["nachos"],
 
   // Meat dishes
@@ -449,6 +482,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "lean-beef-with-quinoa-and-roasted-root-vegetables",
     "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
     "chilli-lime-beef-pasta",
+    "beef-quesadilla",
+    "thyme-beef-patty-plate",
   ],
   steak: [
     "steak-with-mashed-potatoes",
@@ -459,6 +494,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "philly-cheese-steak",
     "beef-steak-in-baguette",
     "japanese-katsu-chicken-bowl",
+    "beef-quesadilla",
   ],
   meatballs: ["meat-balls"],
   meat: [
@@ -474,6 +510,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "beef-steak-in-baguette",
     "japanese-katsu-chicken-bowl",
     "chilli-lime-beef-pasta",
+    "beef-quesadilla",
+    "thyme-beef-patty-plate",
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos", "duck-breast-with-mushed-potatoes"],
@@ -483,6 +521,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
     "turkey-and-hummus-wrap-with-side-salad",
     "turkey-mustard-savoury-pancake",
+    "garlic-turkey-soft-tacos",
+    "turkey-mustard-dill-salad"
   ],
   schnitzel: ["schnitzel-and-fries"],
 
@@ -499,6 +539,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "spanish-egg-and-potato-omelette",
     "roasted-padron-peppers",
     "croquetas",
+    "ginger-sesame-chicken-stir-fry",
   ],
   vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry", "vermicelli-salad", "spanish-egg-and-potato-omelette", "padron-peppers", "croquetas"],
   falafel: ["falafel", "falafel-and-hummus"],
@@ -544,6 +585,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "yogurt-with-muesli",
     "tropical-mango-and-pineapple-smoothie-bowl",
     "peanut-butter-chia-oats",
+    "smoked-salmon-yogurt-bowl",
+    "greek-yogurt-berry-bowl",
   ],
   granola: [
     "greek-yogurt-topped-with-granola",
@@ -553,6 +596,8 @@ const keywordMappings: { [key: string]: string[] } = {
     "yogurt-with-muesli",
     "tropical-mango-and-pineapple-smoothie-bowl",
     "peanut-butter-chia-oats",
+    "smoked-salmon-yogurt-bowl",
+    "greek-yogurt-berry-bowl",
   ],
   chia: ["chia-pudding", "peanut-butter-chia-oats"],
   pudding: ["chia-pudding"],

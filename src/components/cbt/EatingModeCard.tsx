@@ -3,6 +3,7 @@ import { Brain, Heart, Users, Zap, RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import type { EatingMode } from "@/types/interfaces";
 
 const EATING_MODES: {
   value: EatingMode;
@@ -66,7 +67,7 @@ const EATING_MODES: {
   },
 ];
 
-export type EatingMode = "mindful" | "comfort" | "social" | "fuel" | "habit";
+export type { EatingMode };
 
 interface EatingModeCardProps {
   onSelect?: (mode: EatingMode) => void;

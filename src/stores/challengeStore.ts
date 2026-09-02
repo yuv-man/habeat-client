@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import { shallow } from "zustand/shallow";
 import { userAPI } from "../services/api";
 import { IChallenge, IChallengeClaimResult } from "../types/interfaces";
+import { asArray } from "@/lib/safe";
 
 interface ChallengeState {
   // Data
@@ -58,7 +59,7 @@ export const useChallengeStore = create<ChallengeState>()(
         try {
           const response = await userAPI.getChallenges();
           set({
-            challenges: response.data.challenges,
+            challenges: asArray<IChallenge>(response.data?.challenges),
             loading: false,
             lastFetchTime: now,
           });
@@ -73,7 +74,7 @@ export const useChallengeStore = create<ChallengeState>()(
       fetchClaimableChallenges: async () => {
         try {
           const response = await userAPI.getClaimableChallenges();
-          set({ claimableChallenges: response.data.challenges });
+          set({ claimableChallenges: asArray<IChallenge>(response.data?.challenges) });
         } catch (error: any) {
           console.error("Failed to fetch claimable challenges:", error);
         }
@@ -130,7 +131,7 @@ export const useChallengeStore = create<ChallengeState>()(
         try {
           const response = await userAPI.refreshChallenges();
           set({
-            challenges: response.data.challenges,
+            challenges: asArray<IChallenge>(response.data?.challenges),
             loading: false,
             lastFetchTime: Date.now(),
           });
@@ -150,7 +151,7 @@ export const useChallengeStore = create<ChallengeState>()(
         try {
           const response = await userAPI.getChallengeHistory();
           // Filter only completed challenges
-          const completed = response.data.challenges.filter(
+          const completed = asArray<IChallenge>(response.data?.challenges).filter(
             (c) => c.status === "completed" || c.status === "claimed"
           );
           set({ completedChallenges: completed });

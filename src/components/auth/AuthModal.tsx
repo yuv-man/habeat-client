@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -44,8 +45,24 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
     phone: "",
   });
 
-  const { login, signup, oauthSignin, oauthSignup, googleAuth, user } = useAuthStore();
+  const { login, signup, oauthSignin, oauthSignup, googleAuth } = useAuthStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Route by onboarding state, read fresh from the store after auth resolves.
+  // A brand-new signup (Google or email) has kycCompleted=false and must go
+  // through onboarding — sending everyone to the dashboard skipped KYC for
+  // new users. Existing, onboarded users fall through to the caller's
+  // onSuccess (the dashboard).
+  const routeAfterAuth = () => {
+    setIsOpen(false);
+    const freshUser = useAuthStore.getState().user;
+    if (freshUser && !freshUser.kycCompleted) {
+      navigate("/register");
+      return;
+    }
+    onSuccess?.();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,8 +90,7 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
           : "Your account has been created successfully.",
       });
 
-      setIsOpen(false);
-      onSuccess?.();
+      routeAfterAuth();
     } catch (error) {
       toast({
         title: "Error",
@@ -105,8 +121,7 @@ const AuthModal = ({ children, userData, onSuccess }: AuthModalProps) => {
             : "Your account has been created successfully.",
         });
         
-        setIsOpen(false);
-        onSuccess?.();
+        routeAfterAuth();
       } else {
         // For other providers (Facebook), use redirect flow
         if (isLogin) {

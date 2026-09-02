@@ -9,6 +9,7 @@ import {
 // Mock the API
 const mockUserAPI = {
   login: vi.fn(),
+  logout: vi.fn(),
   signup: vi.fn(),
   fetchUser: vi.fn(),
   updateUser: vi.fn(),
@@ -137,6 +138,23 @@ describe("AuthStore", () => {
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("token");
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("habeat_user");
       expect(localStorageMock.removeItem).toHaveBeenCalledWith("habeat_plan");
+    });
+  });
+
+  describe("signOut vs logout (revocation regression)", () => {
+    it("logout() must NOT hit the revoke endpoint — it's the transient-401 recovery path", async () => {
+      // Making logout() revoke turned a momentary 401 into a permanent lockout,
+      // which broke fresh Google logins.
+      const { useAuthStore } = await import("./authStore");
+      useAuthStore.getState().logout();
+      expect(mockUserAPI.logout).not.toHaveBeenCalled();
+    });
+
+    it("signOut() revokes server-side, then clears locally", async () => {
+      const { useAuthStore } = await import("./authStore");
+      useAuthStore.getState().signOut();
+      expect(mockUserAPI.logout).toHaveBeenCalledTimes(1);
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith("token");
     });
   });
 

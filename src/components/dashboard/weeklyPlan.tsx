@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { planErrorKey } from "@/lib/planErrors";
 import {
   GlassWater,
   Sparkles,
@@ -618,11 +621,25 @@ export default function WeeklyMealPlan() {
   const displayDates = plan?.generationStatus === "generating" ? allWeekDates : dates;
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const { t: tPlan } = useTranslation("navigation");
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Poll for plan completion while remaining days are being generated in background
+  // Poll for plan completion while the rest of the week is generated in the
+  // background. Terminates on completion, on an explicit failure, or after a
+  // hard time budget — never spins forever, so a stuck/failed generation always
+  // resolves into either a plan or a visible error.
   useEffect(() => {
     const isGeneratingPlan = plan?.generationStatus === "generating";
+    const POLL_MS = 5000;
+    const MAX_POLL_MS = 3 * 60 * 1000; // give background generation ~3 minutes
+    const startedAt = Date.now();
+
+    const stop = () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
 
     if (isGeneratingPlan && token) {
       pollingRef.current = setInterval(async () => {
@@ -631,26 +648,30 @@ export default function WeeklyMealPlan() {
           if (freshPlan) {
             useAuthStore.getState().setPlan(freshPlan);
             if (freshPlan.generationStatus === "complete") {
-              clearInterval(pollingRef.current!);
-              pollingRef.current = null;
+              stop();
+            } else if (freshPlan.generationStatus === "failed") {
+              // Today's plan is usable; the rest of the week didn't generate.
+              stop();
+              toast.error(tPlan("errors.generatePartial"), { duration: 8000 });
             }
           }
+          // Safety net: if the server never reaches a terminal state, don't
+          // leave the user staring at a spinner indefinitely.
+          if (Date.now() - startedAt > MAX_POLL_MS) {
+            stop();
+            toast.error(tPlan("errors.generateTimeout"), { duration: 8000 });
+          }
         } catch {
-          // Silently ignore polling errors
+          // Ignore transient polling errors; the time budget still applies.
+          if (Date.now() - startedAt > MAX_POLL_MS) stop();
         }
-      }, 5000);
-    } else if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
+      }, POLL_MS);
+    } else {
+      stop();
     }
 
-    return () => {
-      if (pollingRef.current) {
-        clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
-    };
-  }, [plan?.generationStatus, token]);
+    return stop;
+  }, [plan?.generationStatus, token, tPlan]);
   const [selectedMeal, setSelectedMeal] = useState<{
     date: Date;
     meal: IMeal;
@@ -957,6 +978,7 @@ export default function WeeklyMealPlan() {
       if (handleSubscriptionApiError(error, navigate)) {
         return;
       }
+      toast.error(tPlan(planErrorKey(error)), { duration: 8000 });
       console.error("Failed to generate meal plan:", error);
     } finally {
       setIsGenerating(false);

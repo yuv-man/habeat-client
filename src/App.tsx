@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import MealLoader from "@/components/helper/MealLoader";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { clearExpiredCacheSync } from "@/lib/cache";
@@ -28,7 +28,6 @@ const Recipes = lazy(() => import("./pages/Recipes"));
 const RecipeDetailPage = lazy(() => import("./pages/RecipeDetailPage"));
 const ShoppingList = lazy(() => import("./pages/ShoppingList"));
 const Settings = lazy(() => import("./pages/Settings"));
-const Analytics = lazy(() => import("./pages/Analytics"));
 const Progress = lazy(() => import("./pages/Progress"));
 const ChallengesAndSummary = lazy(() => import("./pages/ChallengesAndSummary"));
 const Profile = lazy(() => import("./pages/Profile"));
@@ -47,6 +46,19 @@ const Discover = lazy(() => import("./pages/Discover"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+
+/**
+ * Clears itself whenever the route changes.
+ *
+ * The outer boundary alone latched permanently: once any screen threw, every
+ * subsequent navigation rendered the same error page, so the only escape was a
+ * full reload. Keying on the pathname means walking away from a broken screen
+ * is enough to recover.
+ */
+const RouteErrorBoundary = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  return <ErrorBoundary resetKey={location.pathname}>{children}</ErrorBoundary>;
+};
 
 const App = () => {
   // Clear expired cache on app start for better performance
@@ -74,6 +86,7 @@ const App = () => {
           <WatchPermissionModal />
           <BrowserRouter>
             <BackNavigationHandler />
+            <RouteErrorBoundary>
             <Suspense fallback={<MealLoader />}>
               <Routes>
                 <Route path="/" element={<Index />} />
@@ -91,7 +104,6 @@ const App = () => {
                 <Route path="/shopping-list" element={<ShoppingList />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/profile" element={<Profile />} />
-                <Route path="/analytics" element={<Analytics />} />
                 <Route path="/progress" element={<Progress />} />
                 <Route
                   path="/challenges-summary"
@@ -121,6 +133,7 @@ const App = () => {
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
+            </RouteErrorBoundary>
           </BrowserRouter>
         </TooltipProvider>
       </QueryClientProvider>

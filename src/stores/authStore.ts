@@ -16,6 +16,7 @@ import {
   DEFAULT_TTL,
 } from "@/lib/cache";
 import { resolveUserDocumentId } from "@/lib/userId";
+import { identifyUser, resetAnalyticsUser } from "@/lib/analytics";
 
 // Default meal times
 const DEFAULT_MEAL_TIMES: MealTimes = {
@@ -80,8 +81,16 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         phone: normalized.phone,
       };
       localStorage.setItem("habeat_user", JSON.stringify(userDataToStore));
+      identifyUser(String(normalized._id), {
+        email: normalized.email,
+        name: normalized.name,
+        path: normalized.path,
+        subscriptionTier: normalized.subscriptionTier,
+        gender: normalized.gender,
+      });
     } else {
       localStorage.removeItem("habeat_user");
+      resetAnalyticsUser();
     }
   },
   setLoading: (loading) => set({ loading }),
@@ -363,12 +372,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
   },
 
+  // Local-only session clear. This is also the recovery path for transient
+  // 401s and in-flight token races, so it must stay side-effect-free — it must
+  // NOT revoke server-side, or a momentary blip would permanently kill a valid
+  // session (which is exactly what broke fresh Google logins). Explicit
+  // user-initiated sign-out that revokes the token lives in `signOut`.
   logout: () => {
     get().setToken(null);
     get().setUser(null);
     get().setPlan(null);
     set({ loading: false, userAuthError: false, favoriteMealsData: [], favoriteMealsLoaded: false });
     localStorage.removeItem("habeat_favorite_meals");
+  },
+
+  // The button the user taps to sign out. Revokes the token server-side (so a
+  // captured token can't be replayed), then clears locally. Never called from
+  // error handling — only from a deliberate action.
+  signOut: () => {
+    userAPI.logout();
+    get().logout();
   },
 
   generateMealPlan: async (

@@ -17,14 +17,28 @@ import { MoodLevel, MoodCategory, MoodTrigger, IMoodEntry } from "@/types/interf
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useWatchStore } from "@/stores/watchStore";
+import { toLocalDateString } from "@/lib/dateUtils";
+import { calcEmotionalEatingScore, NUDGE_THRESHOLD } from "@/lib/mindfulEating";
 
 interface MoodEntryFormProps {
   className?: string;
   linkedMealId?: string;
   linkedMealType?: "breakfast" | "lunch" | "dinner" | "snacks";
+  /** Needed to file a meal-mood correlation alongside the mood entry. Without
+   *  it the form can still log the mood, just not the eating episode. */
+  linkedMealName?: string;
   onComplete?: (entry: IMoodEntry) => void;
   onCancel?: () => void;
 }
+
+const HUNGER_LABELS = [
+  "Not hungry",
+  "Slightly hungry",
+  "Moderately hungry",
+  "Very hungry",
+  "Extremely hungry",
+];
 
 const MOOD_OPTIONS: { value: MoodCategory; label: string; emoji: string; color: string }[] = [
   { value: "happy",    label: "Happy",    emoji: "😄", color: "bg-yellow-50 border-yellow-200" },
@@ -55,10 +69,12 @@ export function MoodEntryForm({
   className,
   linkedMealId,
   linkedMealType,
+  linkedMealName,
   onComplete,
   onCancel,
 }: MoodEntryFormProps) {
-  const { logMood, loading } = useCBTStore();
+  const { logMood, linkMoodToMeal, loading } = useCBTStore();
+  const watchSnapshot = useWatchStore((s) => s.snapshot);
   const [step, setStep] = useState(1);
   const [moodCategory, setMoodCategory] = useState<MoodCategory | null>(null);
   const [moodLevel, setMoodLevel] = useState<MoodLevel>(3);
@@ -66,6 +82,12 @@ export function MoodEntryForm({
   const [stressLevel, setStressLevel] = useState<MoodLevel>(3);
   const [triggers, setTriggers] = useState<MoodTrigger[]>([]);
   const [notes, setNotes] = useState("");
+  /** Asked only when a meal is attached. The insights screen tells users their
+   *  Mindful Eating Score weighs "hunger level before eating" — but nothing in
+   *  the live UI ever asked, so the heaviest input to that score was always
+   *  absent on this path. */
+  const [hungerLevel, setHungerLevel] = useState<MoodLevel | null>(null);
+  const isMealLinked = Boolean(linkedMealId);
 
   const toggleTrigger = (trigger: MoodTrigger) => {
     setTriggers((prev) =>
@@ -75,12 +97,23 @@ export function MoodEntryForm({
     );
   };
 
+  const emotionalScore = calcEmotionalEatingScore(
+    moodCategory,
+    hungerLevel,
+    linkedMealType ?? "",
+    watchSnapshot
+  );
+
   const handleSubmit = async () => {
     if (!moodCategory) return;
 
     const now = new Date();
+    // Local rather than UTC — an evening check-in west of Greenwich was landing
+    // on tomorrow's date, which quietly emptied the day it belonged to.
+    const today = toLocalDateString(now);
+
     const entry = {
-      date: now.toISOString().split("T")[0],
+      date: today,
       time: now.toTimeString().split(" ")[0].slice(0, 5),
       moodLevel,
       moodCategory,
@@ -93,6 +126,35 @@ export function MoodEntryForm({
     };
 
     const result = await logMood(entry);
+
+    // A mood attached to a meal is an eating episode, and only a correlation
+    // record carries it into the emotional-eating insights. Logging the mood
+    // alone left that half of the picture blank.
+    if (result && linkedMealId && linkedMealType) {
+      linkMoodToMeal({
+        mealId: linkedMealId,
+        mealName: linkedMealName ?? linkedMealType,
+        mealType: linkedMealType,
+        date: today,
+        wasEmotionalEating: emotionalScore > NUDGE_THRESHOLD,
+        hungerLevelBefore: hungerLevel ?? undefined,
+        moodBefore: result,
+        biometrics: watchSnapshot
+          ? {
+              heartRate: watchSnapshot.heartRate,
+              restingHeartRate: watchSnapshot.restingHeartRate,
+              stressLevel: watchSnapshot.stressLevel,
+              sleepHours: watchSnapshot.sleepHours,
+              sleepQuality: watchSnapshot.sleepQuality,
+              stepCount: watchSnapshot.stepCount,
+            }
+          : undefined,
+      }).catch(() => {
+        // The mood itself is already saved; failing to also file the
+        // correlation isn't worth blocking the modal from closing.
+      });
+    }
+
     if (result) {
       onComplete?.(result);
     }
@@ -189,6 +251,42 @@ export function MoodEntryForm({
           ))}
         </div>
       </div>
+
+      {/* Hunger — only when there's a meal to attach it to. Asking a plain
+          mood check-in how hungry it is would be a non-sequitur. */}
+      {isMealLinked && (
+        <div>
+          <label className="text-sm font-medium text-gray-600 mb-2 block">
+            How hungry are you?{" "}
+            <span className="font-normal text-gray-400">— optional</span>
+          </label>
+          <div className="flex justify-between gap-2">
+            {([1, 2, 3, 4, 5] as MoodLevel[]).map((level) => (
+              <button
+                key={level}
+                onClick={() =>
+                  setHungerLevel(hungerLevel === level ? null : level)
+                }
+                title={HUNGER_LABELS[level - 1]}
+                aria-label={HUNGER_LABELS[level - 1]}
+                className={cn(
+                  "flex-1 py-2 rounded-lg border transition-all text-sm font-medium",
+                  hungerLevel === level
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                )}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-gray-400 mt-1.5">
+            {hungerLevel
+              ? HUNGER_LABELS[hungerLevel - 1]
+              : "1 = not hungry · 5 = extremely hungry"}
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-2 pt-2">
         <Button variant="outline" onClick={() => setStep(1)} className="flex-1">

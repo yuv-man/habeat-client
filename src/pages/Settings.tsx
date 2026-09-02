@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
 import { SUPPORTED_LANGUAGES, SupportedLanguage } from "@/lib/i18n";
+import { resizeImageToDataUrl } from "@/lib/imageResize";
 import { IUser, MealTimes } from "@/types/interfaces";
 import {
   dietTypes,
@@ -50,7 +51,7 @@ const Settings = () => {
     updateProfile,
     loading,
     token,
-    logout,
+    signOut,
     mealTimes: storeMealTimes,
     setMealTimes: setStoreMealTimes,
   } = useAuthStore();
@@ -88,6 +89,13 @@ const Settings = () => {
 
   // Diet type
   const [dietType, setDietType] = useState("");
+
+  // Fasting settings (only used when dietType === "8 - 16 hours fasting")
+  const [fastingHours, setFastingHours] = useState(16);
+  const [fastingStartTime, setFastingStartTime] = useState("20:00");
+
+  // Meals per day (non-fasting)
+  const [mealsPerDay, setMealsPerDay] = useState(4);
 
   // Nutrition display
   const [showMacros, setShowMacros] = useState(true);
@@ -138,6 +146,9 @@ const Settings = () => {
     setShowMacros(user.showMacros !== false);
     // Map user.path to diet type name
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
+    setFastingHours(user.fastingHours || 16);
+    setFastingStartTime(user.fastingStartTime || "20:00");
+    setMealsPerDay((user as any).mealsPerDay || 4);
 
     // Initialize meal times from store
     setMealTimes(storeMealTimes);
@@ -168,21 +179,19 @@ const Settings = () => {
         return;
       }
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result) {
-          setProfilePicture(reader.result as string);
-        }
-      };
-      reader.onerror = () => {
-        toast({
-          title: t("profileInfo.readErrorTitle"),
-          description: t("profileInfo.readErrorDesc"),
-          variant: "destructive",
+      // Resize before preview/upload. Every user is on the mobile app, where
+      // the picker hands back a multi-MB full-res photo; the server only keeps
+      // a 400x400 version, so we downscale here to spend the user's cellular
+      // data on tens of KB instead of several MB.
+      resizeImageToDataUrl(file)
+        .then((dataUrl) => setProfilePicture(dataUrl))
+        .catch(() => {
+          toast({
+            title: t("profileInfo.readErrorTitle"),
+            description: t("profileInfo.readErrorDesc"),
+            variant: "destructive",
+          });
         });
-      };
-      reader.readAsDataURL(file);
 
       // Reset file input to allow re-selecting the same file
       if (fileInputRef.current) {
@@ -214,6 +223,10 @@ const Settings = () => {
         showMacros,
         // Map diet type name back to path
         path: dietTypeToPath[dietType] || user.path || "healthy",
+        ...(dietType === "8 - 16 hours fasting"
+          ? { fastingHours, fastingStartTime }
+          : { fastingHours: undefined, fastingStartTime: undefined }),
+        mealsPerDay: dietType === "8 - 16 hours fasting" ? undefined : mealsPerDay,
       };
 
       // If there's a new profile picture, add it (base64 for now)
@@ -314,6 +327,53 @@ const Settings = () => {
   const updateMealTime = (mealType: keyof MealTimes, time: string) => {
     setMealTimes((prev) => ({ ...prev, [mealType]: time }));
   };
+
+  // When fasting settings change, auto-derive meal times from the eating window.
+  // Slots that fall outside the window are removed; active slots are spread evenly.
+  useEffect(() => {
+    if (dietType !== "8 - 16 hours fasting") return;
+
+    const [h, m] = fastingStartTime.split(":").map(Number);
+    const fastStartMin = (h ?? 0) * 60 + (m ?? 0);
+    const eatStartMin = (fastStartMin + fastingHours * 60) % 1440;
+    const eatEndMin = fastStartMin; // wraps: eating ends when fasting begins again
+
+    const SLOT_TYPICAL: Record<keyof MealTimes, number> = {
+      breakfast: 8 * 60,
+      lunch: 12 * 60 + 30,
+      snacks: 15 * 60,
+      dinner: 18 * 60 + 30,
+    };
+
+    const inWindow = (t: number) =>
+      eatStartMin < eatEndMin
+        ? t >= eatStartMin && t < eatEndMin
+        : t >= eatStartMin || t < eatEndMin;
+
+    // Figure out which slots are active and spread them across the window
+    const activeSlots = (Object.keys(SLOT_TYPICAL) as (keyof MealTimes)[]).filter(
+      (s) => inWindow(SLOT_TYPICAL[s])
+    );
+
+    // Divide the eating window into equal intervals
+    const windowMins = ((eatEndMin - eatStartMin) + 1440) % 1440 || (24 - fastingHours) * 60;
+    const interval = Math.floor(windowMins / (activeSlots.length + 1));
+
+    const newTimes: Partial<MealTimes> = {};
+    activeSlots.forEach((slot, i) => {
+      const slotMin = (eatStartMin + interval * (i + 1)) % 1440;
+      const hh = Math.floor(slotMin / 60).toString().padStart(2, "0");
+      const mm = (slotMin % 60).toString().padStart(2, "0");
+      newTimes[slot] = `${hh}:${mm}`;
+    });
+
+    // Slots outside the window get cleared
+    (Object.keys(SLOT_TYPICAL) as (keyof MealTimes)[]).forEach((slot) => {
+      if (!activeSlots.includes(slot)) newTimes[slot] = "";
+    });
+
+    setMealTimes((prev) => ({ ...prev, ...newTimes }));
+  }, [dietType, fastingHours, fastingStartTime]);
 
   if (!user) {
     return (
@@ -554,9 +614,9 @@ const Settings = () => {
             </div>
           </div>
 
-          {/* Diet Type Section - Redesigned as horizontal chips */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          {/* Diet Type Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-900">
               {t("dietType.heading")}
             </h2>
             <div className="flex flex-wrap gap-2">
@@ -578,6 +638,83 @@ const Settings = () => {
                 );
               })}
             </div>
+
+            {/* Fasting controls — shown only when fasting diet is selected */}
+            {dietType === "8 - 16 hours fasting" && (
+              <div className="border-t border-gray-100 pt-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    Fasting duration
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="12"
+                      max="20"
+                      step="1"
+                      value={fastingHours}
+                      onChange={(e) => setFastingHours(Number(e.target.value))}
+                      className="flex-1 h-2 bg-emerald-200 rounded-full appearance-none cursor-pointer accent-emerald-500"
+                    />
+                    <span className="w-16 text-center text-sm font-bold text-gray-900">
+                      {fastingHours}:{24 - fastingHours} IF
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {fastingHours}h fast · {24 - fastingHours}h eating window
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-2">
+                    Stop eating at
+                  </label>
+                  <input
+                    type="time"
+                    value={fastingStartTime}
+                    onChange={(e) => setFastingStartTime(e.target.value)}
+                    className="w-full h-10 px-3 border border-gray-300 rounded-lg focus:border-emerald-500 focus:outline-none text-sm bg-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Eating window: {(() => {
+                      const [h, m] = fastingStartTime.split(":").map(Number);
+                      const endMin = (h * 60 + m + fastingHours * 60) % 1440;
+                      const startH = Math.floor(endMin / 60).toString().padStart(2, "0");
+                      const startM = (endMin % 60).toString().padStart(2, "0");
+                      return `${startH}:${startM} → ${fastingStartTime}`;
+                    })()}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Meals per day — shown only for non-fasting diets */}
+            {dietType !== "8 - 16 hours fasting" && (
+              <div className="border-t border-gray-100 pt-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  Meals per day
+                </label>
+                <div className="flex gap-2">
+                  {[2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setMealsPerDay(n)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                        mealsPerDay === n
+                          ? "bg-emerald-500 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  {mealsPerDay === 2 && "Lunch + Dinner"}
+                  {mealsPerDay === 3 && "Breakfast + Lunch + Dinner"}
+                  {mealsPerDay === 4 && "Breakfast + Lunch + Dinner + Snack"}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Meal Times Section */}
@@ -586,54 +723,25 @@ const Settings = () => {
               {t("mealTimes.heading")}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div>
-                <Label htmlFor="breakfast-time" className="text-xs font-medium">
-                  {t("mealTimes.breakfast")}
-                </Label>
-                <Input
-                  id="breakfast-time"
-                  type="time"
-                  value={mealTimes.breakfast}
-                  onChange={(e) => updateMealTime("breakfast", e.target.value)}
-                  className="mt-1 h-9 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="lunch-time" className="text-xs font-medium">
-                  {t("mealTimes.lunch")}
-                </Label>
-                <Input
-                  id="lunch-time"
-                  type="time"
-                  value={mealTimes.lunch}
-                  onChange={(e) => updateMealTime("lunch", e.target.value)}
-                  className="mt-1 h-9 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="dinner-time" className="text-xs font-medium">
-                  {t("mealTimes.dinner")}
-                </Label>
-                <Input
-                  id="dinner-time"
-                  type="time"
-                  value={mealTimes.dinner}
-                  onChange={(e) => updateMealTime("dinner", e.target.value)}
-                  className="mt-1 h-9 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="snacks-time" className="text-xs font-medium">
-                  {t("mealTimes.snacks")}
-                </Label>
-                <Input
-                  id="snacks-time"
-                  type="time"
-                  value={mealTimes.snacks}
-                  onChange={(e) => updateMealTime("snacks", e.target.value)}
-                  className="mt-1 h-9 text-sm"
-                />
-              </div>
+              {(["breakfast", "lunch", "dinner", "snacks"] as const).map((slot) => {
+                const inactive = dietType === "8 - 16 hours fasting" && !mealTimes[slot];
+                return (
+                  <div key={slot} className={inactive ? "opacity-40" : ""}>
+                    <Label htmlFor={`${slot}-time`} className="text-xs font-medium flex items-center gap-1">
+                      {t(`mealTimes.${slot}`)}
+                      {inactive && <span className="text-gray-400 font-normal">(skipped)</span>}
+                    </Label>
+                    <Input
+                      id={`${slot}-time`}
+                      type="time"
+                      value={mealTimes[slot]}
+                      onChange={(e) => updateMealTime(slot, e.target.value)}
+                      disabled={inactive}
+                      className="mt-1 h-9 text-sm"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1017,7 +1125,7 @@ const Settings = () => {
                 variant="destructive"
                 size="sm"
                 onClick={() => {
-                  logout();
+                  signOut();
                   navigate("/");
                 }}
                 className="h-8 text-xs"

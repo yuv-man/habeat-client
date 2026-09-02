@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  /** Changing this clears a caught error. Pass the route so navigating away
+   *  from a broken screen actually recovers — without it the boundary stays
+   *  latched and every subsequent page renders the error state too. */
+  resetKey?: string;
 }
 
 interface State {
@@ -31,6 +35,15 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
     // Log error to an error reporting service
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  componentDidUpdate(prevProps: Props): void {
+    if (
+      this.state.hasError &&
+      prevProps.resetKey !== this.props.resetKey
+    ) {
+      this.handleRetry();
+    }
   }
 
   handleReload = (): void => {

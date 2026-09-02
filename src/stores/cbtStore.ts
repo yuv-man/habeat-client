@@ -14,6 +14,7 @@ import {
   MoodTrigger,
   CBTExerciseType,
 } from "../types/interfaces";
+import { asArray } from "../lib/safe";
 
 interface CBTState {
   // Mood tracking
@@ -202,7 +203,7 @@ export const useCBTStore = create<CBTStore>()(
         try {
           const response = await cbtAPI.getTodayMoods();
           set({
-            todayMoodEntries: response.data,
+            todayMoodEntries: asArray<IMoodEntry>(response.data),
             loading: false,
           });
         } catch (error: any) {
@@ -328,7 +329,7 @@ export const useCBTStore = create<CBTStore>()(
         try {
           const response = await cbtAPI.getExerciseHistory(limit);
           set({
-            exerciseCompletions: response.data,
+            exerciseCompletions: asArray<ICBTExerciseCompletion>(response.data),
             loading: false,
           });
         } catch (error: any) {
@@ -366,7 +367,7 @@ export const useCBTStore = create<CBTStore>()(
         try {
           const response = await cbtAPI.getMealMoodHistory(limit);
           set({
-            mealMoodCorrelations: response.data,
+            mealMoodCorrelations: asArray<IMealMoodCorrelation>(response.data),
             loading: false,
           });
         } catch (error: any) {

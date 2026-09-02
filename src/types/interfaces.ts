@@ -39,6 +39,7 @@ export interface IUser {
   profilePicture?: string; // Base64 encoded profile picture or URL
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
+  mealsPerDay?: number; // 2, 3, or 4 meals per day (non-fasting)
   sensoryProfile?: ISensoryProfile | null;
   kycCompleted?: boolean;
   language?: "en" | "he";
@@ -47,6 +48,11 @@ export interface IUser {
   emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
   showMacros?: boolean; // whether numeric calories/macros are displayed; defaults to true unless foodRelationship flags a difficult relationship with food
 }
+
+/** Where the food actually came from. Only set when the user tells us what they
+ *  really ate — an untouched plan meal stays `undefined` rather than claiming
+ *  "cooked", which would turn a missing answer into a fabricated one. */
+export type MealSource = "cooked" | "ordered" | "eaten-out";
 
 export interface IMeal {
   _id: string;
@@ -65,6 +71,7 @@ export interface IMeal {
   usageCount?: number;
   prepTime: number;
   done: boolean;
+  source?: MealSource;
 }
 
 export interface IDailyPlan {
@@ -133,7 +140,7 @@ export interface IPlan {
   weeklyPlan: { [date: string]: IDailyPlan };
   language: string;
   generatedAt: Date;
-  generationStatus?: "generating" | "complete";
+  generationStatus?: "generating" | "complete" | "failed";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -350,6 +357,7 @@ export interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, userData?: IUser) => Promise<void>;
   logout: () => void;
+  signOut: () => void;
   updateProfile: (id: string, data: Partial<IUser>) => Promise<void>;
   setUser: (user: IUser | null) => void;
   setPlan: (plan: IPlan | null) => void;
@@ -766,6 +774,39 @@ export type MoodTrigger =
   | "social"
   | "other";
 
+/** What made eating harder on a given day. Shares the id space with
+ *  EMOTIONAL_TRIGGERS (kyc/types.tsx) so a reflection and a KYC answer are
+ *  countable against each other, plus two the onboarding list doesn't cover. */
+export type EatingTrigger =
+  | "stress"
+  | "boredom"
+  | "sadness"
+  | "celebration"
+  | "habit"
+  | "social"
+  | "tiredness"
+  | "procrastination"
+  | "anxiety"
+  | "late-night"
+  | "cravings"
+  | "time-pressure";
+
+/** What made eating easier. Deliberately a separate axis from EatingTrigger —
+ *  counting "had time" as a trigger would read as a problem in the insights. */
+export type EatingFacilitator =
+  | "had-time"
+  | "felt-good"
+  | "planned-ahead"
+  | "food-ready";
+
+/** The daily reflection captured alongside the mood check-in. Both sides are
+ *  optional and a day can carry both — "I had time but also had cravings" is a
+ *  real answer, not a contradiction. */
+export interface IDailyReflection {
+  easedBy?: EatingFacilitator[];
+  hinderedBy?: EatingTrigger[];
+}
+
 export interface IMoodEntry {
   _id?: string;
   userId: string;
@@ -777,6 +818,7 @@ export interface IMoodEntry {
   stressLevel?: MoodLevel;
   notes?: string;
   triggers?: MoodTrigger[];
+  reflection?: IDailyReflection;
   linkedMealId?: string;
   linkedMealType?: "breakfast" | "lunch" | "dinner" | "snacks";
   createdAt?: string;
@@ -896,6 +938,10 @@ export interface IBiometricSnapshot {
   stepCount?: number;
 }
 
+/** The user's own one-word read on why a meal happened, asked right after they
+ *  mark it done. Coarser than a mood entry and much cheaper to answer. */
+export type EatingMode = "mindful" | "comfort" | "social" | "fuel" | "habit";
+
 export interface IMealMoodCorrelation {
   _id?: string;
   userId: string;
@@ -906,6 +952,7 @@ export interface IMealMoodCorrelation {
   moodBefore?: IMoodEntry;
   moodAfter?: IMoodEntry;
   wasEmotionalEating: boolean;
+  eatingMode?: EatingMode;
   hungerLevelBefore?: MoodLevel; // 1=not hungry, 5=very hungry
   satisfactionAfter?: MoodLevel;
   notes?: string;
@@ -919,6 +966,8 @@ export interface IEmotionalEatingInsight {
   emotionalEatingInstances: number;
   emotionalEatingPercentage: number;
   mindfulEatingScore: number;
+  /** 0–1 ratio (unlike `emotionalEatingPercentage`, which is 0–100). Run it
+   *  through `toPercent` before display. */
   satietyRate: number;
   patternSpotlight: string | null;
   weeklyTrend: { week: string; score: number }[];
@@ -932,6 +981,9 @@ export interface IEmotionalEatingInsight {
   commonTriggers: {
     trigger: string;
     count: number;
+    /** "onboarding" means nothing has been observed yet and these are the
+     *  answers given at signup — never render them as watched behaviour. */
+    source: "observed" | "onboarding";
     /** When this trigger fires, derived from real log timestamps. Null when
      *  there aren't enough observations to name a time of day. */
     window: {
@@ -944,6 +996,11 @@ export interface IEmotionalEatingInsight {
     /** Server-formatted version of `window`, e.g. "Tue & Thu, 3–6 PM". */
     windowLabel: string | null;
   }[];
+  /** Day-level self-report from the tracker's daily reflection. Weaker
+   *  evidence than a logged eating episode, so it's reported separately. */
+  reflectionDays: number;
+  reflectionTriggers: { trigger: string; count: number }[];
+  reflectionFacilitators: { facilitator: string; count: number }[];
   /** Day × time slots where emotional eating dominates. */
   riskWindows: {
     dayOfWeek: number;

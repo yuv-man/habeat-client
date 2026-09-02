@@ -6,6 +6,7 @@ import {
   SocialFeedResponse,
   FollowListResponse,
 } from "@/services/api";
+import { asArray } from "@/lib/safe";
 
 interface SocialState {
   // Feed
@@ -65,7 +66,7 @@ export const useSocialStore = create<SocialState>((set, get) => ({
     try {
       const response = await socialAPI.getFeed(page, 20);
       set((state) => ({
-        posts: append ? [...state.posts, ...response.data.posts] : response.data.posts,
+        posts: append ? [...state.posts, ...asArray<ISocialPost>(response.data?.posts)] : asArray<ISocialPost>(response.data?.posts),
         feedPagination: response.data.pagination,
         feedLoading: false,
       }));
@@ -79,7 +80,7 @@ export const useSocialStore = create<SocialState>((set, get) => ({
     try {
       const response = await socialAPI.getUserPosts(userId, page, 20);
       set((state) => ({
-        userPosts: append ? [...state.userPosts, ...response.data.posts] : response.data.posts,
+        userPosts: append ? [...state.userPosts, ...asArray<ISocialPost>(response.data?.posts)] : asArray<ISocialPost>(response.data?.posts),
         userPostsPagination: response.data.pagination,
         userPostsLoading: false,
       }));
@@ -183,12 +184,12 @@ export const useSocialStore = create<SocialState>((set, get) => ({
 
   fetchFollowers: async (page = 1) => {
     const response = await socialAPI.getFollowers(page, 50);
-    set({ followers: response.data.users });
+    set({ followers: asArray<FollowListResponse["users"][number]>(response.data?.users) });
   },
 
   fetchFollowing: async (page = 1) => {
     const response = await socialAPI.getFollowing(page, 50);
-    set({ following: response.data.users });
+    set({ following: asArray<FollowListResponse["users"][number]>(response.data?.users) });
   },
 
   fetchFollowStatus: async (userId) => {

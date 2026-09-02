@@ -133,8 +133,10 @@ export const useProgressStore = create<ProgressStore>()(
 
       fetchTodayProgress: async (userId: string, force?: boolean) => {
         if (config.testFrontend) {
-          // Use mock data in test mode
-          set({ todayProgress: mockDailyProgress as IDailyProgress });
+          // Use mock data in test mode. `loading` starts true, so the early
+          // return has to clear it — otherwise the dashboard sits on the
+          // loader forever and the whole test mode is unusable.
+          set({ todayProgress: mockDailyProgress as IDailyProgress, loading: false });
           return;
         }
 

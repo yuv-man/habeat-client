@@ -5,8 +5,8 @@ const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
 export function initAnalytics() {
   if (!POSTHOG_KEY) return;
   posthog.init(POSTHOG_KEY, {
-    api_host: "https://app.posthog.com",
-    capture_pageview: true,
+    api_host: "https://eu.i.posthog.com",
+    capture_pageview: "history_change",
     capture_pageleave: true,
     autocapture: false,
     persistence: "localStorage",

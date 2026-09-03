@@ -6,6 +6,7 @@ import {
   dislikes,
   foodPreferences,
 } from "./types";
+import { MAX_TERM_LENGTH } from "@/lib/termInput";
 import KycLayout from "./KycLayout";
 
 interface PreferencesStepProps {
@@ -71,6 +72,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
+              maxLength={MAX_TERM_LENGTH}
               placeholder={t("preferences.allergyPlaceholder")}
               value={customInputs.allergy}
               onChange={(e) =>
@@ -127,6 +129,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
+              maxLength={MAX_TERM_LENGTH}
               placeholder={t("preferences.dislikePlaceholder")}
               value={customInputs.dislike}
               onChange={(e) =>
@@ -185,6 +188,7 @@ export default function PreferencesStep({
           <div className="flex gap-2">
             <input
               type="text"
+              maxLength={MAX_TERM_LENGTH}
               placeholder={t("preferences.foodPreferencePlaceholder")}
               value={customInputs.foodPreference}
               onChange={(e) =>

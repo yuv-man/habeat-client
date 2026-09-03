@@ -1,13 +1,14 @@
 import { Health } from '@flomentumsolutions/capacitor-health-extended'
-import { WatchDataProvider, WatchSnapshot, deriveStressLevel, deriveSleepQuality } from './types'
-
-const PERMISSIONS = [
-  'READ_HEART_RATE',
-  'READ_RESTING_HEART_RATE',
-  'READ_HRV',
-  'READ_SLEEP',
-  'READ_STEPS',
-] as const
+import {
+  WatchDataProvider,
+  WatchSnapshot,
+  WatchPermissionState,
+  ALL_PERMISSIONS,
+  DISCONNECTED,
+  evaluatePermissions,
+  deriveStressLevel,
+  deriveSleepQuality,
+} from './types'
 
 export class HealthConnectProvider implements WatchDataProvider {
   async isAvailable(): Promise<boolean> {
@@ -19,12 +20,48 @@ export class HealthConnectProvider implements WatchDataProvider {
     }
   }
 
-  async requestPermissions(): Promise<boolean> {
+  /**
+   * What the platform says right now — no prompt, no cached guess.
+   * This is what lets the app notice a permission the user granted manually
+   * in the OS health settings after previously declining.
+   */
+  async checkPermissions(): Promise<WatchPermissionState> {
     try {
-      const { permissions } = await Health.requestHealthPermissions({ permissions: [...PERMISSIONS] })
-      return PERMISSIONS.every((permission) => permissions[permission])
+      const { permissions } = await Health.checkHealthPermissions({
+        permissions: [...ALL_PERMISSIONS],
+      })
+      return evaluatePermissions(permissions)
     } catch {
-      return false
+      return DISCONNECTED
+    }
+  }
+
+  async requestPermissions(): Promise<WatchPermissionState> {
+    try {
+      const { permissions } = await Health.requestHealthPermissions({
+        permissions: [...ALL_PERMISSIONS],
+      })
+      // Partial grants are fine: only the required set decides the verdict.
+      return evaluatePermissions(permissions)
+    } catch {
+      return DISCONNECTED
+    }
+  }
+
+  async openSettings(): Promise<void> {
+    try {
+      await Health.openHealthConnectSettings()
+    } catch {
+      /* nothing else we can do from here */
+    }
+  }
+
+  /** Health Connect is a separate app on Android 13 and below. */
+  async openStore(): Promise<void> {
+    try {
+      await Health.showHealthConnectInPlayStore()
+    } catch {
+      /* nothing else we can do from here */
     }
   }
 

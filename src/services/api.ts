@@ -197,6 +197,27 @@ const markKYCCompleted = async (userId: string): Promise<void> => {
   }, "Failed to update KYC status. Please try again.");
 };
 
+/**
+ * Sanity-check custom allergy / dislike / preference entries.
+ *
+ * Advisory only: the server never rejects a term, it just reports which ones
+ * do not look food-related so the user can confirm. Deliberately swallows its
+ * own errors — a validation outage must never block onboarding.
+ */
+const validateFoodTerms = async (
+  terms: string[]
+): Promise<{ unrecognised: string[] }> => {
+  try {
+    const response = await userClient.post<{
+      results: { term: string; recognised: boolean; source: string }[];
+      unrecognised: string[];
+    }>("/food-terms/validate", { terms }, { headers: getAuthHeaders() });
+    return { unrecognised: response.data?.unrecognised ?? [] };
+  } catch {
+    return { unrecognised: [] }; // fail open
+  }
+};
+
 const oauthAuth = async (
   provider: string,
   action: "signin" | "signup",
@@ -2497,4 +2518,5 @@ export const userAPI = {
   cancelSubscription,
   // KYC
   markKYCCompleted,
+  validateFoodTerms,
 };

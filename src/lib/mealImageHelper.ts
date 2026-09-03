@@ -172,7 +172,9 @@ const availableImages = [
   "spiced-salmon-stew",
   "beef-quesadilla",
   "thyme-butter-chicken-pasta",
-  "thyme-beef-patty-plate"
+  "thyme-beef-patty-plate",
+  "beef-sweet-potato-stew",
+  "salmon-coconut-rice"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -307,6 +309,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "smoked-salmon-yogurt-bowl",
     "salmon-herb-pita",
     "spiced-salmon-stew",
+    "salmon-coconut-rice",
   ],
   teriyaki: [
     "teriyaki-salmon-on-a-plate",
@@ -327,7 +330,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "salmon-and-avocado-toast",
     "spanish-egg-and-potato-omelette",
   ],
-  stew: ["spiced-salmon-stew", "beef-and-bean-chili"],
+  stew: ["spiced-salmon-stew", "beef-and-bean-chili", "beef-sweet-potato-stew"],
   eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach", "spanish-egg-and-potato-omelette"],
   scrambled: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
   omelette: ["veggie-omelette", "spanish-egg-and-potato-omelette"],
@@ -426,6 +429,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "lemon-herb-chicken-with-brown-rice-and-broccoli",
     "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
     "thai-peanut-tofu-bowl",
+    "salmon-coconut-rice",
   ],
   biryani: ["biryani-rice"],
   risotto: ["risotto"],
@@ -484,6 +488,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chilli-lime-beef-pasta",
     "beef-quesadilla",
     "thyme-beef-patty-plate",
+    "beef-sweet-potato-stew"
   ],
   steak: [
     "steak-with-mashed-potatoes",
@@ -512,6 +517,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "chilli-lime-beef-pasta",
     "beef-quesadilla",
     "thyme-beef-patty-plate",
+    "beef-sweet-potato-stew"
   ],
   ribs: ["spare-ribs"],
   duck: ["duck-leg-with-mush-potatos", "duck-breast-with-mushed-potatoes"],

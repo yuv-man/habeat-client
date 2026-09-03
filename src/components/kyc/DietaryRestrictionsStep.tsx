@@ -15,6 +15,11 @@ import {
 import { KYCData, dietaryRestrictions } from "./types";
 import KycLayout from "./KycLayout";
 import { Input } from "@/components/ui/input";
+import {
+  validateTerm,
+  MAX_TERM_LENGTH,
+  MAX_TERMS_PER_LIST,
+} from "@/lib/termInput";
 import { Button } from "@/components/ui/button";
 
 interface DietaryRestrictionsStepProps {
@@ -76,6 +81,7 @@ export default function DietaryRestrictionsStep({
 }: DietaryRestrictionsStepProps) {
   const { t } = useTranslation("onboarding");
   const [otherRestriction, setOtherRestriction] = useState("");
+  const [otherError, setOtherError] = useState("");
 
   // Multi-selection for dietary restrictions
   const toggleRestriction = (restrictionId: string) => {
@@ -111,20 +117,30 @@ export default function DietaryRestrictionsStep({
   };
 
   const addOtherRestriction = () => {
-    if (otherRestriction.trim()) {
-      setKycData((prev) => {
-        const current = prev.dietaryRestrictions || [];
-        const customValue = `other:${otherRestriction.trim()}`;
-        if (!current.includes(customValue)) {
-          return {
-            ...prev,
-            dietaryRestrictions: [...current, customValue],
-          };
-        }
-        return prev;
-      });
-      setOtherRestriction("");
+    // Same bounds as the other free-text term inputs: this string reaches the
+    // meal-generation prompt, so it is cleaned, capped and de-duplicated.
+    const current = kycData.dietaryRestrictions || [];
+    const result = validateTerm(otherRestriction, current);
+    if (!result.ok) {
+      if (result.reason !== "empty") {
+        setOtherError(
+          t(`preferences.errors.${result.reason}`, {
+            max: MAX_TERM_LENGTH,
+            maxItems: MAX_TERMS_PER_LIST,
+          }),
+        );
+      }
+      return;
     }
+    setOtherError("");
+    setKycData((prev) => ({
+      ...prev,
+      dietaryRestrictions: [
+        ...(prev.dietaryRestrictions || []),
+        `other:${result.value}`,
+      ],
+    }));
+    setOtherRestriction("");
   };
 
   const removeOtherRestriction = (value: string) => {
@@ -227,7 +243,11 @@ export default function DietaryRestrictionsStep({
             <div className="flex gap-2">
               <Input
                 value={otherRestriction}
-                onChange={(e) => setOtherRestriction(e.target.value)}
+                onChange={(e) => {
+                  setOtherRestriction(e.target.value);
+                  if (otherError) setOtherError("");
+                }}
+                maxLength={MAX_TERM_LENGTH}
                 placeholder={t("dietaryRestrictions.customPlaceholder")}
                 className="h-9 text-sm"
                 onKeyPress={(e) => e.key === "Enter" && addOtherRestriction()}
@@ -242,6 +262,9 @@ export default function DietaryRestrictionsStep({
                 <Plus className="w-3.5 h-3.5" />
               </Button>
             </div>
+            {otherError && (
+              <p className="text-xs text-red-600 mt-1.5">{otherError}</p>
+            )}
           </div>
         )}
       </div>

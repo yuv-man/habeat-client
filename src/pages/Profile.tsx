@@ -63,8 +63,14 @@ const Profile = () => {
     fetchFavoriteMeals,
     updateFavorite,
   } = useAuthStore();
-  const { status: watchStatus, grant: grantWatch, deny: denyWatch } =
-    useWatchStore();
+  const {
+    status: watchStatus,
+    grant: grantWatch,
+    deny: denyWatch,
+    openSettings: openWatchSettings,
+    openStore: openWatchStore,
+    missingOptional: watchMissingOptional,
+  } = useWatchStore();
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [activeTab, setActiveTab] = useState<"settings" | "favorites">(
@@ -832,9 +838,13 @@ const Profile = () => {
                   <p className="text-sm font-medium text-gray-800">{t("appFeatures.healthData")}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
                     {watchStatus === "granted"
-                      ? t("appFeatures.healthDataConnected")
+                      ? watchMissingOptional.length > 0
+                        ? t("appFeatures.healthDataPartial")
+                        : t("appFeatures.healthDataConnected")
                       : watchStatus === "unavailable"
                       ? t("appFeatures.healthDataUnavailable")
+                      : watchStatus === "needs-setup"
+                      ? t("appFeatures.healthDataNeedsSetup")
                       : t("appFeatures.healthDataDisconnected")}
                   </p>
                 </div>
@@ -851,6 +861,23 @@ const Profile = () => {
                   <span className="text-xs text-gray-400 shrink-0">
                     {t("appFeatures.mobileOnly")}
                   </span>
+                ) : watchStatus === "needs-setup" ? (
+                  <Button
+                    size="sm"
+                    onClick={openWatchStore}
+                    className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600"
+                  >
+                    {t("appFeatures.install")}
+                  </Button>
+                ) : watchStatus === "denied" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openWatchSettings}
+                    className="h-8 text-xs shrink-0"
+                  >
+                    {t("appFeatures.openHealthSettings")}
+                  </Button>
                 ) : (
                   <Button
                     size="sm"

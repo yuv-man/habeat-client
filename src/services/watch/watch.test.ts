@@ -2,11 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Health } from "@flomentumsolutions/capacitor-health-extended";
 import type { PermissionResponse } from "@flomentumsolutions/capacitor-health-extended";
 import { HealthConnectProvider } from "./HealthConnectProvider";
-import { deriveStressLevel, deriveSleepQuality } from "./types";
+import {
+  deriveStressLevel,
+  deriveSleepQuality,
+  evaluatePermissions,
+  REQUIRED_PERMISSIONS as REQUIRED,
+} from "./types";
 
 vi.mock("@flomentumsolutions/capacitor-health-extended", () => ({
   Health: {
     requestHealthPermissions: vi.fn(),
+    checkHealthPermissions: vi.fn(),
   },
 }));
 
@@ -70,18 +76,82 @@ describe("deriveSleepQuality", () => {
   });
 });
 
-describe("HealthConnectProvider", () => {
-  it("returns granted only when Health Connect grants every requested permission", async () => {
-    vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissionsResponse(true));
-
-    await expect(new HealthConnectProvider().requestPermissions()).resolves.toBe(true);
+describe("permission requirements", () => {
+  it("treats only steps and heart rate as required", () => {
+    // Everything else is optional on purpose: demanding all five meant one
+    // declined type — usually HRV, which many devices never record — reported
+    // the whole connection as denied.
+    expect([...REQUIRED]).toEqual(["READ_STEPS", "READ_HEART_RATE"]);
   });
 
-  it("returns denied when Health Connect denies any requested permission", async () => {
+  it("connects when the required set is granted but optional types are not", () => {
+    const state = evaluatePermissions({
+      READ_STEPS: true,
+      READ_HEART_RATE: true,
+      READ_HRV: false,
+      READ_SLEEP: false,
+      READ_RESTING_HEART_RATE: false,
+    });
+    expect(state.connected).toBe(true);
+    expect(state.missingOptional).toEqual([
+      "READ_RESTING_HEART_RATE",
+      "READ_HRV",
+      "READ_SLEEP",
+    ]);
+  });
+
+  it("does not connect when a required permission is missing", () => {
+    expect(evaluatePermissions({ READ_STEPS: true, READ_HEART_RATE: false }).connected).toBe(false);
+    expect(evaluatePermissions({}).connected).toBe(false);
+    expect(evaluatePermissions(undefined).connected).toBe(false);
+  });
+});
+
+describe("HealthConnectProvider", () => {
+  it("connects when every permission is granted", async () => {
+    vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissionsResponse(true));
+
+    const state = await new HealthConnectProvider().requestPermissions();
+    expect(state.connected).toBe(true);
+    expect(state.missingOptional).toEqual([]);
+  });
+
+  it("still connects when only an OPTIONAL permission is denied", async () => {
+    // Regression guard: this exact case used to report the whole connection
+    // as denied and then cache that refusal permanently.
     const permissions = permissionsResponse(true);
     permissions.permissions.READ_SLEEP = false;
     vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissions);
 
-    await expect(new HealthConnectProvider().requestPermissions()).resolves.toBe(false);
+    const state = await new HealthConnectProvider().requestPermissions();
+    expect(state.connected).toBe(true);
+    expect(state.missingOptional).toEqual(["READ_SLEEP"]);
+  });
+
+  it("does not connect when a REQUIRED permission is denied", async () => {
+    const permissions = permissionsResponse(true);
+    permissions.permissions.READ_STEPS = false;
+    vi.mocked(Health.requestHealthPermissions).mockResolvedValue(permissions);
+
+    await expect(
+      new HealthConnectProvider().requestPermissions(),
+    ).resolves.toMatchObject({ connected: false });
+  });
+
+  it("reports disconnected instead of throwing when the platform errors", async () => {
+    vi.mocked(Health.requestHealthPermissions).mockRejectedValue(new Error("no Health Connect"));
+
+    await expect(
+      new HealthConnectProvider().requestPermissions(),
+    ).resolves.toMatchObject({ connected: false });
+  });
+
+  it("checkPermissions reads current state without prompting", async () => {
+    vi.mocked(Health.checkHealthPermissions).mockResolvedValue(permissionsResponse(true));
+
+    const state = await new HealthConnectProvider().checkPermissions();
+    expect(state.connected).toBe(true);
+    // The whole point: no permission dialog is triggered.
+    expect(Health.requestHealthPermissions).not.toHaveBeenCalled();
   });
 });

@@ -1,14 +1,14 @@
 import posthog from "posthog-js";
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
+const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST as string | undefined;
 
 export function initAnalytics() {
   if (!POSTHOG_KEY) return;
   posthog.init(POSTHOG_KEY, {
-    api_host: "https://app.posthog.com",
+    api_host: POSTHOG_HOST,
     capture_pageview: true,
     capture_pageleave: true,
-    autocapture: false,
     persistence: "localStorage",
   });
 }

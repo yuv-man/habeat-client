@@ -85,7 +85,13 @@
     "dislikePlaceholder": "Add custom dislike...",
     "foodPreferences": "Food Preferences",
     "foodPreferencePlaceholder": "Add food preference...",
-    "add": "Add"
+    "add": "Add",
+    "errors": {
+      "tooLong": "Keep it under {{max}} characters — just the food name works best.",
+      "noLetters": "Please use words, not only symbols or numbers.",
+      "duplicate": "You've already added that one.",
+      "listFull": "That's the maximum of {{maxItems}} items. Remove one to add another."
+    }
   },
   "healthProfile": {
     "title": "Health Profile",
@@ -121,5 +127,13 @@
     "goBack": "Go back",
     "stepOf": "Step {{current}} of {{total}}",
     "completeRegistration": "Complete Registration"
+  },
+  "unrecognisedTerms": {
+    "title": "Just checking",
+    "description": "These entries don't look like food to us. Keep them if they're right — we may just not know them.",
+    "remove": "Remove",
+    "undo": "Undo",
+    "keepAll": "Keep all",
+    "continue": "Continue"
   }
 }

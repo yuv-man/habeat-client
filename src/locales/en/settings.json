@@ -56,7 +56,11 @@
     "sensoryProfileActive": "Active — meals are filtered to your preferences",
     "sensoryProfileInactive": "Personalise meals by texture, routine & safe foods",
     "edit": "Edit",
-    "setUp": "Set up"
+    "setUp": "Set up",
+    "healthDataPartial": "Connected — some data types not shared",
+    "healthDataNeedsSetup": "Health Connect isn't installed yet",
+    "install": "Install",
+    "openHealthSettings": "Open settings"
   },
   "nutritionDisplay": {
     "heading": "Nutrition Numbers",

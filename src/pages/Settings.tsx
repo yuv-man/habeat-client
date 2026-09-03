@@ -55,7 +55,14 @@ const Settings = () => {
     mealTimes: storeMealTimes,
     setMealTimes: setStoreMealTimes,
   } = useAuthStore();
-  const { status: watchStatus, grant: grantWatch, deny: denyWatch } = useWatchStore();
+  const {
+    status: watchStatus,
+    grant: grantWatch,
+    deny: denyWatch,
+    openSettings: openWatchSettings,
+    openStore: openWatchStore,
+    missingOptional: watchMissingOptional,
+  } = useWatchStore();
   const language = useLanguageStore((state) => state.language);
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const [isSaving, setIsSaving] = useState(false);
@@ -763,9 +770,13 @@ const Settings = () => {
                 <p className="text-sm font-medium text-gray-800">{t("appFeatures.healthData")}</p>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {watchStatus === 'granted'
-                    ? t("appFeatures.healthDataConnected")
+                    ? watchMissingOptional.length > 0
+                      ? t("appFeatures.healthDataPartial")
+                      : t("appFeatures.healthDataConnected")
                     : watchStatus === 'unavailable'
                     ? t("appFeatures.healthDataUnavailable")
+                    : watchStatus === 'needs-setup'
+                    ? t("appFeatures.healthDataNeedsSetup")
                     : t("appFeatures.healthDataDisconnected")}
                 </p>
               </div>
@@ -775,6 +786,18 @@ const Settings = () => {
                 </Button>
               ) : watchStatus === 'unavailable' ? (
                 <span className="text-xs text-gray-400 shrink-0">{t("appFeatures.mobileOnly")}</span>
+              ) : watchStatus === 'needs-setup' ? (
+                // Health Connect is a separate install below Android 14 — give
+                // the user the way out instead of a dead "unavailable" label.
+                <Button size="sm" onClick={openWatchStore} className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600">
+                  {t("appFeatures.install")}
+                </Button>
+              ) : watchStatus === 'denied' ? (
+                // After a refusal the OS stops showing the prompt, so re-asking
+                // does nothing. Send them to the settings screen instead.
+                <Button variant="outline" size="sm" onClick={openWatchSettings} className="h-8 text-xs shrink-0">
+                  {t("appFeatures.openHealthSettings")}
+                </Button>
               ) : (
                 <Button size="sm" onClick={grantWatch} className="h-8 text-xs shrink-0 bg-green-500 text-white hover:bg-green-600">
                   {t("appFeatures.connect")}

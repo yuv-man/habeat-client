@@ -85,7 +85,13 @@
     "dislikePlaceholder": "הוסף מאכל לא אהוב...",
     "foodPreferences": "העדפות אוכל",
     "foodPreferencePlaceholder": "הוסף העדפת אוכל...",
-    "add": "הוסף"
+    "add": "הוסף",
+    "errors": {
+      "tooLong": "עד {{max}} תווים — עדיף פשוט את שם המאכל.",
+      "noLetters": "צריך להשתמש במילים, לא רק בסמלים או מספרים.",
+      "duplicate": "כבר הוספת את זה.",
+      "listFull": "הגעת למקסימום של {{maxItems}} פריטים. הסר אחד כדי להוסיף עוד."
+    }
   },
   "healthProfile": {
     "title": "פרופיל בריאותי",
@@ -121,5 +127,13 @@
     "goBack": "חזרה",
     "stepOf": "שלב {{current}} מתוך {{total}}",
     "completeRegistration": "השלם הרשמה"
+  },
+  "unrecognisedTerms": {
+    "title": "רגע, נוודא",
+    "description": "הערכים האלה לא נראים לנו כמו מזון. אם הם נכונים — אפשר להשאיר אותם, ייתכן שפשוט לא מכירים אותם.",
+    "remove": "הסר",
+    "undo": "ביטול",
+    "keepAll": "השאר הכל",
+    "continue": "המשך"
   }
 }

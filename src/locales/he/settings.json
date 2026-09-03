@@ -56,7 +56,11 @@
     "sensoryProfileActive": "פעיל — הארוחות מסוננות לפי ההעדפות שלך",
     "sensoryProfileInactive": "התאם אישית ארוחות לפי מרקם, שגרה ומאכלים בטוחים",
     "edit": "ערוך",
-    "setUp": "הגדר"
+    "setUp": "הגדר",
+    "healthDataPartial": "מחובר — חלק מסוגי הנתונים לא משותפים",
+    "healthDataNeedsSetup": "‏Health Connect עדיין לא מותקן",
+    "install": "התקנה",
+    "openHealthSettings": "פתח הגדרות"
   },
   "nutritionDisplay": {
     "heading": "מספרי תזונה",

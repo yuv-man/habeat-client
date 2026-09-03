@@ -22,6 +22,12 @@ export interface KYCData {
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
   foodRelationship?: string; // fuel | sometimes-emotional | very-emotional | unsure
   emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
+  /**
+   * Custom terms the user kept after we flagged them as probably-not-food.
+   * Stored so they stay visible to the user but are excluded from generator
+   * prompts. Allergies are never dropped from the prompt on this basis.
+   */
+  unrecognisedTerms?: string[];
 }
 
 export interface CustomInputs {
@@ -173,3 +179,12 @@ export const EMOTIONAL_TRIGGERS = [
   { id: "anxiety", emoji: "😟", label: "Anxiety" },
   { id: "late-night", emoji: "🌙", label: "Late night" },
 ];
+
+/**
+ * Every term the UI offers as a preset chip, lowercased.
+ * Custom entries are exactly the ones NOT in here, so only those need the
+ * "does this look like food?" check.
+ */
+export const PRESET_TERMS: ReadonlySet<string> = new Set(
+  [...allergies, ...dislikes, ...foodPreferences].map((t) => t.toLowerCase()),
+);

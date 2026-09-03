@@ -9,6 +9,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { clearExpiredCacheSync } from "@/lib/cache";
 import BackNavigationHandler from "@/components/navigation/BackNavigationHandler";
 import WatchPermissionModal from "@/components/watch/WatchPermissionModal";
+import { App as CapacitorApp } from "@capacitor/app";
 import { useWatchStore } from "@/stores/watchStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
@@ -65,6 +66,22 @@ const App = () => {
   useEffect(() => {
     clearExpiredCacheSync();
     useWatchStore.getState().initialize();
+
+    // Granting health permissions happens OUTSIDE the app — in Health Connect
+    // or Apple Health. Re-check on resume so the connection lights up when the
+    // user comes back, instead of them having to hunt for a Connect button.
+    let remove: (() => void) | undefined;
+    CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) void useWatchStore.getState().refresh();
+    })
+      .then((handle) => {
+        remove = () => handle.remove();
+      })
+      .catch(() => {
+        /* web build - no native app lifecycle */
+      });
+
+    return () => remove?.();
   }, []);
 
   // Signed-in user's saved language preference is the cross-device source

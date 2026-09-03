@@ -1,6 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  validateTerm,
+  MAX_TERM_LENGTH,
+  MAX_TERMS_PER_LIST,
+} from "@/lib/termInput";
 import SignupStep from "./SignupStep";
 import EmotionalEatingStep from "./EmotionalEatingStep";
 import DietStep from "./DietStep";
@@ -10,8 +15,9 @@ import ProfileStep from "./ProfileStep";
 import HealthProfileStep from "./HealthProfileStep";
 import FitnessStep from "./FitnessStep";
 import PreferencesStep from "./PreferencesStep";
+import UnrecognisedTermsDialog from "./UnrecognisedTermsDialog";
 import CompleteStep from "./CompleteStep";
-import { AuthData, KYCData, CustomInputs } from "./types";
+import { AuthData, KYCData, CustomInputs, PRESET_TERMS } from "./types";
 import type { IUser } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +47,8 @@ export default function KYCFlow() {
   const [step, setStep] = useState("signup");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [flaggedTerms, setFlaggedTerms] = useState<string[]>([]);
+  const [checkingTerms, setCheckingTerms] = useState(false);
 
   const [authData, setAuthData] = useState<AuthData>({
     name: "",
@@ -270,6 +278,50 @@ export default function KYCFlow() {
   };
 
   const submitPreferences = async () => {
+    // Only the terms the user typed themselves need checking — the preset
+    // chips are known-good by construction.
+    const custom = [
+      ...kycData.allergies,
+      ...kycData.dislikes,
+      ...kycData.foodPreferences,
+    ].filter((term) => !PRESET_TERMS.has(term.toLowerCase()));
+
+    if (custom.length === 0) {
+      setStep("healthProfile");
+      return;
+    }
+
+    setCheckingTerms(true);
+    // validateFoodTerms fails open, so a validation outage just moves on.
+    const { unrecognised } = await userAPI.validateFoodTerms(custom);
+    setCheckingTerms(false);
+
+    if (unrecognised.length === 0) {
+      setStep("healthProfile");
+      return;
+    }
+
+    // Advisory, never a block: the user decides per term.
+    setFlaggedTerms(unrecognised);
+  };
+
+  /** Resolve the "does this look like food?" prompt and continue. */
+  const resolveFlaggedTerms = (removed: string[]) => {
+    const drop = new Set(removed.map((t) => t.toLowerCase()));
+    const keep = flaggedTerms.filter((t) => !drop.has(t.toLowerCase()));
+    const without = (list: string[]) =>
+      list.filter((t) => !drop.has(t.toLowerCase()));
+
+    setKycData((prev) => ({
+      ...prev,
+      allergies: without(prev.allergies),
+      dislikes: without(prev.dislikes),
+      foodPreferences: without(prev.foodPreferences),
+      // Kept-but-flagged terms are remembered so the generator can skip them.
+      unrecognisedTerms: [...(prev.unrecognisedTerms ?? []), ...keep],
+    }));
+
+    setFlaggedTerms([]);
     setStep("healthProfile");
   };
 
@@ -317,6 +369,7 @@ export default function KYCFlow() {
         dietaryRestrictions: kycData.dietaryRestrictions || [],
         foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
+        unrecognisedTerms: kycData.unrecognisedTerms ?? [],
         foodRelationship: kycData.foodRelationship ?? "",
         emotionalTriggers: kycData.emotionalTriggers ?? [],
         // Default numeric calorie/macro display off for users who flagged a difficult
@@ -414,16 +467,29 @@ export default function KYCFlow() {
 
   const addCustomItem = (category: string, inputKey: string) => {
     const key = inputKey as keyof CustomInputs;
-    const value = customInputs[key].trim();
-    if (!value) return;
+    const currentList = (kycData[category as keyof KYCData] as string[]) || [];
 
-    setKycData((prev) => {
-      const currentList = prev[category as keyof KYCData] as string[];
-      return {
-        ...prev,
-        [category]: [...currentList, value],
-      };
-    });
+    // These terms go straight into the meal-generation prompt, so they are
+    // bounded and de-duplicated here rather than after the fact. The server
+    // enforces the same rules (@SafeTermArray) for anyone bypassing the UI.
+    const result = validateTerm(customInputs[key], currentList);
+
+    if (!result.ok) {
+      if (result.reason === "empty") return; // nothing typed — no need to scold
+      setError(
+        t(`preferences.errors.${result.reason}`, {
+          max: MAX_TERM_LENGTH,
+          maxItems: MAX_TERMS_PER_LIST,
+        }),
+      );
+      return;
+    }
+
+    setError("");
+    setKycData((prev) => ({
+      ...prev,
+      [category]: [...((prev[category as keyof KYCData] as string[]) || []), result.value],
+    }));
     setCustomInputs((prev) => ({
       ...prev,
       [key]: "",
@@ -636,20 +702,26 @@ export default function KYCFlow() {
     case "preferences": {
       const { stepNumber, totalSteps } = getStepInfo("preferences");
       return (
-        <PreferencesStep
-          kycData={kycData}
-          setKycData={setKycData}
-          customInputs={customInputs}
-          setCustomInputs={setCustomInputs}
-          loading={loading}
-          error={error}
-          onSubmit={submitPreferences}
-          onToggleOption={toggleOption}
-          onAddCustomItem={addCustomItem}
-          onBack={handleBack}
-          currentStep={stepNumber}
-          totalSteps={totalSteps}
-        />
+        <>
+          <PreferencesStep
+            kycData={kycData}
+            setKycData={setKycData}
+            customInputs={customInputs}
+            setCustomInputs={setCustomInputs}
+            loading={loading || checkingTerms}
+            error={error}
+            onSubmit={submitPreferences}
+            onToggleOption={toggleOption}
+            onAddCustomItem={addCustomItem}
+            onBack={handleBack}
+            currentStep={stepNumber}
+            totalSteps={totalSteps}
+          />
+          <UnrecognisedTermsDialog
+            terms={flaggedTerms}
+            onResolve={resolveFlaggedTerms}
+          />
+        </>
       );
     }
 

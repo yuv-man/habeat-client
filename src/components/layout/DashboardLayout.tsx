@@ -118,9 +118,10 @@ const DashboardLayout = ({
         // inset. Kept as a class, not an inline style — inline padding outranks
         // every breakpoint variant, which silently killed the md: overrides.
         "pt-[calc(env(safe-area-inset-top,0px)+3.5rem)]",
-        // Clears the fixed BottomNav, including the home-indicator inset on
-        // devices that have one.
-        "pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)]",
+        // Clears the fixed BottomNav. --bottom-nav-h is the bar's measured
+        // height (BottomNav publishes it), so this stays correct when the
+        // gesture-bar inset or the system font scale makes the bar taller.
+        "pb-[calc(var(--bottom-nav-h)+0.5rem)]",
         // Desktop swaps to the h-16 top navbar and drops the bottom nav.
         "md:pt-16 md:pb-0"
       )}

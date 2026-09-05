@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { IDailyProgress, IEngagementResult } from "@/types/interfaces";
+import { IDailyProgress, IEngagementResult, IMeal } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
@@ -41,6 +41,14 @@ interface ProgressActions {
     date: string,
     mealType: string,
     mealId: string
+  ) => Promise<void>;
+  /** Correct the time a completed meal was actually eaten ("HH:MM", local). */
+  setMealEatenTime: (
+    userId: string,
+    date: string,
+    mealType: string,
+    mealId: string,
+    time: string
   ) => Promise<void>;
   addWaterGlass: (userId: string, date: string) => Promise<void>;
   setTodayProgress: (progress: IDailyProgress | null) => void;
@@ -368,6 +376,79 @@ export const useProgressStore = create<ProgressStore>()(
       // Rollback on error
       set({ todayProgress: originalProgress });
       set({ error: error.message || "Failed to complete meal" });
+      throw error;
+    }
+  },
+
+  setMealEatenTime: async (
+    userId: string,
+    date: string,
+    mealType: string,
+    mealId: string,
+    time: string
+  ) => {
+    const { todayProgress } = get();
+    if (!todayProgress) return;
+
+    // The eaten time carries the day the meal belongs to, not today: a meal
+    // being corrected at 00:30 still belongs to the day it was logged under.
+    const [hours, minutes] = time.split(":").map(Number);
+    const [year, month, day] = date.slice(0, 10).split("-").map(Number);
+    const completedAt = new Date(
+      year,
+      (month || 1) - 1,
+      day || 1,
+      hours || 0,
+      minutes || 0,
+      0,
+      0
+    ).toISOString();
+
+    const originalProgress = JSON.parse(JSON.stringify(todayProgress));
+
+    const stamp = (meal: IMeal): IMeal => ({
+      ...meal,
+      completedAt,
+      completedAtSource: "user",
+    });
+
+    // Optimistic: only the timestamp moves — no calories or macros change.
+    if (mealType === "snacks") {
+      set({
+        todayProgress: {
+          ...todayProgress,
+          meals: {
+            ...todayProgress.meals,
+            snacks: todayProgress.meals.snacks.map((snack) =>
+              snack._id === mealId ? stamp(snack) : snack
+            ),
+          },
+        },
+      });
+    } else {
+      const meal = todayProgress.meals[
+        mealType as "breakfast" | "lunch" | "dinner"
+      ];
+      if (!meal) return;
+      set({
+        todayProgress: {
+          ...todayProgress,
+          meals: { ...todayProgress.meals, [mealType]: stamp(meal) },
+        },
+      });
+    }
+
+    if (config.testFrontend) {
+      return;
+    }
+
+    try {
+      await userAPI.updateMealEatenTime(userId, date, mealType, mealId, time);
+    } catch (error: any) {
+      // Rollback: a time the server rejected must not be left on screen
+      // looking saved.
+      set({ todayProgress: originalProgress });
+      set({ error: error.message || "Failed to update the meal time" });
       throw error;
     }
   },

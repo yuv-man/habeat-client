@@ -1,4 +1,5 @@
 import React from "react";
+import type { CookingLevel } from "@/lib/cookingLevels";
 
 export interface AuthData {
   name: string;
@@ -20,6 +21,9 @@ export interface KYCData {
   foodPreferences: string[];
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
+  /** How much cooking the user is up for; caps generated prep time and
+   *  technique. See @/lib/cookingLevels. */
+  cookingLevel?: CookingLevel;
   foodRelationship?: string; // fuel | sometimes-emotional | very-emotional | unsure
   emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
   /**

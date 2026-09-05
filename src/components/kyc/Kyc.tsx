@@ -15,6 +15,7 @@ import ProfileStep from "./ProfileStep";
 import HealthProfileStep from "./HealthProfileStep";
 import FitnessStep from "./FitnessStep";
 import PreferencesStep from "./PreferencesStep";
+import CookingLevelStep from "./CookingLevelStep";
 import UnrecognisedTermsDialog from "./UnrecognisedTermsDialog";
 import CompleteStep from "./CompleteStep";
 import { AuthData, KYCData, CustomInputs, PRESET_TERMS } from "./types";
@@ -287,7 +288,7 @@ export default function KYCFlow() {
     ].filter((term) => !PRESET_TERMS.has(term.toLowerCase()));
 
     if (custom.length === 0) {
-      setStep("healthProfile");
+      setStep("cooking");
       return;
     }
 
@@ -297,7 +298,7 @@ export default function KYCFlow() {
     setCheckingTerms(false);
 
     if (unrecognised.length === 0) {
-      setStep("healthProfile");
+      setStep("cooking");
       return;
     }
 
@@ -322,6 +323,15 @@ export default function KYCFlow() {
     }));
 
     setFlaggedTerms([]);
+    setStep("cooking");
+  };
+
+  const submitCookingLevel = async () => {
+    if (!kycData.cookingLevel) {
+      setError(t("kyc.errors.selectCookingLevel"));
+      return;
+    }
+    setError("");
     setStep("healthProfile");
   };
 
@@ -370,6 +380,7 @@ export default function KYCFlow() {
         foodPreferences: kycData.foodPreferences,
         dislikes: kycData.dislikes,
         unrecognisedTerms: kycData.unrecognisedTerms ?? [],
+        cookingLevel: kycData.cookingLevel,
         foodRelationship: kycData.foodRelationship ?? "",
         emotionalTriggers: kycData.emotionalTriggers ?? [],
         // Default numeric calorie/macro display off for users who flagged a difficult
@@ -504,7 +515,7 @@ export default function KYCFlow() {
   // Helper function to calculate step number and total steps
   const getStepInfo = (currentStep: string) => {
     const hasFasting = kycData.dietType === "fasting";
-    const totalSteps = hasFasting ? 8 : 7;
+    const totalSteps = hasFasting ? 9 : 8;
 
     let stepNumber = 0;
     switch (currentStep) {
@@ -529,8 +540,11 @@ export default function KYCFlow() {
       case "preferences":
         stepNumber = hasFasting ? 7 : 6;
         break;
-      case "healthProfile":
+      case "cooking":
         stepNumber = hasFasting ? 8 : 7;
+        break;
+      case "healthProfile":
+        stepNumber = hasFasting ? 9 : 8;
         break;
       default:
         stepNumber = 0;
@@ -567,8 +581,11 @@ export default function KYCFlow() {
       case "preferences":
         setStep("fitness");
         break;
-      case "healthProfile":
+      case "cooking":
         setStep("preferences");
+        break;
+      case "healthProfile":
+        setStep("cooking");
         break;
       default:
         break;
@@ -722,6 +739,22 @@ export default function KYCFlow() {
             onResolve={resolveFlaggedTerms}
           />
         </>
+      );
+    }
+
+    case "cooking": {
+      const { stepNumber, totalSteps } = getStepInfo("cooking");
+      return (
+        <CookingLevelStep
+          kycData={kycData}
+          setKycData={setKycData}
+          loading={loading}
+          error={error}
+          onSubmit={submitCookingLevel}
+          onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
+        />
       );
     }
 

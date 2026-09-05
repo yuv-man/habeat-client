@@ -93,6 +93,26 @@
       "listFull": "That's the maximum of {{maxItems}} items. Remove one to add another."
     }
   },
+  "cooking": {
+    "title": "How much cooking are you up for?",
+    "description": "We'll only plan meals you'd actually make. You can change this any time.",
+    "upToMinutes": "Up to {{minutes}} min per meal",
+    "changeLater": "Not sure? Pick the one that fits a normal weekday — you can change it in your profile.",
+    "levels": {
+      "beginner": {
+        "label": "I keep it simple",
+        "description": "Assembly, one pan or one tray. Few ingredients, nothing to juggle."
+      },
+      "home-cook": {
+        "label": "I'm a comfortable home cook",
+        "description": "Everyday cooking — sautéing, roasting, a simple sauce, a couple of pans."
+      },
+      "confident": {
+        "label": "I love to cook",
+        "description": "Bring on multi-step dishes — marinades, braises, baking, real sauces."
+      }
+    }
+  },
   "healthProfile": {
     "title": "Health Profile",
     "description": "Based on your information, here are your personalized metrics",
@@ -120,7 +140,8 @@
   "kyc": {
     "errors": {
       "selectDietType": "Please select a diet type",
-      "fastingSchedule": "Please set your fasting schedule"
+      "fastingSchedule": "Please set your fasting schedule",
+      "selectCookingLevel": "Please choose how much cooking you're up for"
     }
   },
   "layout": {

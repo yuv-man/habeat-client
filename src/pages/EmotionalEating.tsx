@@ -151,9 +151,9 @@ function ScoreRing({ score, weeklyChange, mealsAnalysed }: ScoreRingProps) {
         </p>
         <p>
           It is calculated from {mealsAnalysed} meal
-          {mealsAnalysed === 1 ? "" : "s"} you linked to a mood check-in over this
-          period — not from your onboarding answers. Log more meal-and-mood pairs
-          and it gets sharper.
+          {mealsAnalysed === 1 ? "" : "s"} you logged with a mood check-in near
+          them over this period — not from your onboarding answers. Check in on
+          your mood closer to eating and it gets sharper.
         </p>
         <p className="text-slate-400">
           75+ Excellent · 50–74 Building · under 50 Developing.
@@ -170,8 +170,12 @@ interface DayBar {
   label: string;
   /** Average mood that day on the 1–5 scale, or null if nothing was logged. */
   moodAvg: number | null;
-  /** Mindful-eating score that day on the 0–100 scale, or null if no meals. */
+  /** Mindful-eating score that day on the 0–100 scale, or null when no meal
+   *  that day had a mood near enough to read anything from. */
   mindfulScore: number | null;
+  /** Meals ticked off that day. A day with meals but no score is a real day of
+   *  eating we simply can't score — it gets a marker, not a blank. */
+  mealsLogged: number;
 }
 
 interface MoodEatingChartProps {
@@ -209,7 +213,8 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
   const [selected, setSelected] = useState<number | null>(null);
 
   const loggedMoodDays = days.filter((d) => d.moodAvg != null).length;
-  const loggedMealDays = days.filter((d) => d.mindfulScore != null).length;
+  const loggedMealDays = days.filter((d) => d.mealsLogged > 0).length;
+  const scoredMealDays = days.filter((d) => d.mindfulScore != null).length;
   const active = selected != null ? days[selected] : null;
 
   return (
@@ -239,7 +244,8 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
       <div className="grid grid-cols-7 gap-2 flex-1 items-end">
         {days.map((day, i) => {
           const hasMood = day.moodAvg != null;
-          const hasMeal = day.mindfulScore != null;
+          const hasScore = day.mindfulScore != null;
+          const hasMeal = day.mealsLogged > 0;
           const isSelected = selected === i;
 
           return (
@@ -249,7 +255,11 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
               aria-label={`${dayFull(day.date)}: ${
                 hasMood ? `mood ${day.moodAvg!.toFixed(1)} of 5` : "no mood logged"
               }, ${
-                hasMeal ? `eating score ${day.mindfulScore} of 100` : "no meals logged"
+                hasScore
+                  ? `eating score ${day.mindfulScore} of 100`
+                  : hasMeal
+                    ? `${day.mealsLogged} meal${day.mealsLogged === 1 ? "" : "s"} logged, no mood nearby to score them`
+                    : "no meals logged"
               }`}
               className={cn(
                 "flex flex-col items-center gap-0.5 rounded-md transition-all",
@@ -273,13 +283,31 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
               {/* Centre line */}
               <div className="w-full h-px bg-slate-300" />
 
-              {/* Lower: eating quality, grows from the centre line downward */}
+              {/* Lower: eating quality, grows from the centre line downward.
+                  A day with meals but no nearby mood gets a hatched stub and
+                  its meal count: the meals happened, the emotion behind them
+                  is what's missing. Drawing that day as a dash was the bug —
+                  it told users we had no meals when we had them all along. */}
               <div className="w-full bg-teal-100/50 rounded-b-md h-20 relative flex items-start justify-center overflow-hidden">
-                {hasMeal ? (
+                {hasScore ? (
                   <div
                     className="w-1/2 bg-teal-400 rounded-b-md transition-all duration-500 ease-out"
                     style={{ height: `${Math.round(day.mindfulScore!)}%` }}
                   />
+                ) : hasMeal ? (
+                  <>
+                    <div
+                      className="w-1/2 rounded-b-md border border-teal-300 border-t-0"
+                      style={{
+                        height: "28%",
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, rgba(45,212,191,0.35) 0 3px, transparent 3px 6px)",
+                      }}
+                    />
+                    <span className="absolute bottom-0.5 inset-x-0 text-center text-[9px] font-semibold text-teal-600 tabular-nums">
+                      {day.mealsLogged}
+                    </span>
+                  </>
                 ) : (
                   <span className="absolute inset-0 flex items-center justify-center text-slate-300 text-[9px]">
                     —
@@ -320,8 +348,15 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
               <span className="font-semibold text-slate-700">
                 {active.mindfulScore != null
                   ? `${active.mindfulScore} / 100`
-                  : "no meals logged"}
+                  : active.mealsLogged > 0
+                    ? `${active.mealsLogged} meal${active.mealsLogged === 1 ? "" : "s"} logged`
+                    : "no meals logged"}
               </span>
+              {active.mindfulScore == null && active.mealsLogged > 0 && (
+                <span className="block text-[10px] text-slate-400 mt-0.5">
+                  No mood check-in near them, so they can't be scored
+                </span>
+              )}
             </span>
           </div>
         </div>
@@ -349,6 +384,12 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
           100/100, meaning every meal was eaten for hunger rather than emotion.
         </p>
         <p>
+          <span className="font-semibold text-slate-600">A hatched stub</span>{" "}
+          with a number means you logged that many meals but checked in on your
+          mood too far from them to link the two. The meals count; the emotion
+          behind them is what's missing.
+        </p>
+        <p>
           <span className="font-semibold text-slate-600">A dash (—)</span> means
           nothing was logged that day. It is not a score of zero — the day is
           simply blank.
@@ -361,7 +402,10 @@ function MoodEatingChart({ days, insight }: MoodEatingChartProps) {
         <p className="pt-1 text-slate-400">
           Based on {loggedMoodDays} day{loggedMoodDays === 1 ? "" : "s"} with mood
           check-ins and {loggedMealDays} day{loggedMealDays === 1 ? "" : "s"} with
-          logged meals, out of the last 7.
+          logged meals, out of the last {days.length}
+          {scoredMealDays < loggedMealDays &&
+            ` — ${scoredMealDays} of those meal days had a mood close enough to score`}
+          .
         </p>
       </HowToRead>
     </div>
@@ -663,8 +707,9 @@ function PatternsTable({
           <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
           <p className="text-[11px] leading-relaxed text-amber-800">
             These rows illustrate what this table will show — they are not your
-            patterns. Yours appear once you have logged two meals in the same slot,
-            or a mood trigger has been observed at least once.
+            patterns. Yours appear as the logs build up: two meals in the same
+            slot, two late nights, a meal skipped twice, or a mood trigger seen
+            at least once.
           </p>
         </div>
       )}
@@ -742,12 +787,13 @@ export default function EmotionalEating() {
         label: dayInitial(d.date),
         moodAvg: d.moodAvg,
         mindfulScore: d.mindfulScore,
+        mealsLogged: d.mealsLogged ?? 0,
       }));
     }
 
-    // Before any meal-mood correlations exist the backend has no mindfulScore to
-    // give us. We still plot the mood check-ins the user *has* logged, and leave
-    // the eating half empty rather than inventing a curve for it.
+    // The insight call hasn't landed (or failed). Plot the mood check-ins we
+    // already hold rather than an empty frame; the eating half stays unknown
+    // rather than being invented.
     return Array.from({ length: 7 }, (_, i) => {
       const dateKey = daysAgo(6 - i);
       const dayEntries = moodHistory.filter((m) => m.date.startsWith(dateKey));
@@ -758,63 +804,36 @@ export default function EmotionalEating() {
           ? dayEntries.reduce((s, m) => s + m.moodLevel, 0) / dayEntries.length
           : null,
         mindfulScore: null,
+        mealsLogged: 0,
       };
     });
   }, [insight, moodHistory]);
 
-  // Build patterns table — only observed patterns, never KYC seeds.
-  // `isExample` tells the table to label itself as an illustration rather than
-  // presenting placeholder rows as findings.
+  // Patterns come from the server, which is the only place that can see the
+  // meals, the moods and the days a planned meal never happened. The client's
+  // job is to render them — and, when there are none, to say so with example
+  // rows that are unmistakably labelled as examples.
   const { patterns, patternsAreExample } = useMemo<{
     patterns: Pattern[];
     patternsAreExample: boolean;
   }>(() => {
-    if (!insight) return { patterns: DEFAULT_PATTERNS, patternsAreExample: true };
+    const observed = insight?.patterns ?? [];
 
-    const rows: Pattern[] = [];
-
-    const TRIGGER_EMOJIS: Record<string, string> = {
-      stress: "😤", boredom: "😑", sadness: "😢", anxiety: "😰",
-      social: "👥", tiredness: "😴", habit: "🔄", celebration: "🎉",
-      procrastination: "📱", "late-night": "🌙",
-    };
-
-    // Positive: meal slot with strongest mindful eating score (≥2 logged meals)
-    if (insight.strongestMealType) {
-      const slot = insight.strongestMealType;
-      const mealCount =
-        insight.mealTypeBreakdown[slot as keyof typeof insight.mealTypeBreakdown] ?? 0;
-      rows.push({
-        emoji: "☀️",
-        name: `${slot.charAt(0).toUpperCase()}${slot.slice(1)} Mindfulness`,
-        context: "Most mindful meal of the day",
-        frequency: `${mealCount} meal${mealCount !== 1 ? "s" : ""} logged`,
-        impact: "positive",
-      });
+    if (observed.length) {
+      return {
+        patterns: observed.map((p) => ({
+          emoji: p.emoji,
+          name: p.name,
+          context: p.context,
+          frequency: p.frequency,
+          impact: p.impact,
+        })),
+        patternsAreExample: false,
+      };
     }
 
-    // Negative: only triggers that were actually observed (count > 0)
-    (insight.commonTriggers ?? [])
-      .filter((t) => t.count > 0)
-      .slice(0, 3)
-      .forEach((t) => {
-        const key = t.trigger.toLowerCase();
-        rows.push({
-          emoji: TRIGGER_EMOJIS[key] ?? "⚡",
-          name: `${t.trigger.charAt(0).toUpperCase()}${t.trigger.slice(1)}-Eating`,
-          // The real window this trigger fires in, when the data supports naming
-          // one. Falls back to the generic phrasing only when it doesn't.
-          context: t.windowLabel ?? "Observed from your logs",
-          frequency: `${t.count}× this ${period}`,
-          impact: "negative",
-        });
-      });
-
-    // Only fall back to defaults when there's genuinely no data at all
-    return rows.length
-      ? { patterns: rows, patternsAreExample: false }
-      : { patterns: DEFAULT_PATTERNS, patternsAreExample: true };
-  }, [insight, period]);
+    return { patterns: DEFAULT_PATTERNS, patternsAreExample: true };
+  }, [insight]);
 
   const score = insight?.mindfulEatingScore ?? 0;
   const weeklyChange = (insight?.weeklyTrend?.length ?? 0) > 1
@@ -834,6 +853,14 @@ export default function EmotionalEating() {
   // tile stays correct whichever the server sends.
   const satietyPct = Math.round(toPercent(insight?.satietyRate));
   const mealsAnalyzed = insight?.totalMeals ?? 0;
+  const mealsLogged = insight?.mealsLogged ?? 0;
+  const satietyBasis = insight?.satietyBasis ?? 0;
+  // Meals count as data on their own. The old gate only looked at moods, so a
+  // week of ticked-off meals with no check-in still landed on "No patterns yet".
+  const hasAnyData =
+    mealsLogged > 0 ||
+    moodHistory.length > 0 ||
+    (insight?.reflectionDays ?? 0) > 0;
 
   return (
     <DashboardLayout hidePlanBanner bgColor="bg-slate-50">
@@ -877,36 +904,48 @@ export default function EmotionalEating() {
             Understand the connection between your emotional state and eating habits.
           </p>
 
-          {/* Provenance: what this page is actually computed from. */}
+          {/* Provenance: what this page is actually computed from, and how it
+              knows it. A meal the user linked a mood to and a meal we paired
+              with a nearby check-in are not the same evidence, so the line
+              names both rather than blurring them into one number. */}
           {insight && (
             <p className="text-[11px] text-slate-400 mb-6 flex items-center gap-1.5">
               <Info className="w-3.5 h-3.5 shrink-0" />
-              {insight.totalMeals > 0 ? (
+              {mealsLogged > 0 ? (
                 <span>
-                  Computed from <strong className="text-slate-500">{insight.totalMeals}</strong>{" "}
-                  meal{insight.totalMeals === 1 ? "" : "s"} linked to a mood check-in
-                  {moodHistory.length > 0 && (
+                  From <strong className="text-slate-500">{mealsLogged}</strong>{" "}
+                  meal{mealsLogged === 1 ? "" : "s"} you logged
+                  {insight.totalMeals > 0 ? (
                     <>
-                      {" "}and <strong className="text-slate-500">{moodHistory.length}</strong>{" "}
-                      mood entr{moodHistory.length === 1 ? "y" : "ies"}
+                      {" "}— <strong className="text-slate-500">{insight.totalMeals}</strong>{" "}
+                      of them with a mood close enough to read
+                      {insight.linkedMeals > 0 && `, ${insight.linkedMeals} you linked yourself`}
                     </>
+                  ) : (
+                    <> — none yet with a mood logged near them</>
                   )}
                   {(() => {
                     const range = fmtRange(insight.period?.start, insight.period?.end);
                     return range ? `, ${range}.` : ".";
                   })()}
                 </span>
+              ) : moodHistory.length > 0 ? (
+                <span>
+                  <strong className="text-slate-500">{moodHistory.length}</strong> mood
+                  entr{moodHistory.length === 1 ? "y" : "ies"} so far and no meals
+                  ticked off — the eating half fills in as you log meals.
+                </span>
               ) : (
                 <span>
-                  No meals linked to a mood yet — scores below stay locked until you
-                  link at least one.
+                  Nothing logged yet in this period. Tick off meals on the tracker
+                  and check in on your mood to fill this in.
                 </span>
               )}
             </p>
           )}
 
           {/* No data at all */}
-          {!insight && moodHistory.length === 0 ? (
+          {!hasAnyData ? (
             <div className="bg-white rounded-2xl p-8 text-center border border-slate-100 shadow-sm">
               <div className="text-4xl mb-3">🌱</div>
               <p className="font-semibold text-slate-700 mb-1">No patterns yet</p>
@@ -936,14 +975,23 @@ export default function EmotionalEating() {
                 </div>
               </div>
 
-              {/* Link-moods CTA — shown until user has real meal-mood correlations */}
+              {/* Shown until at least one meal can be read against a mood. The
+                  copy changes depending on which half is missing — telling
+                  someone who has logged nine meals to "log a meal" is what made
+                  this screen feel like it wasn't watching. */}
               {(!insight || insight.totalMeals === 0) && (
                 <div className="bg-teal-50 border border-teal-200 rounded-2xl p-4 flex items-start gap-3">
                   <Brain className="w-5 h-5 text-teal-600 mt-0.5 shrink-0" />
                   <div>
-                    <p className="text-sm font-semibold text-teal-800 mb-0.5">Mood data connected</p>
+                    <p className="text-sm font-semibold text-teal-800 mb-0.5">
+                      {mealsLogged > 0
+                        ? "Your meals are here — the feelings aren't yet"
+                        : "Mood data connected"}
+                    </p>
                     <p className="text-xs text-teal-700 leading-relaxed">
-                      Your mood check-ins are showing above. To unlock your Mindful Eating Score and satiety stats, log a mood right after a meal — the check-in will ask if you want to link it.
+                      {mealsLogged > 0
+                        ? `We can see the ${mealsLogged} meal${mealsLogged === 1 ? "" : "s"} you ticked off, but no mood check-in landed close enough to any of them to say how you felt. Check in on your mood around a meal — within a couple of hours either side — and the eating half of the chart starts filling in.`
+                        : "Your mood check-ins are showing above. To unlock your Mindful Eating Score and satiety stats, tick off a meal on the tracker and check in on your mood around the same time."}
                     </p>
                   </div>
                 </div>
@@ -953,29 +1001,48 @@ export default function EmotionalEating() {
               {insight && insight.totalMeals > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-12 gap-4">
                   <div className="md:col-span-3">
+                    {/* Only meals where the hunger question was actually put
+                        can answer this. Showing 0% because nobody was asked
+                        would read as "you never eat for hunger". */}
                     <MetricCard
                       label="Satiety Rate"
-                      value={`${satietyPct}%`}
-                      unit={satietyPct >= 70 ? "High" : satietyPct >= 40 ? "Medium" : "Low"}
-                      sublabel="Meals eaten for hunger, not emotion"
+                      value={satietyBasis > 0 ? `${satietyPct}%` : "—"}
+                      unit={
+                        satietyBasis > 0
+                          ? satietyPct >= 70 ? "High" : satietyPct >= 40 ? "Medium" : "Low"
+                          : "Not asked yet"
+                      }
+                      sublabel={
+                        satietyBasis > 0
+                          ? "Meals eaten for hunger, not emotion"
+                          : "Rate your hunger when you link a mood to a meal"
+                      }
                       icon={<Sparkles className="w-4 h-4" />}
                       color="teal"
-                      help={`Of the ${mealsAnalyzed} meal${mealsAnalyzed === 1 ? "" : "s"} you logged, ${satietyPct}% were started at a genuine hunger level (3 or more out of 5 on the pre-meal check-in). The rest were started while you were full or close to it.`}
+                      help={
+                        satietyBasis > 0
+                          ? `Of the ${satietyBasis} meal${satietyBasis === 1 ? "" : "s"} where you rated your hunger before eating, ${satietyPct}% were started at a genuine hunger level (3 or more out of 5). The rest were started while you were full or close to it.`
+                          : "This one needs your own answer: when you link a mood to a meal, the check-in asks how hungry you were beforehand. Until then there is nothing here to report."
+                      }
                     />
                   </div>
                   <div className="md:col-span-3">
                     <MetricCard
                       label="Meals Analysed"
                       value={String(mealsAnalyzed)}
-                      unit="total"
+                      unit={mealsLogged > mealsAnalyzed ? `of ${mealsLogged} logged` : "total"}
                       sublabel={`${insight.emotionalEatingInstances} showed emotional eating`}
                       icon={<Brain className="w-4 h-4" />}
                       color="violet"
-                      help={`Meals you logged together with a mood check-in${
+                      help={`Meals with a mood we could read against them${
                         fmtRange(insight.period?.start, insight.period?.end)
                           ? ` between ${fmtDate(insight.period?.start)} and ${fmtDate(insight.period?.end)}`
                           : ""
-                      }. Only these count towards your scores — meals logged without a mood aren't analysed.`}
+                      } — ${insight.linkedMeals} you linked to a mood yourself, ${insight.inferredMeals} paired with a check-in logged within two hours. ${
+                        insight.unscoredMeals > 0
+                          ? `${insight.unscoredMeals} more meal${insight.unscoredMeals === 1 ? " was" : "s were"} logged with no mood nearby, so ${insight.unscoredMeals === 1 ? "it isn't" : "they aren't"} scored.`
+                          : "Every meal you logged had a mood near it."
+                      }`}
                     />
                   </div>
                   <div className="col-span-2 md:col-span-6">

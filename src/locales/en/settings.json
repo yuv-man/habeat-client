@@ -32,6 +32,26 @@
   "dietType": {
     "heading": "Diet Type"
   },
+  "cookingLevel": {
+    "heading": "Cooking Level",
+    "description": "How much cooking you're up for. We won't plan meals beyond it.",
+    "upToMinutes": "Up to {{minutes}} min per meal",
+    "appliesToNextPlan": "Applies to meals generated from now on — your current week stays as it is.",
+    "levels": {
+      "beginner": {
+        "label": "I keep it simple",
+        "description": "Assembly, one pan or one tray. Few ingredients, nothing to juggle."
+      },
+      "home-cook": {
+        "label": "Comfortable home cook",
+        "description": "Everyday cooking — sautéing, roasting, a simple sauce, a couple of pans."
+      },
+      "confident": {
+        "label": "I love to cook",
+        "description": "Multi-step dishes — marinades, braises, baking, real sauces."
+      }
+    }
+  },
   "mealTimes": {
     "heading": "Meal Times",
     "breakfast": "Breakfast",

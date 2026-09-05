@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@/test/test-utils";
+import { render, screen, fireEvent, act } from "@/test/test-utils";
 import MealCard from "./MealCard";
 import { mockBreakfast, mockSnack } from "@/test/mocks";
 
@@ -17,9 +17,14 @@ vi.mock("@/stores/favoritesStore", () => ({
   }),
 }));
 
+const { setMealEatenTime } = vi.hoisted(() => ({
+  setMealEatenTime: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/stores/progressStore", () => ({
   useProgressStore: () => ({
     completeMeal: vi.fn(),
+    setMealEatenTime,
     todayProgress: { date: new Date() },
   }),
 }));
@@ -81,6 +86,57 @@ describe("MealCard", () => {
   it("shows mark complete button", () => {
     render(<MealCard {...defaultProps} mealStatus="future" />);
     expect(screen.getByRole("button", { name: "Mark as complete" })).toBeInTheDocument();
+  });
+
+  describe("Eaten time", () => {
+    // 2024-12-17T11:04 local — the meal was eaten at 11:04, not at the 8:00
+    // slot it was planned for.
+    const eatenAt = new Date(2024, 11, 17, 11, 4).toISOString();
+    const eatenBreakfast = {
+      ...mockBreakfast,
+      done: true,
+      completedAt: eatenAt,
+      completedAtSource: "user" as const,
+    };
+
+    it("shows the scheduled time, not editable, until the meal is ticked", () => {
+      render(<MealCard {...defaultProps} mealStatus="future" />);
+      expect(screen.getByText("8:00 AM")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", {
+          name: "Change the time you ate this meal",
+        })
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows when a completed meal was actually eaten, next to the plan", () => {
+      render(<MealCard {...defaultProps} meal={eatenBreakfast} />);
+      expect(screen.getByText("ate at 11:04 AM")).toBeInTheDocument();
+      expect(screen.getByText("planned 8:00 AM")).toBeInTheDocument();
+    });
+
+    it("saves a corrected time against the meal's own date", async () => {
+      render(<MealCard {...defaultProps} meal={eatenBreakfast} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Change the time you ate this meal" })
+      );
+
+      const input = screen.getByLabelText("Time you ate this meal");
+      fireEvent.change(input, { target: { value: "09:30" } });
+      // Saving awaits the store, so let the resulting state updates settle.
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Save time" }));
+      });
+
+      expect(setMealEatenTime).toHaveBeenCalledWith(
+        "test_user_123",
+        "2024-12-17",
+        "breakfast",
+        mockBreakfast._id,
+        "09:30"
+      );
+    });
   });
 
   describe("Snack Card Variant", () => {

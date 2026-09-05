@@ -6,6 +6,12 @@
 
 @layer base {
   :root {
+    /* Live height of the fixed BottomNav. BottomNav overwrites this with its
+       measured height on mount; the fallback below is the design height plus
+       the home-indicator / gesture-bar inset, used before that runs and on
+       screens that render no bottom nav. */
+    --bottom-nav-h: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+
     /* Base colors - Modern food app theme */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;

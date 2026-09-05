@@ -1065,6 +1065,33 @@ const completeMeal = async (
   }, "Failed to complete meal. Please try again.");
 };
 
+/**
+ * Correct when a completed meal was actually eaten.
+ *
+ * The tick stamps the moment it was ticked, which is not the same thing —
+ * breakfast logged over lunch reads as a midday meal to everything downstream
+ * that looks at eating times (meal spacing, late-night eating, mood pairing).
+ *
+ * `time` is "HH:MM" local to the user; `date` is the YYYY-MM-DD the meal
+ * belongs to.
+ */
+const updateMealEatenTime = async (
+  userId: string,
+  date: string,
+  mealType: string,
+  mealId: string,
+  time: string
+): Promise<ApiResponse<IDailyProgress>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<ApiResponse<IDailyProgress>>(
+      `/progress/meal-time/${userId}/${mealId}`,
+      { date, mealType, time },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to update the meal time. Please try again.");
+};
+
 // Current mood interface for mood-aware suggestions
 export interface CurrentMood {
   moodCategory: string;
@@ -2470,6 +2497,7 @@ export const userAPI = {
   getProgressHistory,
   updateDailyProgress,
   completeMeal,
+  updateMealEatenTime,
   // Meal Changes
   getAIMealSuggestions,
   changeMealInPlan,

@@ -44,7 +44,13 @@ const FloatingActionButton = ({
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-50" ref={menuRef}>
+    // Anchored to the measured BottomNav height rather than a fixed 6rem — on
+    // Android the nav is taller (gesture-bar inset + system font scale) and the
+    // button ended up behind it. Desktop has no bottom nav.
+    <div
+      className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 z-50 md:bottom-6"
+      ref={menuRef}
+    >
       {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute bottom-20 right-0 mb-2 flex flex-col gap-2 animate-in slide-in-from-bottom-2 duration-200">

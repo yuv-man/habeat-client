@@ -9,6 +9,8 @@ import {
   ChevronUp,
   ChevronDown,
   Brain,
+  Pencil,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { EatingMode, IMeal } from "@/types/interfaces";
@@ -36,7 +38,7 @@ import {
 import MissedMealPanel, { MISSED_ACTION_CLASS } from "./MissedMealPanel";
 import { MealMoodLink } from "@/components/cbt/MealMoodLink";
 import { LATE_NIGHT_HOUR } from "@/lib/mindfulEating";
-import { toLocalDateString } from "@/lib/dateUtils";
+import { toLocalDateString, formatTime12Hour } from "@/lib/dateUtils";
 
 type MealStatus = "past" | "current" | "future" | "missed";
 
@@ -76,7 +78,7 @@ const MealCard = ({
   const navigate = useNavigate();
   const displayName = formatMealName(meal.name);
   const { user, updateFavorite } = useAuthStore();
-  const { completeMeal, todayProgress } = useProgressStore();
+  const { completeMeal, todayProgress, setMealEatenTime } = useProgressStore();
   const showMacros = useShowMacros();
   const startMealMoodLink = useCBTStore((state) => state.startMealMoodLink);
   const linkMoodToMeal = useCBTStore((state) => state.linkMoodToMeal);
@@ -100,6 +102,9 @@ const MealCard = ({
   // State to track if title is expanded (to show full text)
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  /** Non-null while the user is correcting the time this meal was eaten. */
+  const [timeDraft, setTimeDraft] = useState<string | null>(null);
+  const [isSavingTime, setIsSavingTime] = useState(false);
 
   // Get meal ID with fallback for compatibility
   const mealId = meal._id || (meal as any).id || "";
@@ -164,6 +169,135 @@ const MealCard = ({
         toast.error("Failed to update meal. Please try again.");
       }
     }
+  };
+
+  /**
+   * When this meal was actually eaten, as "HH:MM", or null if we don't know.
+   *
+   * `completedAt` is stamped by the tick, so on a meal ticked hours late it is
+   * the logging time rather than the eating time. The user can correct it, and
+   * `completedAtSource` says which of the two this is.
+   */
+  const eatenTime = meal.completedAt
+    ? (() => {
+        const at = new Date(meal.completedAt);
+        return isNaN(at.getTime())
+          ? null
+          : `${String(at.getHours()).padStart(2, "0")}:${String(
+              at.getMinutes(),
+            ).padStart(2, "0")}`;
+      })()
+    : null;
+
+  /** Only a meal the user has ticked has an eating time to correct. */
+  const canEditTime = isCompleted && Boolean(user?._id && mealId);
+
+  const startEditingTime = () => {
+    // Seed with what we have: the recorded time, else the planned slot time,
+    // else now — so the picker never opens on 00:00.
+    const now = new Date();
+    setTimeDraft(
+      eatenTime ??
+        `${String(now.getHours()).padStart(2, "0")}:${String(
+          now.getMinutes(),
+        ).padStart(2, "0")}`,
+    );
+  };
+
+  const saveEatenTime = async () => {
+    if (!timeDraft || !user?._id) return;
+    setIsSavingTime(true);
+    try {
+      await setMealEatenTime(
+        user._id,
+        toLocalDateString(date),
+        mealType,
+        mealId,
+        timeDraft,
+      );
+      setTimeDraft(null);
+      toast.success(`Logged as eaten at ${formatTime12Hour(timeDraft)}`);
+    } catch {
+      // The store already rolled the optimistic change back.
+      toast.error("Couldn't save that time. Please try again.");
+    } finally {
+      setIsSavingTime(false);
+    }
+  };
+
+  /**
+   * The time line on the card: the planned slot time until the meal is ticked,
+   * then the time it was actually eaten, editable in place.
+   */
+  const renderTime = (size: "sm" | "md") => {
+    const iconClass = size === "sm" ? "w-3 h-3" : "w-4 h-4";
+
+    if (timeDraft !== null) {
+      return (
+        <div
+          className="flex items-center gap-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="time"
+            value={timeDraft}
+            onChange={(e) => setTimeDraft(e.target.value)}
+            className="border border-gray-300 rounded-md px-1.5 py-0.5 text-xs text-gray-700 bg-white"
+            aria-label="Time you ate this meal"
+            autoFocus
+          />
+          <button
+            onClick={saveEatenTime}
+            disabled={isSavingTime || !timeDraft}
+            className="p-1 rounded-md bg-green-500 text-white disabled:opacity-50"
+            aria-label="Save time"
+          >
+            <Check className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setTimeDraft(null)}
+            disabled={isSavingTime}
+            className="p-1 rounded-md bg-gray-100 text-gray-500"
+            aria-label="Cancel"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      );
+    }
+
+    if (!canEditTime) {
+      return (
+        <div className="flex items-center gap-1">
+          <Clock className={iconClass} />
+          <span>{mealTime}</span>
+        </div>
+      );
+    }
+
+    const eatenLabel = eatenTime ? formatTime12Hour(eatenTime) : null;
+
+    return (
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            startEditingTime();
+          }}
+          className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+          aria-label="Change the time you ate this meal"
+        >
+          <Clock className={iconClass} />
+          <span>{eatenLabel ? `ate at ${eatenLabel}` : mealTime}</span>
+          <Pencil className="w-2.5 h-2.5 opacity-60" />
+        </button>
+        {/* Keeps the plan visible next to what actually happened — the gap
+            between the two is the thing worth noticing. */}
+        {eatenLabel && eatenLabel !== mealTime && (
+          <span className="text-[10px] text-gray-300">planned {mealTime}</span>
+        )}
+      </div>
+    );
   };
 
   const handleViewRecipe = () => {
@@ -268,10 +402,7 @@ const MealCard = ({
                     : "text-xs text-gray-500"
               }`}
             >
-              <div className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>{mealTime}</span>
-              </div>
+              {renderTime("sm")}
               {showMacros && (
                 <>
                   <span>•</span>
@@ -400,10 +531,7 @@ const MealCard = ({
                   : "text-xs text-gray-500"
             }`}
           >
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{mealTime}</span>
-            </div>
+            {renderTime("md")}
             {showMacros && (
               <>
                 <span>•</span>

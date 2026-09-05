@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Calendar, BarChart3, Brain, Users } from "lucide-react";
@@ -6,6 +7,32 @@ const BottomNav = () => {
   const { t } = useTranslation("navigation");
   const navigate = useNavigate();
   const location = useLocation();
+
+  const navRef = useRef<HTMLElement>(null);
+
+  // Publish the bar's real height as --bottom-nav-h so floating elements (FABs)
+  // can clear it. A hard-coded offset is not enough on Android: the gesture-bar
+  // inset and the system font scale both make this bar taller than the design
+  // height, which left the tracker's FAB sitting behind it.
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+
+    const publish = () =>
+      document.documentElement.style.setProperty(
+        "--bottom-nav-h",
+        `${el.offsetHeight}px`,
+      );
+
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--bottom-nav-h");
+    };
+  }, []);
 
   const isActive = (path: string) => {
     if (path === "/daily-tracker") {
@@ -90,6 +117,7 @@ const BottomNav = () => {
 
   return (
     <nav
+      ref={navRef}
       className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 pt-2 md:hidden z-50 shadow-lg"
       // Sits above the home indicator rather than under it — without this the
       // bottom row of buttons is partly covered on devices that have one.

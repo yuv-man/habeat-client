@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { COOKING_LEVEL_OPTIONS, CookingLevel } from "@/lib/cookingLevels";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
@@ -115,6 +116,10 @@ const Profile = () => {
   // Meals per day (non-fasting)
   const [mealsPerDay, setMealsPerDay] = useState(4);
 
+  // How much cooking the user is up for — caps the prep time the generator
+  // may plan for. Undefined for accounts created before it was asked.
+  const [cookingLevel, setCookingLevel] = useState<CookingLevel | undefined>();
+
   // Map path to diet type name
   const pathToDietType: Record<string, string> = {
     keto: "Keto",
@@ -156,6 +161,7 @@ const Profile = () => {
     setAllergies(user.allergies || []);
     setDislikes(user.dislikes || []);
     setFoodPreferences(user.foodPreferences || []);
+    setCookingLevel(user.cookingLevel);
     setDietaryRestrictions(user.dietaryRestrictions || []);
     setDietType(pathToDietType[user.path || ""] || "Healthy Balance");
     setFastingHours(user.fastingHours || 16);
@@ -277,6 +283,7 @@ const Profile = () => {
           ? { fastingHours, fastingStartTime }
           : { fastingHours: undefined, fastingStartTime: undefined }),
         mealsPerDay: dietType === "8 - 16 hours fasting" ? undefined : mealsPerDay,
+        ...(cookingLevel ? { cookingLevel } : {}),
       };
 
       if (profilePicture && profilePicture !== user.profilePicture) {
@@ -781,6 +788,58 @@ const Profile = () => {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Cooking Level Section */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <h2 className="text-sm font-semibold text-gray-900">
+                {t("cookingLevel.heading")}
+              </h2>
+              <p className="text-xs text-gray-500 mt-1 mb-3">
+                {t("cookingLevel.description")}
+              </p>
+              <div className="space-y-2">
+                {COOKING_LEVEL_OPTIONS.map((option) => {
+                  const active = cookingLevel === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setCookingLevel(option.id)}
+                      className={`w-full flex items-start gap-3 p-3 rounded-lg border-2 text-start transition-colors ${
+                        active
+                          ? "border-green-500 bg-green-50"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="text-xl leading-none mt-0.5">
+                        {option.emoji}
+                      </span>
+                      <span className="flex-1">
+                        <span
+                          className={`block text-sm font-semibold ${
+                            active ? "text-green-700" : "text-gray-900"
+                          }`}
+                        >
+                          {t(`cookingLevel.levels.${option.id}.label`)}
+                        </span>
+                        <span className="block text-xs text-gray-500 mt-0.5 leading-relaxed">
+                          {t(`cookingLevel.levels.${option.id}.description`)}
+                        </span>
+                        <span className="block text-xs font-medium text-gray-400 mt-1">
+                          {t("cookingLevel.upToMinutes", {
+                            minutes: option.maxPrepMinutes,
+                          })}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              {/* The choice only reaches meals the generator hasn't written yet. */}
+              <p className="text-xs text-gray-400 mt-3">
+                {t("cookingLevel.appliesToNextPlan")}
+              </p>
             </div>
 
             {/* Meal Times Section */}

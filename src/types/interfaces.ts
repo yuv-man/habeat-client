@@ -1,3 +1,5 @@
+import type { CookingLevel } from "@/lib/cookingLevels";
+
 export type TextureKey = 'mushy' | 'crunchy' | 'chewy' | 'slimy' | 'grainy' | 'gooey'
 export type SmellKey = 'pungent' | 'fermented' | 'spicy' | 'fishy'
 
@@ -36,6 +38,9 @@ export interface IUser {
   favoriteMeals?: string[]; // Array of meal IDs that user has liked
   foodPreferences: string[];
   dislikes?: string[];
+  /** Custom food terms the user kept after we flagged them as probably-not-food.
+   *  Sent by KYC and stored server-side; excluded from generator prompts. */
+  unrecognisedTerms?: string[];
   profilePicture?: string; // Base64 encoded profile picture or URL
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
@@ -44,6 +49,9 @@ export interface IUser {
   kycCompleted?: boolean;
   language?: "en" | "he";
   workoutFrequency?: number;
+  /** How much cooking the user is up for. Caps the prep time and technique the
+   *  meal generator may assume — see @/lib/cookingLevels. */
+  cookingLevel?: CookingLevel;
   foodRelationship?: string; // fuel | sometimes-emotional | very-emotional | unsure
   emotionalTriggers?: string[]; // subset of EMOTIONAL_TRIGGERS ids
   showMacros?: boolean; // whether numeric calories/macros are displayed; defaults to true unless foodRelationship flags a difficult relationship with food
@@ -72,6 +80,12 @@ export interface IMeal {
   prepTime: number;
   done: boolean;
   source?: MealSource;
+  /** When the meal was actually eaten. Stamped when the box is ticked, and
+   *  correctable by the user afterwards — see `completedAtSource`. ISO string. */
+  completedAt?: string;
+  /** "tick" is the moment the box was ticked, "user" is a time the user
+   *  corrected it to. Only the second one is the user's own claim. */
+  completedAtSource?: "tick" | "user";
 }
 
 export interface IDailyPlan {
@@ -962,13 +976,26 @@ export interface IMealMoodCorrelation {
 
 export interface IEmotionalEatingInsight {
   period: { start: string; end: string };
+  /** Episodes the score is actually computed from: meals the user linked a
+   *  mood to, plus meals ticked off with a mood logged close to them. */
   totalMeals: number;
+  /** Every meal ticked off on the tracker in the period, scored or not. */
+  mealsLogged: number;
+  /** Of those, the ones the user deliberately attached a mood to. */
+  linkedMeals: number;
+  /** Paired with a nearby mood check-in by the server rather than by the user. */
+  inferredMeals: number;
+  /** Logged with no mood anywhere near them — real meals, no emotion to read. */
+  unscoredMeals: number;
   emotionalEatingInstances: number;
   emotionalEatingPercentage: number;
   mindfulEatingScore: number;
   /** 0–1 ratio (unlike `emotionalEatingPercentage`, which is 0–100). Run it
    *  through `toPercent` before display. */
   satietyRate: number;
+  /** How many meals the satiety rate is computed over. 0 means the hunger
+   *  question was never asked, not that the answer was "never hungry". */
+  satietyBasis: number;
   patternSpotlight: string | null;
   weeklyTrend: { week: string; score: number }[];
   strongestMealType: string | null;
@@ -976,6 +1003,10 @@ export interface IEmotionalEatingInsight {
     date: string;
     mindfulScore: number | null;
     moodAvg: number | null;
+    /** Meals ticked off that day. A day can have meals and no score — that is
+     *  "logged, no mood", which is not the same as an empty day. */
+    mealsLogged: number;
+    mealsScored: number;
     hasData: boolean;
   }[];
   commonTriggers: {
@@ -1015,6 +1046,25 @@ export interface IEmotionalEatingInsight {
     dinner: number;
     snacks: number;
   };
+  /** Every meal logged per slot, regardless of whether it could be scored. */
+  mealTypeLogged: {
+    breakfast: number;
+    lunch: number;
+    dinner: number;
+    snacks: number;
+  };
+  /** Patterns the server actually observed. Empty means nothing has been
+   *  observed yet — the client shows clearly-labelled examples in that case
+   *  and must never present these as interchangeable. */
+  patterns: {
+    key: string;
+    emoji: string;
+    name: string;
+    context: string;
+    frequency: string;
+    impact: "positive" | "negative" | "neutral";
+    evidence: number;
+  }[];
   recommendations: string[];
 }
 

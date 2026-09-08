@@ -174,7 +174,9 @@ const availableImages = [
   "thyme-butter-chicken-pasta",
   "thyme-beef-patty-plate",
   "beef-sweet-potato-stew",
-  "salmon-coconut-rice"
+  "salmon-coconut-rice",
+  "fruit-chia-pudding",
+  "almond-butter-yogurt-bowl"
 ];
 
 // Keyword mappings - maps keywords to image files
@@ -240,8 +242,9 @@ const keywordMappings: { [key: string]: string[] } = {
   quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
   buddha: ["buddha-salad"],
   couscous: ["couscous-salad"],
-  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit", "cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl"],
+  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit", "cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl", "fruit-chia-pudding"],
   pineapple: ["cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl"],
+  chia: ["fruit-chia-pudding", "almond-butter-yogurt-bowl"],
 
   // Chicken dishes
   chicken: [
@@ -593,6 +596,7 @@ const keywordMappings: { [key: string]: string[] } = {
     "peanut-butter-chia-oats",
     "smoked-salmon-yogurt-bowl",
     "greek-yogurt-berry-bowl",
+    "almond-butter-yogurt-bowl",
   ],
   granola: [
     "greek-yogurt-topped-with-granola",
@@ -604,9 +608,9 @@ const keywordMappings: { [key: string]: string[] } = {
     "peanut-butter-chia-oats",
     "smoked-salmon-yogurt-bowl",
     "greek-yogurt-berry-bowl",
+    "almond-butter-yogurt-bowl",
   ],
-  chia: ["chia-pudding", "peanut-butter-chia-oats"],
-  pudding: ["chia-pudding"],
+  pudding: ["fruit-chia-pudding", "almond-butter-yogurt-bowl, chia-pudding"],
   oats: ["oatmeal-bowl-with-fruits", "porridge-with-cinnamon-and-apples", "peanut-butter-chia-oats"],
   overnight: ["oatmeal-bowl-with-fruits", "chia-pudding"],
   shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi", "tropical-mango-and-pineapple-smoothie-bowl"],

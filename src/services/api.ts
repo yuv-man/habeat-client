@@ -1994,12 +1994,16 @@ const getEmotionalEatingInsights = async (
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: IEmotionalEatingInsight;
+      data: { insight: IEmotionalEatingInsight };
     }>(`/cbt/meal-mood/insights`, {
       params: { period },
       headers: getAuthHeaders(),
     });
-    return { data: response.data.data };
+    // The server wraps the payload as `data.insight`. Returning `data` itself
+    // handed the UI an object with none of the fields it reads, which reads on
+    // screen as "no data yet" — example patterns, a zero score — rather than as
+    // an error, so the page looked like it was working.
+    return { data: response.data.data.insight };
   }, "Failed to get emotional eating insights. Please try again.");
 };
 
@@ -2009,12 +2013,12 @@ const getMealMoodHistory = async (
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: IMealMoodCorrelation[];
+      data: { correlations: IMealMoodCorrelation[] };
     }>(`/cbt/meal-mood/history`, {
       params: { limit },
       headers: getAuthHeaders(),
     });
-    return { data: response.data.data };
+    return { data: response.data.data.correlations };
   }, "Failed to get meal-mood history. Please try again.");
 };
 

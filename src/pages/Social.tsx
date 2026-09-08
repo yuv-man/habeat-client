@@ -151,10 +151,13 @@ const Social = () => {
         <SocialFeed refreshKey={refreshKey} />
       </div>
 
-      {/* FAB for quick post */}
+      {/* FAB for quick post. Anchored to the measured BottomNav height rather
+          than a fixed 6rem — on Android the bar is taller (gesture-bar inset +
+          system font scale) and the button sat behind it. No bottom nav on
+          desktop, so it falls back to a plain offset there. */}
       <button
         onClick={() => openModal("mood")}
-        className="fixed bottom-24 right-5 w-14 h-14 bg-green-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-green-700 hover:scale-105 active:scale-90 transition-all z-40"
+        className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-5 md:bottom-6 w-14 h-14 bg-green-800 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-green-700 hover:scale-105 active:scale-90 transition-all z-40"
       >
         <Plus className="w-7 h-7" />
       </button>

@@ -133,6 +133,17 @@ const Mindfulness = () => {
       {/* Mood logger */}
       <MoodTracker />
 
+      {/* The deeper check-in — energy, stress, triggers and a note. The modal
+          below has always been mounted on this page but nothing ever opened
+          it, so the form was unreachable; the meal cards used to be its only
+          way in, and they now ask their own two questions inline. */}
+      <button
+        onClick={() => useCBTStore.getState().showMoodCheckInModal()}
+        className="w-full -mt-4 py-2 text-sm font-medium text-violet-600 hover:text-violet-700 transition-colors"
+      >
+        Add energy, stress and triggers →
+      </button>
+
       {/* Streaks Section */}
       <div className="space-y-4">
         <div className="flex items-end justify-between">

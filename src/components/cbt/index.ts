@@ -17,7 +17,7 @@ export { ExerciseCard } from "./ExerciseCard";
 export { ExercisePlayer } from "./ExercisePlayer";
 
 // Meal-Mood Integration
-export { MealMoodLink } from "./MealMoodLink";
+export { MealCheckIn } from "./MealCheckIn";
 export { EmotionalEatingInsights } from "./EmotionalEatingInsights";
 
 // Progress & Summary

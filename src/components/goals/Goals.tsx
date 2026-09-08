@@ -336,10 +336,13 @@ const Goals = ({
         })}
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button. Anchored to the measured BottomNav height
+          rather than a fixed 6rem — on Android the bar is taller (gesture-bar
+          inset + system font scale) and the button sat behind it. No bottom
+          nav on desktop, so it falls back to a plain offset there. */}
       <button
         onClick={onAddGoal}
-        className="fixed bottom-24 right-4 w-14 h-14 bg-green-500 text-white hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
+        className="fixed bottom-[calc(var(--bottom-nav-h)+1rem)] right-4 md:bottom-6 w-14 h-14 bg-green-500 text-white hover:bg-green-600 rounded-full shadow-lg flex items-center justify-center transition-colors z-40"
       >
         <Plus className="w-6 h-6" />
       </button>

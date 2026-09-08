@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { shallow } from "zustand/shallow";
 import { cbtAPI } from "../services/api";
 import {
   IMoodEntry,
@@ -41,13 +40,6 @@ interface CBTState {
   error: string | null;
   lastFetchTime: number | null;
 
-  // Pending mood entry (for meal linking)
-  pendingMealMoodLink: {
-    mealId: string;
-    mealType: "breakfast" | "lunch" | "dinner" | "snacks";
-    mealName: string;
-    phase: "before" | "after";
-  } | null;
 
   // Quick mood check-in modal state
   showMoodCheckIn: boolean;
@@ -74,11 +66,6 @@ interface CBTActions {
   linkMoodToMeal: (correlation: Omit<IMealMoodCorrelation, "_id" | "userId" | "createdAt">) => Promise<void>;
   fetchMealMoodCorrelations: (limit?: number) => Promise<void>;
   fetchEmotionalEatingInsight: (period: "week" | "month") => Promise<void>;
-
-  // Meal mood link flow
-  startMealMoodLink: (mealId: string, mealType: "breakfast" | "lunch" | "dinner" | "snacks", mealName: string, phase: "before" | "after") => void;
-  completeMealMoodLink: () => void;
-  cancelMealMoodLink: () => void;
 
   // Stats
   fetchCBTStats: () => Promise<void>;
@@ -108,7 +95,6 @@ const initialState: CBTState = {
   loading: false,
   error: null,
   lastFetchTime: null,
-  pendingMealMoodLink: null,
   showMoodCheckIn: false,
 };
 
@@ -351,7 +337,6 @@ export const useCBTStore = create<CBTStore>()(
           set((state) => ({
             mealMoodCorrelations: [newCorrelation, ...state.mealMoodCorrelations],
             loading: false,
-            pendingMealMoodLink: null,
           }));
         } catch (error: any) {
           set({
@@ -393,28 +378,6 @@ export const useCBTStore = create<CBTStore>()(
             loading: false,
           });
         }
-      },
-
-      // Meal Mood Link Flow
-      startMealMoodLink: (mealId, mealType, mealName, phase) => {
-        set({
-          pendingMealMoodLink: { mealId, mealType, mealName, phase },
-          showMoodCheckIn: true,
-        });
-      },
-
-      completeMealMoodLink: () => {
-        set({
-          pendingMealMoodLink: null,
-          showMoodCheckIn: false,
-        });
-      },
-
-      cancelMealMoodLink: () => {
-        set({
-          pendingMealMoodLink: null,
-          showMoodCheckIn: false,
-        });
       },
 
       // Stats
@@ -509,19 +472,8 @@ export const useCBTStats = () => useCBTStore((state) => state.cbtStats);
 export const useCBTLoading = () => useCBTStore((state) => state.loading);
 export const useCBTError = () => useCBTStore((state) => state.error);
 
-// Meal mood link selectors
-export const usePendingMealMoodLink = () => useCBTStore((state) => state.pendingMealMoodLink);
 export const useShowMoodCheckIn = () => useCBTStore((state) => state.showMoodCheckIn);
 
 // Computed selectors
 export const useTodayMoodCount = () => useCBTStore((state) => state.todayMoodEntries.length);
 export const useLatestMood = () => useCBTStore((state) => state.todayMoodEntries[state.todayMoodEntries.length - 1] ?? null);
-
-export const useMoodCheckInState = () =>
-  useCBTStore(
-    (state) => ({
-      show: state.showMoodCheckIn,
-      pendingLink: state.pendingMealMoodLink,
-    }),
-    shallow
-  );

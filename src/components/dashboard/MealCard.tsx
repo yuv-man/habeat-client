@@ -13,10 +13,9 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { EatingMode, IMeal } from "@/types/interfaces";
+import { IMeal } from "@/types/interfaces";
 import { useProgressStore } from "@/stores/progressStore";
 import { useAuthStore } from "@/stores/authStore";
-import { useCBTStore } from "@/stores/cbtStore";
 import { useNavigate } from "react-router-dom";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import ChangeMealModal from "@/components/modals/ChangeMealModal";
@@ -27,7 +26,7 @@ import {
   calculateMealHealthScore,
   getHealthScoreColor,
 } from "@/lib/nutritionHelpers";
-import { EatingModeCard } from "@/components/cbt/EatingModeCard";
+import { MealCheckIn } from "@/components/cbt/MealCheckIn";
 import { useShowMacros } from "@/hooks/useShowMacros";
 import {
   MealSlot,
@@ -36,7 +35,6 @@ import {
   usePatternStore,
 } from "@/stores/patternStore";
 import MissedMealPanel, { MISSED_ACTION_CLASS } from "./MissedMealPanel";
-import { MealMoodLink } from "@/components/cbt/MealMoodLink";
 import { LATE_NIGHT_HOUR } from "@/lib/mindfulEating";
 import { toLocalDateString, formatTime12Hour } from "@/lib/dateUtils";
 
@@ -80,8 +78,6 @@ const MealCard = ({
   const { user, updateFavorite } = useAuthStore();
   const { completeMeal, todayProgress, setMealEatenTime } = useProgressStore();
   const showMacros = useShowMacros();
-  const startMealMoodLink = useCBTStore((state) => state.startMealMoodLink);
-  const linkMoodToMeal = useCBTStore((state) => state.linkMoodToMeal);
   const recordPattern = usePatternStore((state) => state.record);
   const isLateNight = new Date().getHours() >= LATE_NIGHT_HOUR;
 
@@ -102,6 +98,15 @@ const MealCard = ({
   // State to track if title is expanded (to show full text)
   const [isTitleExpanded, setIsTitleExpanded] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  /** The Mood button's answer, when the user has given one: `null` means the
+   *  card is still following its own default. Marking a meal done opens the
+   *  check-in on its own, but the button stays available either way — a meal
+   *  you already ticked off is still a meal you might want to reflect on. */
+  const [checkInOverride, setCheckInOverride] = useState<boolean | null>(null);
+  /** Set when the user marks the meal done *here*, so the check-in opens at
+   *  the moment it's relevant rather than on every card already ticked off
+   *  when the screen loaded. */
+  const [justCompleted, setJustCompleted] = useState(false);
   /** Non-null while the user is correcting the time this meal was eaten. */
   const [timeDraft, setTimeDraft] = useState<string | null>(null);
   const [isSavingTime, setIsSavingTime] = useState(false);
@@ -115,6 +120,11 @@ const MealCard = ({
   // Check if meal is in user.favoriteMeals array
   const isFavorite = user?.favoriteMeals?.includes(mealId) || false;
   const isCompleted = meal.done || false;
+
+  /** Which half of the meal the check-in asks about, and whether it's showing.
+   *  Both phases are the same component; only the questions differ. */
+  const checkInPhase: "before" | "after" = isCompleted ? "after" : "before";
+  const isCheckInOpen = checkInOverride ?? justCompleted;
 
   // Calculate health score
   const healthScore = calculateMealHealthScore(meal);
@@ -147,6 +157,11 @@ const MealCard = ({
       setIsCompleting(true);
       try {
         await completeMeal(user._id, date, mealType, mealId);
+
+        // Opening the check-in is the point of ticking the box; un-ticking
+        // should take it back down rather than leave it hanging.
+        setJustCompleted(!isCompleted);
+        setCheckInOverride(null);
 
         // Only on the way *in* — un-ticking a snack shouldn't file a second
         // late-night episode. The hour is read at completion time, which is
@@ -318,37 +333,6 @@ const MealCard = ({
     }
   };
 
-  const handleMoodLink = (phase: "before" | "after") => {
-    if (mealId) {
-      startMealMoodLink(
-        mealId,
-        mealType as "breakfast" | "lunch" | "dinner" | "snacks",
-        displayName,
-        phase
-      );
-    }
-  };
-
-  /** The eating-mode answer used to live and die in the card's local state.
-   *  It now becomes a real meal-mood correlation: `comfort` and `habit` are
-   *  what the insight pipeline already means by emotional eating, and the exact
-   *  mode rides along beside it so the nuance isn't flattened to a boolean. */
-  const handleEatingMode = (mode: EatingMode) => {
-    if (!mealId) return;
-
-    linkMoodToMeal({
-      mealId,
-      mealName: displayName,
-      mealType: mealType as "breakfast" | "lunch" | "dinner" | "snacks",
-      date,
-      wasEmotionalEating: mode === "comfort" || mode === "habit",
-      eatingMode: mode,
-    }).catch(() => {
-      // A one-tap reflection is not worth interrupting the screen over; the
-      // card has already given its own "Logged as …" confirmation.
-    });
-  };
-
   // Determine card styling based on status
   // Snacks can NEVER be current - override mealStatus for snacks
   const isPast = mealStatus === "past";
@@ -472,20 +456,37 @@ const MealCard = ({
           </div>
         </div>
 
-        {/* The snack card was the one card with no way to attach a feeling to
-            what you ate — which meant the 9pm snack, the single episode the
-            whole emotional-eating model cares most about, was also the only
-            one it could never see. Opens expanded when the hour itself is the
-            reason to ask. */}
-        {mealId && (
-          <MealMoodLink
-            className="mt-3"
-            mealId={mealId}
-            mealType="snacks"
-            mealName={displayName}
-            defaultExpanded={promptMoodCheck}
-          />
-        )}
+        {/* The 9pm snack is the single episode the emotional-eating model cares
+            most about, so it gets the check-in before it happens as well as
+            after. Before eating it stays collapsed unless the hour itself is
+            the reason to ask. */}
+        {mealId &&
+          (isCompleted ? (
+            <MealCheckIn
+              className="mt-3"
+              mealId={mealId}
+              mealType="snacks"
+              mealName={displayName}
+              date={date}
+              phase="after"
+              // Collapsible so that logging it leaves a re-openable line
+              // rather than a hole, and so a snack already ticked off when the
+              // screen loaded doesn't reopen a question it has answered.
+              collapsible
+              defaultOpen={justCompleted}
+            />
+          ) : (
+            <MealCheckIn
+              className="mt-3"
+              mealId={mealId}
+              mealType="snacks"
+              mealName={displayName}
+              date={date}
+              phase="before"
+              collapsible
+              defaultOpen={promptMoodCheck}
+            />
+          ))}
       </div>
     );
   }
@@ -714,9 +715,26 @@ const MealCard = ({
               </div>
             )}
 
-            {/* Eating Mode Picker - shown after completing a meal */}
-            {isCompleted && !isPast && (
-              <EatingModeCard onSelect={handleEatingMode} />
+            {/* The check-in, in whichever phase the meal is in. Inline and not
+                a modal: this used to open a three-step wizard over the whole
+                screen to ask what one tap here answers. Keyed on the phase so
+                ticking the box swaps the questions instead of carrying the
+                pre-meal answers into the post-meal ones. */}
+            {isCheckInOpen && mealId && (
+              <MealCheckIn
+                key={checkInPhase}
+                mealId={mealId}
+                mealType={mealType as MealSlot}
+                mealName={displayName}
+                date={date}
+                phase={checkInPhase}
+                // Put it away once it's answered; the Mood button below brings
+                // it back if the user wants to change something.
+                onLogged={() => {
+                  setJustCompleted(false);
+                  setCheckInOverride(false);
+                }}
+              />
             )}
 
             {/* Other Action Buttons */}
@@ -752,13 +770,29 @@ const MealCard = ({
                 </ChangeMealModal>
               )}
 
-              {/* Mood Link Button */}
+              {/* Mood button — always available, before the meal and after it.
+                  It toggles the panel above rather than opening a modal. */}
               <button
-                onClick={() => handleMoodLink(isCompleted ? "after" : "before")}
-                className="flex items-center gap-1.5 text-gray-600 hover:text-purple-600 transition-colors group"
-                aria-label="Link mood to meal"
+                onClick={() => setCheckInOverride(!isCheckInOpen)}
+                aria-expanded={isCheckInOpen}
+                className={`flex items-center gap-1.5 transition-colors group ${
+                  isCheckInOpen
+                    ? "text-purple-600"
+                    : "text-gray-600 hover:text-purple-600"
+                }`}
+                aria-label={
+                  isCompleted
+                    ? "Check in on how the meal went"
+                    : "Check in on how you feel before this meal"
+                }
               >
-                <div className="p-2 rounded-full bg-gray-100 group-hover:bg-purple-100 transition-colors">
+                <div
+                  className={`p-2 rounded-full transition-colors ${
+                    isCheckInOpen
+                      ? "bg-purple-100"
+                      : "bg-gray-100 group-hover:bg-purple-100"
+                  }`}
+                >
                   <Brain className="w-3.5 h-3.5 stroke-2" />
                 </div>
                 <span className="text-xs font-medium">Mood</span>

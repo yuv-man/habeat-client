@@ -11,6 +11,7 @@ import {
   Edit,
   Brain,
   Lock,
+  ChevronRight,
 } from "lucide-react";
 import { IMeal, MealSource } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
@@ -23,6 +24,7 @@ import { getMealImageVite } from "@/lib/mealImageHelper";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
 import { toast } from "sonner";
+import { syncStoresAfterMealSwap } from "@/lib/mealSwapSync";
 import MealLoader from "@/components/helper/MealLoader";
 import PhotoMealTab from "@/components/meal/PhotoMealTab";
 import type { FeatureKey } from "@/lib/subscription";
@@ -229,7 +231,7 @@ const ChangeMealModal = ({
     const dateString = toLocalDateString(date);
 
     try {
-      await userAPI.changeMealInPlan(
+      const response = await userAPI.changeMealInPlan(
         user._id,
         plan._id,
         dateString,
@@ -237,6 +239,18 @@ const ChangeMealModal = ({
         newMeal,
         mealType === "snacks" ? snackIndex : undefined,
       );
+
+      // The swap writes the plan, the day's progress and the shopping list on
+      // the server. The reply carries the updated plan, which used to be
+      // thrown away — so whichever screen the user wasn't on kept showing the
+      // meal they had just replaced.
+      await syncStoresAfterMealSwap({
+        date: dateString,
+        mealType,
+        snackIndex: mealType === "snacks" ? snackIndex : undefined,
+        newMeal,
+        updatedPlan: response?.data?.plan ?? null,
+      });
     } catch (error) {
       console.error("Failed to change meal via API:", error);
       throw error;
@@ -402,9 +416,16 @@ const ChangeMealModal = ({
     setIsSaving(true);
     setError(null);
 
+    // The picker sits above all four save paths and says it applies to
+    // whichever one the user takes. It was only being honoured on the manual
+    // and photo paths, so answering "ordered" and then picking a favourite
+    // discarded the answer silently.
+    const chosen = withSource(meal);
+
     try {
-      await changeMealAPI(meal);
-      onMealChange(meal);
+      await changeMealAPI(chosen);
+      recordSource();
+      onMealChange(chosen);
       toast.success("Meal changed successfully!");
       handleClose();
     } catch (err: any) {
@@ -419,9 +440,12 @@ const ChangeMealModal = ({
     setIsSaving(true);
     setError(null);
 
+    const chosen = withSource(meal);
+
     try {
-      await changeMealAPI(meal);
-      onMealChange(meal);
+      await changeMealAPI(chosen);
+      recordSource();
+      onMealChange(chosen);
       toast.success("Meal changed successfully!");
       handleClose();
     } catch (err: any) {
@@ -452,34 +476,63 @@ const ChangeMealModal = ({
     }
   };
 
+  const savedCount = favoriteMealsData?.length ?? 0;
+
+  /** The four ways out of this modal, styled to the swap-meal design. The
+   *  forest/sage hexes are written inline rather than added to the Tailwind
+   *  theme: they are this screen's palette, not (yet) the app's. */
   const swapOptions = [
     {
       id: "ai" as TabType,
       label: "AI Suggestion",
       icon: Sparkles,
-      description: "Get smart meal recommendations",
-      color: "purple",
+      description: "Personalized alternatives matching your macros and mood.",
+      cta: "Try tailored swaps",
+      surface: "bg-[#FAF9F6] border-slate-100 hover:border-[#86D2C1]/70",
+      iconTile: "bg-white text-[#3F6652] border-slate-100",
+      titleHover: "group-hover:text-[#3F6652]",
+      footer: "border-slate-100 text-[#3F6652]",
+      ring: "focus:ring-[#3F6652]/20",
+      badge: { label: "Plus", tone: "bg-amber-50 text-amber-700 border border-amber-100" },
     },
     {
       id: "favorites" as TabType,
       label: "From Favorites",
       icon: Heart,
-      description: "Choose from your saved meals",
-      color: "red",
+      description: "Choose from your saved and comforting go-to meals.",
+      cta: savedCount > 0 ? `Browse ${savedCount} saved` : "Browse saved meals",
+      surface: "bg-[#FFF8F7] border-rose-100 hover:border-rose-200",
+      iconTile: "bg-white text-rose-500 border-rose-100",
+      titleHover: "group-hover:text-rose-600",
+      footer: "border-rose-100 text-rose-600",
+      ring: "focus:ring-rose-300",
+      badge: { label: "Quick", tone: "bg-rose-100/70 text-rose-600" },
     },
     {
       id: "photo" as TabType,
       label: "Take Photo",
       icon: Camera,
-      description: "Recognize meal from photo",
-      color: "blue",
+      description: "Instant AI food scan to detect ingredients & calories.",
+      cta: "Scan plate",
+      surface: "bg-[#FAF9F6] border-slate-100 hover:border-[#86D2C1]/70",
+      iconTile: "bg-white text-slate-600 border-slate-100",
+      titleHover: "group-hover:text-[#3F6652]",
+      footer: "border-slate-100 text-slate-500 group-hover:text-[#3F6652]",
+      ring: "focus:ring-[#3F6652]/20",
+      badge: { label: "Premium", tone: "bg-amber-50 text-amber-800 border border-amber-100" },
     },
     {
       id: "manual" as TabType,
       label: "Manual Entry",
       icon: Edit,
-      description: "Enter meal details manually",
-      color: "gray",
+      description: "Search food database or enter custom recipe ingredients.",
+      cta: "Type & search",
+      surface: "bg-[#FAF9F6] border-slate-100 hover:border-[#86D2C1]/70",
+      iconTile: "bg-white text-slate-600 border-slate-100",
+      titleHover: "group-hover:text-[#3F6652]",
+      footer: "border-slate-100 text-slate-500 group-hover:text-[#3F6652]",
+      ring: "focus:ring-[#3F6652]/20",
+      badge: { label: "Manual", tone: "bg-slate-100/80 text-slate-500" },
     },
   ];
 
@@ -490,20 +543,28 @@ const ChangeMealModal = ({
       {isOpen &&
         createPortal(
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-[8px] flex items-end sm:items-center justify-center z-[9999] p-3.5 sm:p-4"
             onClick={(e) => e.target === e.currentTarget && handleClose()}
           >
             <div
-              className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden shadow-xl"
+              className="bg-white/95 rounded-[32px] w-full max-w-md max-h-[90vh] overflow-hidden shadow-[0_20px_45px_-10px_rgba(43,71,56,0.18),0_8px_18px_-6px_rgba(43,71,56,0.08)] border border-slate-100"
               onClick={(e) => e.stopPropagation()}
             >
+              {/* Drag affordance — the sheet meets the bottom edge on phones. */}
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 opacity-80 sm:hidden" />
             {/* Header */}
-            <div className="flex justify-between items-center p-6 pb-4 border-b border-gray-100">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
+            <div className="flex items-start justify-between px-6 pt-6 pb-5">
+              <div className="pr-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#86D2C1]" />
+                  <span className="text-[11px] font-semibold tracking-wider text-[#3F6652]/80 uppercase">
+                    {quickMode && !showAllOptions ? "Quick Log" : "Mindful Choice"}
+                  </span>
+                </div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-800 leading-snug">
                   {quickMode && !showAllOptions ? "What did you eat?" : "Swap Meal"}
                 </h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm font-normal text-slate-400 mt-0.5 leading-relaxed">
                   {quickMode && !showAllOptions
                     ? "Log what you actually had"
                     : "Choose how you want to swap this meal"}
@@ -512,9 +573,10 @@ const ChangeMealModal = ({
               <button
                 onClick={handleClose}
                 disabled={isSaving}
-                className="text-gray-400 hover:text-gray-600 transition disabled:opacity-50"
+                aria-label="Close dialog"
+                className="w-8 h-8 rounded-full bg-slate-100/70 hover:bg-slate-100 active:scale-95 transition-all flex items-center justify-center text-slate-400 hover:text-slate-600 flex-shrink-0 mt-0.5 disabled:opacity-50"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -583,56 +645,104 @@ const ChangeMealModal = ({
 
             {/* Option Selection - Full 4-tab grid */}
             {!activeTab && (!quickMode || showAllOptions) && (
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-3">
+              <div className="px-6 pb-6">
+                <div className="grid grid-cols-2 gap-3.5">
                   {swapOptions.map((option) => {
                     const Icon = option.icon;
-                    const feature = tabFeatures[option.id as Exclude<TabType, null>];
+                    const feature =
+                      tabFeatures[option.id as Exclude<TabType, null>];
                     const locked = feature
                       ? !hasFeatureAccessForUser(user, feature)
                       : false;
-                    const colorClasses = {
-                      purple:
-                        "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100",
-                      red: "bg-red-50 border-red-200 text-red-700 hover:bg-red-100",
-                      blue: "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100",
-                      gray: "bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100",
-                    };
-
-                    const colors = locked
-                      ? "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
-                      : colorClasses[option.color as keyof typeof colorClasses];
 
                     return (
                       <button
                         key={option.id}
+                        type="button"
                         onClick={() => handleSelectTab(option.id)}
                         disabled={isSaving}
-                        className={`p-4 border-2 rounded-xl transition-all text-left disabled:opacity-50 disabled:cursor-not-allowed ${colors}`}
+                        className={`group text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden focus:outline-none focus:ring-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${option.surface} ${option.ring}`}
                       >
-                        <div className="flex items-center gap-2 mb-2">
-                          {locked ? (
-                            <Lock className="w-5 h-5" />
-                          ) : (
-                            <Icon className="w-5 h-5" />
-                          )}
-                          <span className="font-semibold text-sm">
-                            {option.label}
-                          </span>
-                          {locked && (
-                            <span className="text-xs font-medium text-amber-700">
-                              {feature === "photoRecognition" ? "Premium" : "Plus"}
+                        <div className="w-full">
+                          <div className="flex items-center justify-between mb-3">
+                            <div
+                              className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform ${option.iconTile}`}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            {/* The tier badge only claims to be a paywall when
+                                it actually is one — otherwise it just names
+                                the route, as the design does. */}
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${
+                                locked
+                                  ? "bg-amber-50 text-amber-800 border border-amber-100"
+                                  : option.badge.tone
+                              }`}
+                            >
+                              {locked && <Lock className="w-2.5 h-2.5" />}
+                              {locked
+                                ? feature === "photoRecognition"
+                                  ? "Premium"
+                                  : "Plus"
+                                : option.badge.label}
                             </span>
-                          )}
+                          </div>
+
+                          <h3
+                            className={`text-sm font-semibold text-slate-800 leading-tight transition-colors ${option.titleHover}`}
+                          >
+                            {option.label}
+                          </h3>
+                          <p className="text-xs text-slate-400 font-normal mt-1 leading-snug line-clamp-3">
+                            {locked
+                              ? `Upgrade to unlock ${option.label.toLowerCase()}.`
+                              : option.description}
+                          </p>
                         </div>
-                        <p className="text-xs opacity-75">
-                          {locked
-                            ? `Upgrade to unlock ${option.label.toLowerCase()}`
-                            : option.description}
-                        </p>
+
+                        <div
+                          className={`mt-3.5 pt-2 border-t flex items-center text-[11px] font-medium group-hover:translate-x-0.5 transition-transform ${option.footer}`}
+                        >
+                          <span>{locked ? "See plans" : option.cta}</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                        </div>
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Mindful helper banner */}
+                <div className="mt-4 py-2.5 px-3 bg-slate-50/80 rounded-2xl border border-slate-100/60 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-6 h-6 rounded-lg bg-[#3F6652]/10 flex items-center justify-center text-xs flex-shrink-0">
+                      🌿
+                    </span>
+                    <p className="text-[11px] text-slate-500 font-normal">
+                      Listen to your body before swapping.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      navigate("/mindfulness?tab=exercises");
+                    }}
+                    className="text-[11px] font-medium text-[#3F6652] hover:underline whitespace-nowrap ml-2"
+                  >
+                    Check Scale
+                  </button>
+                </div>
+
+                <div className="mt-3 text-center">
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    disabled={isSaving}
+                    className="w-full py-2.5 text-xs font-medium text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50 transition-colors active:scale-[0.98] disabled:opacity-50"
+                  >
+                    Keep Current Meal
+                  </button>
                 </div>
               </div>
             )}

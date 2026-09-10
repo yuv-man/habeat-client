@@ -1147,3 +1147,47 @@ export interface ICBTBadge {
     count: number;
   };
 }
+
+/**
+ * The Brain, as a screen should meet it.
+ *
+ * Composed server-side (`GET /brain/state` → `data.focus`) from the active
+ * pattern, its evidence and the intervention currently in play. It is
+ * deliberately already-worded: the client renders these strings, it does not
+ * decide what a stage or an intervention means.
+ */
+export interface IBrainFocus {
+  patternId: string;
+  patternName: string;
+  category: string;
+  emoji: string;
+  stage: string;
+  /** The stage in plain language, e.g. "Getting to know it". */
+  stageLabel: string;
+  /** 1-based rung on the ladder, for a progress indicator. */
+  stageIndex: number;
+  stageCount: number;
+  /** What Habeat is doing about it this week, in the second person. */
+  whatWeAreDoing: string;
+  /** How the user can tell it is working. */
+  goingWellIf: string;
+  /** The observations the detection rests on, verbatim and checkable. */
+  evidence: string[];
+  status: string | null;
+  /** True once the pattern has measurably eased from its baseline. */
+  improving: boolean;
+  startedAt: string | null;
+  confidence: "insufficient" | "low" | "medium" | "high";
+}
+
+/** A pattern row as the Brain stores it. Used for the fuller patterns list. */
+export interface IBrainPattern {
+  patternId: string;
+  name: string;
+  status: string;
+  score: number;
+  confidence: number;
+  evidence: { description: string; value?: number }[];
+  firstDetectedAt?: string;
+  lastDetectedAt?: string;
+}

@@ -58,7 +58,6 @@ const DailyMealScreen = () => {
   const progressLoading = useProgressStore((state) => state.loading);
   const fetchTodayProgress = useProgressStore((state) => state.fetchTodayProgress);
   const setTodayProgress = useProgressStore((state) => state.setTodayProgress);
-  const syncProgressWithServer = useProgressStore((state) => state.syncProgressWithServer);
   const addWaterGlassToStore = useProgressStore((state) => state.addWaterGlass);
 
   const fetchFavorites = useFavoritesStore((state) => state.fetchFavorites);
@@ -723,10 +722,9 @@ const DailyMealScreen = () => {
                       date={dailyProgress.date}
                       mealStatus={getMealStatus(meal, slot)}
                       onMealMissed={handleMealMissed}
-                      onMealChange={(newMeal) => {
-                        setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, [slot]: newMeal } });
-                        if (userId) syncProgressWithServer(userId);
-                      }}
+                      // The swap already refreshed the progress store, and
+                      // this screen mirrors it — nothing to do here.
+                      onMealChange={() => {}}
                     />
                   );
                 })}
@@ -742,12 +740,7 @@ const DailyMealScreen = () => {
                       snackIndex={index}
                       isSnack
                       promptMoodCheck={promptMoodCheckOnSnackIndex === index}
-                      onMealChange={(newMeal) => {
-                        const updatedSnacks = [...dailyProgress.meals.snacks];
-                        updatedSnacks[index] = newMeal;
-                        setTodayProgress({ ...dailyProgress, meals: { ...dailyProgress.meals, snacks: updatedSnacks } });
-                        if (userId) syncProgressWithServer(userId);
-                      }}
+                      onMealChange={() => {}}
                     />
                   ))}
               </div>

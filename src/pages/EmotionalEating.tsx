@@ -8,6 +8,11 @@ import {
   useEmotionalEatingInsight,
   useMoodHistory,
 } from "@/stores/cbtStore";
+import { useBrainStore } from "@/stores/brainStore";
+import {
+  BrainFocusCard,
+  BrainFocusPending,
+} from "@/components/analytics/BrainFocusCard";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { CBTExercises } from "@/components/cbt/CBTExercises";
 import { cn } from "@/lib/utils";
@@ -80,6 +85,16 @@ function ScoreRing({ score, weeklyChange, mealsAnalysed }: ScoreRingProps) {
   const label =
     score >= 75 ? "Excellent" : score >= 50 ? "Building" : "Developing";
 
+  // "Building" on its own is a grade with no subject. The score's meaning was
+  // only available behind the "How to read this" toggle, which meant the most
+  // prominent number on the page was also the least explained one.
+  const meaning =
+    score >= 75
+      ? "Most of your meals were eaten for hunger rather than feeling."
+      : score >= 50
+        ? "More of your meals were eaten for hunger than for feeling."
+        : "Feelings are driving more of your meals than hunger right now.";
+
   return (
     <div className="bg-white rounded-2xl p-6 shadow-[0_10px_40px_-10px_rgba(15,118,110,0.12)] border-b-4 border-b-teal-200 flex flex-col justify-between h-full">
       <div className="flex items-start justify-between mb-4">
@@ -117,6 +132,9 @@ function ScoreRing({ score, weeklyChange, mealsAnalysed }: ScoreRingProps) {
           </div>
         </div>
         <span className="mt-2 text-sm font-medium text-teal-600">{label}</span>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-slate-500 text-center max-w-[15rem]">
+          {meaning}
+        </p>
       </div>
 
       {weeklyChange !== undefined && (
@@ -680,20 +698,35 @@ function ReflectionSummary({
 function PatternsTable({
   patterns,
   isExample,
+  /** The pattern the Brain is currently working on, so the table can say which
+   *  row that is instead of presenting all of them as equally live. */
+  activePatternName,
 }: {
   patterns: Pattern[];
   isExample: boolean;
+  activePatternName?: string | null;
 }) {
   const IMPACT_STYLES = {
     positive: "bg-teal-100 text-teal-700",
-    negative: "bg-red-100 text-red-700",
-    neutral: "bg-violet-100 text-violet-700",
+    negative: "bg-amber-100 text-amber-800",
+    neutral: "bg-slate-100 text-slate-600",
+  };
+
+  // "NEGATIVE" is a verdict on the user; "Worth working on" is a description
+  // of the habit. Amber rather than red for the same reason — a missed lunch
+  // is worth noticing, not an alarm.
+  const IMPACT_LABELS = {
+    positive: "Working for you",
+    negative: "Worth a look",
+    neutral: "Just noting it",
   };
 
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-lg font-bold text-slate-800">Top Recurring Patterns</h3>
+        <h3 className="text-lg font-bold text-slate-800">
+          Everything else we've noticed
+        </h3>
         {isExample && (
           <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide rounded-full bg-amber-100 text-amber-700">
             Example
@@ -724,32 +757,57 @@ function PatternsTable({
           <thead>
             <tr className="bg-slate-50/80">
               <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pattern</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Frequency</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Impact</th>
+              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">How often</th>
+              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {patterns.map((p, i) => (
-              <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+            {patterns.map((p, i) => {
+              const isActive =
+                !isExample &&
+                Boolean(activePatternName) &&
+                p.name.toLowerCase() === activePatternName!.toLowerCase();
+
+              return (
+              <tr
+                key={i}
+                className={cn(
+                  "transition-colors",
+                  isActive ? "bg-teal-50/50" : "hover:bg-slate-50/50",
+                )}
+              >
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg">
                       {p.emoji}
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-slate-700">{p.name}</div>
+                      <div className="text-sm font-semibold text-slate-700 flex items-center gap-2 flex-wrap">
+                        {p.name}
+                        {isActive && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-teal-600 text-white">
+                            Working on it
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[11px] text-slate-400">{p.context}</div>
                     </div>
                   </div>
                 </td>
                 <td className="px-4 py-4 text-sm font-medium text-slate-600">{p.frequency}</td>
                 <td className="px-4 py-4 text-right">
-                  <span className={cn("px-2.5 py-1 text-[10px] font-bold rounded-full uppercase", IMPACT_STYLES[p.impact])}>
-                    {p.impact}
+                  <span
+                    className={cn(
+                      "px-2.5 py-1 text-[10px] font-bold rounded-full whitespace-nowrap",
+                      IMPACT_STYLES[p.impact],
+                    )}
+                  >
+                    {IMPACT_LABELS[p.impact]}
                   </span>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -768,12 +826,25 @@ export default function EmotionalEating() {
   const insight = useEmotionalEatingInsight();
   const moodHistory = useMoodHistory();
 
+  // The Brain's current focus. Fetched once and cached in its own store, so
+  // this page and any other surface that mentions what the user is working on
+  // are quoting the same decision rather than each deciding for themselves.
+  const brainFocus = useBrainStore((s) => s.focus);
+  const brainLoaded = useBrainStore((s) => s.loaded);
+  const fetchBrainFocus = useBrainStore((s) => s.fetchFocus);
+
   useEffect(() => {
     fetchEmotionalEatingInsight(period);
     const end = new Date().toISOString().split("T")[0];
     const start = daysAgo(7);
     fetchMoodHistory(start, end);
   }, [period, fetchEmotionalEatingInsight, fetchMoodHistory]);
+
+  // Not keyed to `period`: the Brain reasons over its own window and its
+  // decision does not change because the user flipped a 7/30-day toggle.
+  useEffect(() => {
+    fetchBrainFocus();
+  }, [fetchBrainFocus]);
 
   // Build the 7-day chart from real logged data only.
   // A day with nothing logged is rendered as an explicit gap — never as a zero,
@@ -901,7 +972,8 @@ export default function EmotionalEating() {
             </div>
           </div>
           <p className="text-sm text-slate-400 mb-3 max-w-md">
-            Understand the connection between your emotional state and eating habits.
+            One habit at a time, picked from what you actually log — and the
+            numbers behind why.
           </p>
 
           {/* Provenance: what this page is actually computed from, and how it
@@ -955,6 +1027,16 @@ export default function EmotionalEating() {
             </div>
           ) : (
             <div className="space-y-4">
+
+              {/* The answer first. Everything below this is evidence for it —
+                  opening with a 0–100 score and a chart leaves the user to
+                  work out what any of it means. */}
+              {brainLoaded &&
+                (brainFocus ? (
+                  <BrainFocusCard focus={brainFocus} />
+                ) : (
+                  <BrainFocusPending />
+                ))}
 
               {/* Bento row 1: Score (only when real data) + Mood chart */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
@@ -1066,7 +1148,11 @@ export default function EmotionalEating() {
               />
 
               {/* Patterns table */}
-              <PatternsTable patterns={patterns} isExample={patternsAreExample} />
+              <PatternsTable
+                patterns={patterns}
+                isExample={patternsAreExample}
+                activePatternName={brainFocus?.patternName ?? null}
+              />
 
               {/* CBT Exercises toggle */}
               <div>

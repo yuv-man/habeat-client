@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { IDailyProgress, IEngagementResult, IMeal } from "@/types/interfaces";
+import { IDailyProgress, IEngagementResult, IMeal, MealSource } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
 import { mockDailyProgress } from "@/mocks/dailyProgressMock";
@@ -40,7 +40,9 @@ interface ProgressActions {
     userId: string,
     date: string,
     mealType: string,
-    mealId: string
+    mealId: string,
+    /** Where the food came from, when the user said so at the tick. */
+    source?: MealSource
   ) => Promise<void>;
   /** Correct the time a completed meal was actually eaten ("HH:MM", local). */
   setMealEatenTime: (
@@ -274,7 +276,8 @@ export const useProgressStore = create<ProgressStore>()(
     userId: string,
     date: string,
     mealType: string,
-    mealId: string
+    mealId: string,
+    source?: MealSource
   ) => {
     const { todayProgress } = get();
     if (!todayProgress) return;
@@ -363,7 +366,13 @@ export const useProgressStore = create<ProgressStore>()(
 
     // Update backend in background
     try {
-      const response = await userAPI.completeMeal(userId, date, mealType, mealId);
+      const response = await userAPI.completeMeal(
+        userId,
+        date,
+        mealType,
+        mealId,
+        source
+      );
 
       // Handle engagement result if present (only when completing, not uncompleting)
       const responseData = response.data as any;

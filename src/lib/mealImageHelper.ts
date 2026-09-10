@@ -1,938 +1,429 @@
 /**
- * Helper function to get meal image from assets/mealsTypes/webp directory
- * Uses flexible keyword matching to map meal names to images
- * One image can match multiple meals (e.g., vegetable-soup.webp for both "vegetable soup" and "minestrone soup")
+ * Picks the photo for a meal from `assets/mealsTypes/webp`.
+ *
+ * The rule that matters: **the form of the dish wins.** A taco gets a taco
+ * photo, a soup gets a soup photo. Ingredients only choose *between* photos of
+ * the right form — they can never drag a dish into the wrong one.
+ *
+ * The previous matcher scored every image by loose substring overlap, which
+ * let incidental adjectives outvote the dish itself. "Chilli Lime Egg Soup"
+ * matched `chilli-lime-beef-pasta` on two modifiers and was served a bowl of
+ * pasta; "Mustard Dill Tuna Tacos" matched `turkey-mustard-dill-salad` the
+ * same way. Two unrelated dishes routinely landed on one photo because the
+ * words they happened to share were the ones being counted.
  */
 
-// All available webp image files (without extension)
-const availableImages = [
-  "arencini",
-  "chicken-leg-with-fried-cauliflower",
-  "pasta-limone",
-  "ravioli-with-mashroom-sauce",
-  "seafood-pasta",
-  "avocado-chicken-wrap",
-  "avocado-toast-with-poached-egg",
-  "bagel-with-cream-cheese-and-salmon",
-  "baked-salmon-with-asparagus",
-  "baked-sweet-potato",
-  "barbeque-chicken-wings",
-  "beef-and-broccoli-with-noodles",
-  "biryani-rice",
-  "breakfast-burrito",
-  "buddha-salad",
-  "burger-with-fries",
-  "burrito-bowl",
-  "butter-chicken-and-rice",
-  "caesar-salad",
-  "cereal-with-milk",
-  "chia-pudding",
-  "chicken-and-quinoa-salad",
-  "chicken-breast-and-sweet-potato",
-  "chicken-curry",
-  "chicken-fajitas",
-  "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
-  "chicken-parmesan",
-  "chicken-salad",
-  "chicken-noodle-soup",
-  "chinese-dumplings",
-  "couscous-salad",
-  "crepes-topped-with-strawberries",
-  "croissant",
-  "duck-leg-with-mush-potatos",
-  "falafel-and-hummus",
-  "falafel",
-  "fish-tacos",
-  "fruit-salad",
-  "gnocchi-in-mushroom-sauce",
-  "gnocchi-with-white-sauce",
-  "greek-yogurt-topped-with-granola",
-  "grilled-whole-fish",
-  "grilled-salmon-with-veggies",
-  "grilled-vegetable-wrap",
-  "grilled-vegetables-platter",
-  "gulash-soup",
-  "lasagna",
-  "lentil-soup-with-whole-grain-bread",
-  "meat-balls",
-  "muffin",
-  "mussels-with-fries",
-  "nachos",
-  "oatmeal-bowl-with-fruits",
-  "pad-thai",
-  "pancakes-with-berries-and-syrup",
-  "pasta",
-  "peanut-butter-toast-with-banana",
-  "pho-soup",
-  "pizza",
-  "porridge-with-cinnamon-and-apples",
-  "quinoa-salad-with-avocado",
-  "ramen-bowl",
-  "ravioli-with-sauce",
-  "rice-with-curry",
-  "risotto",
-  "salmon-with-broccoli",
-  "schnitzel-and-fries",
-  "scrambled-eggs-and-toast",
-  "scrambled-eggs-with-spinach",
-  "shakshuka",
-  "sheperds-pie",
-  "shrimp-pasta",
-  "shrimps-pad-thai",
-  "smoothie-bowl-with-banana-and-kiwi",
-  "smoothie",
-  "spaghetti-aglio-e-olio",
-  "spaghetti-bolognese",
-  "spaghetti-in-tomato-sauce",
-  "spare-ribs",
-  "steak-and-roasted-vegetables",
-  "steak-with-mashed-potatoes",
-  "stirfried-noodles",
-  "stuffed-bell-peppers",
-  "sushi-bowl",
-  "sushi-rolls",
-  "tacos-with-cheese-and-guacamole",
-  "teriyaki-salmon-on-a-plate",
-  "thai-green-curry",
-  "tofu-and-rice-noodles",
-  "tomato-soup-and-crusty-bread",
-  "tuna-salad-sandwich",
-  "turkey-sandwich",
-  "turkey-stirfry",
-  "vegetable-soup",
-  "veggie-burger",
-  "veggie-omelette",
-  "veggie-stir-fry",
-  "vietnamese-spring-rolls",
-  "waffles-with-honey",
-  "yogurt-parfait-with-granola",
-  "beef-and-bean-chili",
-  "baked-cod-with-quinoa",
-  "whole-wheat-pasta-with-ground-chicken-marinara",
-  "whole-wheat-pasta-with-ground-beef-marinara",
-  "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
-  "chicken-and-vegetable-skewers-couscous",
-  "baked-salmon-with-roasted-sweet-potatoes",
-  "berry-greek-yogurt-parfait",
-  "lean-beef-stir-fry-with-brown-rice",
-  "chicken-and-veggie-whole-wheat-wrap",
-  "green-power-smoothie",
-  "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
-  "chicken-pad-see-ew",
-  "chicken-teriyaki-bowl-with-brown-rice",
-  "power-berry-nut-muesli-bowl",
-  "whole-wheat-pancakes-with-fruit",
-  "black-bean-burger-on-whole-wheat-bun",
-  "lemon-herb-chicken-with-brown-rice-and-broccoli",
-  "lean-beef-with-quinoa-and-roasted-root-vegetables",
-  "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
-  "turkey-and-hummus-wrap-with-side-salad",
-  "lean-steak-with-quinoa-and-asparagus",
-  "baked-cod-with-sweet-potato-wedges-and-green-beans",
-  "herb-crusted-beef-steak-with-potato-wedges",
-  "yogurt-with-muesli",
-  "spicy-red-tuna-poke-bowl",
-  "red-tuna-with-mixed-greens-noodles",
-  "red-tuna-sashimi",
-  "salmon-with-grill-aspargus-and-brocolli",
-  "philly-cheese-steak",
-  "beef-steak-in-baguette",
-  "japanese-katsu-chicken-bowl",
-  "japanese-gyoza",
-  "salmon-and-avocado-toast",
-  "fish-buns",
-  "vermicelli-salad",
-  "calzone",
-  "duck-breast-with-mushed-potatoes",
-  "miso-glazed-noodles-with-shrimp-and-broccoli",
-  "cottage-cheese-with-pineapple",
-  "tropical-mango-and-pineapple-smoothie-bowl",
-  "seafood-soup",
-  "onion-soup",
-  "thai-peanut-tofu-bowl",
-  "spicy-kimchi-and-gochujang-tofu",
-  "mediterranean-chickpea-bowl",
-  "spanish-egg-and-potato-omelette",
-  "roasted-padron-peppers",
-  "croquetas",
-  "chilli-lime-beef-pasta",
-  "coconut-curry-tuna-stir-fry",
-  "turkey-mustard-savoury-pancake",
-  "cottage-cheese-herb-frittata",
-  "thyme-butter-salmon-courgette",
-  "peanut-butter-chia-oats",
-  "roasted-walnut-bowl",
-  "ginger-sesame-chicken-stir-fry",
-  "greek-yogurt-berry-bowl",
-  "maple-glazed-chicken-skillet",
-  "smoked-salmon-yogurt-bowl",
-  "garlic-turkey-soft-tacos",
-  "salmon-herb-pita",
-  "turkey-mustard-dill-salad",
-  "spiced-salmon-stew",
-  "beef-quesadilla",
-  "thyme-butter-chicken-pasta",
-  "thyme-beef-patty-plate",
-  "beef-sweet-potato-stew",
-  "salmon-coconut-rice",
-  "fruit-chia-pudding",
-  "almond-butter-yogurt-bowl"
-];
-
-// Keyword mappings - maps keywords to image files
-// Multiple meals can share the same image
-const keywordMappings: { [key: string]: string[] } = {
-  // Soups
-  soup: [
-    "vegetable-soup",
-    "tomato-soup-and-crusty-bread",
-    "lentil-soup-with-whole-grain-bread",
-    "pho-soup",
-    "gulash-soup",
-    "chicken-noodle-soup",
-    "miso-glazed-noodles-with-shrimp-and-broccoli",
-    "seafood-soup",
-    "onion-soup",
-    "coconut-curry-tuna-stir-fry",
-  ],
-  vegetable: [
-    "vegetable-soup",
-    "grilled-vegetables-platter",
-    "veggie-stir-fry",
-    "thai-peanut-tofu-bowl",
-    "spicy-kimchi-and-gochujang-tofu",
-    "mediterranean-chickpea-bowl",
-    "spanish-egg-and-potato-omelette",
-    "roasted-padron-peppers",
-    "spiced-salmon-stew",
-    "croquetas",
-    "coconut-curry-tuna-stir-fry",
-    "ginger-sesame-chicken-stir-fry",
-    "maple-glazed-chicken-skillet",
-    "turkey-mustard-dill-salad"
-  ],
-  minestrone: ["vegetable-soup"],
-  tomato: ["tomato-soup-and-crusty-bread", "spaghetti-in-tomato-sauce"],
-  lentil: ["lentil-soup-with-whole-grain-bread"],
-  pho: ["pho-soup"],
-  gulash: ["gulash-soup"],
-
-  // Burgers
-  burger: [
-    "burger-with-fries",
-    "veggie-burger",
-    "black-bean-burger-on-whole-wheat-bun",
-  ],
-  hamburger: ["burger-with-fries"],
-  blackBean: ["black-bean-burger-on-whole-wheat-bun"],
-
-  // Salads
-  salad: [
-    "caesar-salad",
-    "chicken-salad",
-    "chicken-and-quinoa-salad",
-    "buddha-salad",
-    "couscous-salad",
-    "quinoa-salad-with-avocado",
-    "fruit-salad",
-    "vermicelli-salad",
-    "turkey-mustard-dill-salad"
-  ],
-  caesar: ["caesar-salad"],
-  quinoa: ["chicken-and-quinoa-salad", "quinoa-salad-with-avocado"],
-  buddha: ["buddha-salad"],
-  couscous: ["couscous-salad"],
-  fruit: ["fruit-salad", "whole-wheat-pancakes-with-fruit", "cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl", "fruit-chia-pudding"],
-  pineapple: ["cottage-cheese-with-pineapple", "tropical-mango-and-pineapple-smoothie-bowl"],
-  chia: ["fruit-chia-pudding", "almond-butter-yogurt-bowl"],
-
-  // Chicken dishes
-  chicken: [
-    "chicken-leg-with-fried-cauliflower",
-    "chicken-breast-and-sweet-potato",
-    "chicken-curry",
-    "chicken-fajitas",
-    "chicken-parmesan",
-    "chicken-salad",
-    "chicken-and-quinoa-salad",
-    "butter-chicken-and-rice",
-    "barbeque-chicken-wings",
-    "avocado-chicken-wrap",
-    "chicken-and-vegetable-skewers-couscous",
-    "chicken-and-veggie-whole-wheat-wrap",
-    "chicken-pad-see-ew",
-    "chicken-teriyaki-bowl-with-brown-rice",
-    "lemon-herb-chicken-with-brown-rice-and-broccoli",
-    "grilled-salmon-quinoa-salad-with-avocado",
-    "ginger-sesame-chicken-stir-fry",
-    "garlic-turkey-soft-tacos",
-    "turkey-mustard-dill-salad",
-    "thyme-butter-chicken-pasta",
-  ],
-  wings: ["barbeque-chicken-wings"],
-  curry: [
-    "chicken-curry",
-    "butter-chicken-and-rice",
-    "thai-green-curry",
-    "rice-with-curry",
-  ],
-  fajitas: [
-    "chicken-fajitas",
-    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
-  ],
-  parmesan: ["chicken-parmesan"],
-  butter: ["butter-chicken-and-rice"],
-
-  // Salmon/Fish
-  salmon: [
-    "baked-salmon-with-asparagus",
-    "grilled-salmon-with-veggies",
-    "salmon-with-broccoli",
-    "teriyaki-salmon-on-a-plate",
-    "baked-salmon-with-roasted-sweet-potatoes",
-    "salmon-with-grill-aspargus-and-brocolli",
-    "grilled-salmon-quinoa-salad-with-avocado",
-    "smoked-salmon-yogurt-bowl",
-    "salmon-herb-pita",
-    "spiced-salmon-stew",
-  ],
-  fish: [
-    "fish-buns",
-    "grilled-whole-fish",
-    "spicy-red-tuna-poke-bowl",
-    "fish-tacos",
-    "baked-cod-with-quinoa",
-    "baked-salmon-with-roasted-sweet-potatoes",
-    "baked-cod-with-sweet-potato-wedges-and-green-beans",
-    "grilled-salmon-quinoa-salad-with-avocado",
-    "red-tuna-with-mixed-greens-noodles",
-    "red-tuna-sashimi",
-    "salmon-with-grill-aspargus-and-brocolli",
-    "seafood-soup",
-    "smoked-salmon-yogurt-bowl",
-    "salmon-herb-pita",
-    "spiced-salmon-stew",
-    "salmon-coconut-rice",
-  ],
-  teriyaki: [
-    "teriyaki-salmon-on-a-plate",
-    "chicken-teriyaki-bowl-with-brown-rice",
-  ],
-  cod: [
-    "baked-cod-with-quinoa",
-    "baked-cod-with-sweet-potato-wedges-and-green-beans",
-    "fish-buns",
-    "seafood-soup",
-  ],
-  // Eggs
-  egg: [
-    "scrambled-eggs-and-toast",
-    "scrambled-eggs-with-spinach",
-    "veggie-omelette",
-    "avocado-toast-with-poached-egg",
-    "salmon-and-avocado-toast",
-    "spanish-egg-and-potato-omelette",
-  ],
-  stew: ["spiced-salmon-stew", "beef-and-bean-chili", "beef-sweet-potato-stew"],
-  eggs: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach", "spanish-egg-and-potato-omelette"],
-  scrambled: ["scrambled-eggs-and-toast", "scrambled-eggs-with-spinach"],
-  omelette: ["veggie-omelette", "spanish-egg-and-potato-omelette"],
-  omelet: ["veggie-omelette"],
-
-  // Breakfast
-  oatmeal: ["porridge-with-cinnamon-and-apples", "oatmeal-bowl-with-fruits"],
-  porridge: ["porridge-with-cinnamon-and-apples"],
-  cereal: ["cereal-with-milk"],
-  waffles: ["waffles-with-honey"],
-  waffle: ["waffles-with-honey"],
-  pancakes: [
-    "pancakes-with-berries-and-syrup",
-    "whole-wheat-pancakes-with-fruit",
-  ],
-  pancake: [
-    "pancakes-with-berries-and-syrup",
-    "whole-wheat-pancakes-with-fruit",
-  ],
-  crepes: ["crepes-topped-with-strawberries"],
-  crepe: ["crepes-topped-with-strawberries"],
-  muffin: ["muffin"],
-  croissant: ["croissant"],
-  bagel: ["bagel-with-cream-cheese-and-salmon"],
-  toast: [
-    "scrambled-eggs-and-toast",
-    "peanut-butter-toast-with-banana",
-    "avocado-toast-with-poached-egg",
-    "salmon-and-avocado-toast",
-  ],
-  avocado: [
-    "avocado-toast-with-poached-egg",
-    "quinoa-salad-with-avocado",
-    "avocado-chicken-wrap",
-    "salmon-and-avocado-toast",
-  ],
-
-  // Pasta
-  pasta: [
-    "pasta",
-    "pasta-limone",
-    "ravioli-with-mashroom-sauce",
-    "seafood-pasta",
-    "shrimp-pasta",
-    "spaghetti-aglio-e-olio",
-    "spaghetti-bolognese",
-    "spaghetti-in-tomato-sauce",
-    "whole-wheat-pasta-with-ground-chicken-marinara",
-    "whole-wheat-pasta-with-ground-beef-marinara",
-    "lasagna",
-    "ravioli-with-sauce",
-    "gnocchi-in-mushroom-sauce",
-    "chilli-lime-beef-pasta",
-    "thyme-butter-chicken-pasta",
-  ],
-  spaghetti: [
-    "pasta-limone",
-    "seafood-pasta",
-    "spaghetti-aglio-e-olio",
-    "spaghetti-bolognese",
-    "spaghetti-in-tomato-sauce",
-    "pasta",
-    "thyme-butter-chicken-pasta",
-  ],
-  bolognese: ["spaghetti-bolognese"],
-  carbonara: ["pasta", "spaghetti-aglio-e-olio"],
-  alfredo: ["pasta", "gnocchi-with-white-sauce", "ravioli-with-mashroom-sauce"],
-  marinara: [
-    "whole-wheat-pasta-with-ground-chicken-marinara",
-    "whole-wheat-pasta-with-ground-beef-marinara",
-    "spaghetti-in-tomato-sauce",
-    "seafood-pasta",
-  ],
-  penne: ["pasta"],
-  fettuccine: ["pasta"],
-  linguine: ["pasta", "shrimp-pasta", "seafood-pasta", "chilli-lime-beef-pasta"],
-  tagliatelle: ["pasta", "spaghetti-bolognese", "pasta-limone"],
-  rigatoni: ["pasta"],
-  macaroni: ["pasta"],
-  lasagna: ["lasagna"],
-  ravioli: ["ravioli-with-sauce", "ravioli-with-mashroom-sauce"],
-  gnocchi: ["gnocchi-in-mushroom-sauce", "gnocchi-with-white-sauce"],
-  aglio: ["spaghetti-aglio-e-olio"],
-  olio: ["spaghetti-aglio-e-olio"],
-
-
-  // Rice dishes
-  rice: [
-    "arencini",
-    "spicy-red-tuna-poke-bowl",
-    "biryani-rice",
-    "rice-with-curry",
-    "tofu-and-rice-noodles",
-    "chicken-fried-rice",
-    "chicken-teriyaki-bowl-with-brown-rice",
-    "lemon-herb-chicken-with-brown-rice-and-broccoli",
-    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
-    "thai-peanut-tofu-bowl",
-    "salmon-coconut-rice",
-  ],
-  biryani: ["biryani-rice"],
-  risotto: ["risotto"],
-  fried: ["chicken-fried-rice", "fish-buns", "arencini"],
-  buns: ["fish-buns"],
-
-  // Asian dishes
-  pad: ["pad-thai", "shrimps-pad-thai"],
-  thai: [
-    "pad-thai",
-    "shrimps-pad-thai",
-    "thai-green-curry",
-    "chicken-pad-see-ew",
-    "vermicelli-salad",
-    "miso-glazed-noodles-with-shrimp-and-broccoli",
-    "thai-peanut-tofu-bowl",
-    "coconut-curry-tuna-stir-fry",
-    "ginger-sesame-chicken-stir-fry",
-    "maple-glazed-chicken-skillet",
-  ],
-  noodles: [
-    "tofu-and-rice-noodles",
-    "beef-and-broccoli-with-noodles",
-    "stirfried-noodles",
-    "chicken-pad-see-ew",
-    "red-tuna-with-mixed-greens-noodles",
-    "vermicelli-salad",
-    "miso-glazed-noodles-with-shrimp-and-broccoli",
-  ],
-  stir: [
-    "stirfried-noodles",
-    "veggie-stir-fry",
-    "turkey-stirfry",
-    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
-    "coconut-curry-tuna-stir-fry",
-    "ginger-sesame-chicken-stir-fry",
-    "maple-glazed-chicken-skillet",
-  ],
-  ramen: ["ramen-bowl"],
-  sushi: ["sushi-bowl", "sushi-rolls"],
-  dumplings: ["chinese-dumplings", "japanese-gyoza", "fish-buns"],
-  spring: ["vietnamese-spring-rolls"],
-
-  // Mexican
-  burrito: ["breakfast-burrito", "burrito-bowl"],
-  tacos: ["fish-tacos", "tacos-with-cheese-and-guacamole"],
-  taco: ["fish-tacos", "tacos-with-cheese-and-guacamole", "garlic-turkey-soft-tacos"],
-  nachos: ["nachos"],
-
-  // Meat dishes
-  beef: [
-    "beef-and-bean-chili",
-    "lean-beef-stir-fry-with-brown-rice",
-    "lean-beef-with-quinoa-and-roasted-root-vegetables",
-    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
-    "chilli-lime-beef-pasta",
-    "beef-quesadilla",
-    "thyme-beef-patty-plate",
-    "beef-sweet-potato-stew"
-  ],
-  steak: [
-    "steak-with-mashed-potatoes",
-    "steak-and-roasted-vegetables",
-    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
-    "lean-steak-with-quinoa-and-asparagus",
-    "herb-crusted-beef-steak-with-potato-wedges",
-    "philly-cheese-steak",
-    "beef-steak-in-baguette",
-    "japanese-katsu-chicken-bowl",
-    "beef-quesadilla",
-  ],
-  meatballs: ["meat-balls"],
-  meat: [
-    "meat-balls",
-    "spare-ribs",
-    "beef-and-bean-chili",
-    "lean-beef-stir-fry-with-brown-rice",
-    "lean-beef-with-quinoa-and-roasted-root-vegetables",
-    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
-    "beef-and-black-bean-fajitas-with-whole-wheat-tortillas",
-    "lean-steak-with-quinoa-and-asparagus",
-    "herb-crusted-beef-steak-with-potato-wedges",
-    "beef-steak-in-baguette",
-    "japanese-katsu-chicken-bowl",
-    "chilli-lime-beef-pasta",
-    "beef-quesadilla",
-    "thyme-beef-patty-plate",
-    "beef-sweet-potato-stew"
-  ],
-  ribs: ["spare-ribs"],
-  duck: ["duck-leg-with-mush-potatos", "duck-breast-with-mushed-potatoes"],
-  turkey: [
-    "turkey-sandwich",
-    "turkey-stirfry",
-    "leftover-turkey-and-vegetable-stir-fry-with-brown-rice",
-    "turkey-and-hummus-wrap-with-side-salad",
-    "turkey-mustard-savoury-pancake",
-    "garlic-turkey-soft-tacos",
-    "turkey-mustard-dill-salad"
-  ],
-  schnitzel: ["schnitzel-and-fries"],
-
-  // Vegetarian
-  veggie: [
-    "veggie-burger",
-    "veggie-omelette",
-    "veggie-stir-fry",
-    "grilled-vegetable-wrap",
-    "vermicelli-salad",
-    "thai-peanut-tofu-bowl",
-    "spicy-kimchi-and-gochujang-tofu",
-    "mediterranean-chickpea-bowl",
-    "spanish-egg-and-potato-omelette",
-    "roasted-padron-peppers",
-    "croquetas",
-    "ginger-sesame-chicken-stir-fry",
-  ],
-  vegetarian: ["veggie-burger", "veggie-omelette", "veggie-stir-fry", "vermicelli-salad", "spanish-egg-and-potato-omelette", "padron-peppers", "croquetas"],
-  falafel: ["falafel", "falafel-and-hummus"],
-  tofu: ["tofu-and-rice-noodles", "thai-peanut-tofu-bowl", "spicy-kimchi-and-gochujang-tofu"],
-
-  // Other dishes
-  pizza: ["pizza", "calzone"],
-  calzone: ["calzone"],
-  shakshuka: ["shakshuka"],
-  shepherds: ["sheperds-pie"],
-  pie: ["sheperds-pie", "cottage-cheese-herb-frittata"],
-  peppers: ["stuffed-bell-peppers", "roasted-padron-peppers"],
-  mussels: ["mussels-with-fries"],
-
-  // Sides
-  sweet: ["baked-sweet-potato", "chicken-breast-and-sweet-potato", "cottage-cheese-with-pineapple"],
-  potato: [
-    "baked-sweet-potato",
-    "chicken-breast-and-sweet-potato",
-    "steak-with-mashed-potatoes",
-    "duck-leg-with-mush-potatos",
-    "lean-pork-tenderloin-with-roasted-potatoes-and-broccoli",
-    "duck-breast-with-mushed-potatoes",
-    "spanish-egg-and-potato-omelette",
-    "croquetas",
-    "cottage-cheese-herb-frittata",
-  ],
-  fries: ["burger-with-fries", "mussels-with-fries", "schnitzel-and-fries", "arencini", "croquetas"],
-
-  // Smoothies & Yogurt
-  smoothie: [
-    "smoothie",
-    "smoothie-bowl-with-banana-and-kiwi",
-    "green-power-smoothie",
-    "power-berry-nut-muesli-bowl",
-    "tropical-mango-and-pineapple-smoothie-bowl",
-    "peanut-butter-chia-oats",
-  ],
-  yogurt: [
-    "greek-yogurt-topped-with-granola",
-    "yogurt-parfait-with-granola",
-    "power-berry-nut-muesli-bowl",
-    "yogurt-with-muesli",
-    "tropical-mango-and-pineapple-smoothie-bowl",
-    "peanut-butter-chia-oats",
-    "smoked-salmon-yogurt-bowl",
-    "greek-yogurt-berry-bowl",
-    "almond-butter-yogurt-bowl",
-  ],
-  granola: [
-    "greek-yogurt-topped-with-granola",
-    "yogurt-parfait-with-granola",
-    "berry-greek-yogurt-parfait",
-    "power-berry-nut-muesli-bowl",
-    "yogurt-with-muesli",
-    "tropical-mango-and-pineapple-smoothie-bowl",
-    "peanut-butter-chia-oats",
-    "smoked-salmon-yogurt-bowl",
-    "greek-yogurt-berry-bowl",
-    "almond-butter-yogurt-bowl",
-  ],
-  pudding: ["fruit-chia-pudding", "almond-butter-yogurt-bowl, chia-pudding"],
-  oats: ["oatmeal-bowl-with-fruits", "porridge-with-cinnamon-and-apples", "peanut-butter-chia-oats"],
-  overnight: ["oatmeal-bowl-with-fruits", "chia-pudding"],
-  shake: ["smoothie", "green-power-smoothie", "smoothie-bowl-with-banana-and-kiwi", "tropical-mango-and-pineapple-smoothie-bowl"],
-  snack: ["cottage-cheese-with-pineapple", "roasted-walnut-bowl"],
-
-  // Sandwiches & Wraps
-  sandwich: [
-    "tuna-salad-sandwich",
-    "turkey-sandwich",
-    "tuna-salad-on-whole-wheat-bread-with-mixed-greens",
-    "black-bean-burger-on-whole-wheat-bun",
-    "turkey-and-hummus-wrap-with-side-salad",
-  ],
-  wrap: [
-    "avocado-chicken-wrap",
-    "grilled-vegetable-wrap",
-    "chicken-and-veggie-whole-wheat-wrap",
-    "turkey-and-hummus-wrap-with-side-salad",
-  ],
-
-  // Shrimp
-  shrimp: ["shrimp-pasta", "shrimps-pad-thai", "miso-glazed-noodles-with-shrimp-and-broccoli", "seafood-soup"],
-  shrimps: ["shrimps-pad-thai", "miso-glazed-noodles-with-shrimp-and-broccoli"],
-  seafood: ["seafood-pasta", "shrimp-pasta", "spicy-red-tuna-poke-bowl", "miso-glazed-noodles-with-shrimp-and-broccoli", "seafood-soup"],
-};
-
-// Common words to ignore in matching (low-value words)
-const stopWords = new Set([
-  "with",
-  "and",
-  "the",
-  "on",
-  "in",
-  "a",
-  "an",
-  "of",
-  "for",
-  "to",
-  "topped",
-  "served",
-  "side",
-  "fresh",
-  "homemade",
-  "delicious",
-  "grilled",
-  "baked",
-  "fried",
-  "roasted",
-]);
-
-// High-value specific keywords that should get priority matching
-const specificKeywords = new Set([
-  "pasta",
-  "spaghetti",
-  "lasagna",
-  "ravioli",
-  "gnocchi",
-  "risotto",
-  "bolognese",
-  "carbonara",
-  "alfredo",
-  "marinara",
-  "pizza",
-  "burger",
-  "tacos",
-  "burrito",
-  "sushi",
-  "ramen",
-  "pho",
-  "curry",
-  "biryani",
-  "shakshuka",
-  "falafel",
-  "hummus",
-  "salmon",
-  "chicken",
-  "beef",
-  "steak",
-  "turkey",
-  "duck",
-  "shrimp",
-  "tuna",
-  "cod",
-  "seafood",
-  "mussels",
-  "pancakes",
-  "waffles",
-  "crepes",
-  "oatmeal",
-  "porridge",
-  "smoothie",
-  "salad",
-  "soup",
-  "sandwich",
-  "wrap",
-  "omelette",
-  "schnitzel",
-  "nachos",
-  "dumplings",
-  "noodles",
-  "quinoa",
-  "couscous",
-  "yogurt",
-  "granola",
-]);
-
-/**
- * Extract keywords from meal name, filtering out stop words
- */
-const extractKeywords = (mealName: string): string[] => {
-  const normalized = mealName.toLowerCase().trim();
-  const words = normalized
-    .split(/[\s\-_,]+/)
-    .filter((word) => word.length > 2 && !stopWords.has(word));
-  return words;
-};
-
-/**
- * Normalize string for comparison (remove dashes, lowercase)
- */
-const normalizeForComparison = (str: string): string => {
-  return str.toLowerCase().replace(/[-_\s]+/g, "");
-};
-
-/**
- * Check if image name matches the full meal name closely
- */
-const getExactMatchScore = (mealName: string, imageName: string): number => {
-  const normalizedMeal = normalizeForComparison(mealName);
-  const normalizedImage = normalizeForComparison(imageName);
-
-  // Perfect match
-  if (normalizedMeal === normalizedImage) {
-    return 100;
-  }
-
-  // Meal name contains entire image name or vice versa
-  if (normalizedMeal.includes(normalizedImage)) {
-    return 50 + (normalizedImage.length / normalizedMeal.length) * 30;
-  }
-  if (normalizedImage.includes(normalizedMeal)) {
-    return 50 + (normalizedMeal.length / normalizedImage.length) * 30;
-  }
-
-  return 0;
-};
-
-/**
- * Find best matching image based on keywords with improved scoring
- */
-const findBestMatch = (
-  keywords: string[],
-  originalMealName: string,
-): string | null => {
-  const imageScores: { [key: string]: number } = {};
-
-  // First, check for exact/close matches with the full meal name
-  availableImages.forEach((image) => {
-    const exactScore = getExactMatchScore(originalMealName, image);
-    if (exactScore > 0) {
-      imageScores[image] = exactScore;
-    }
-  });
-
-  // If we have a very high exact match, return it immediately
-  const topExactMatch = Object.entries(imageScores).find(
-    ([, score]) => score >= 70,
-  );
-  if (topExactMatch) {
-    return topExactMatch[0];
-  }
-
-  // Score based on keyword mappings with priority for specific keywords
-  keywords.forEach((keyword, index) => {
-    const matchingImages = keywordMappings[keyword];
-    if (matchingImages) {
-      // Earlier keywords in the meal name are often more important
-      const positionBonus = Math.max(0, 3 - index);
-      // Specific keywords get higher scores
-      const specificBonus = specificKeywords.has(keyword) ? 10 : 0;
-
-      matchingImages.forEach((image, imageIndex) => {
-        // First image in the mapping is often the most relevant
-        const orderBonus = Math.max(0, 3 - imageIndex);
-        const score = 5 + positionBonus + specificBonus + orderBonus;
-        imageScores[image] = (imageScores[image] || 0) + score;
-      });
-    }
-  });
-
-  // Direct keyword matches in image names (very important!)
-  keywords.forEach((keyword) => {
-    availableImages.forEach((image) => {
-      const imageWords = image.split("-");
-
-      // Check if any word in image exactly matches the keyword
-      if (imageWords.some((word) => word === keyword)) {
-        // Strong bonus for exact word match
-        const bonus = specificKeywords.has(keyword) ? 25 : 15;
-        imageScores[image] = (imageScores[image] || 0) + bonus;
-      } else if (image.includes(keyword)) {
-        // Partial match bonus
-        const bonus = specificKeywords.has(keyword) ? 12 : 6;
-        imageScores[image] = (imageScores[image] || 0) + bonus;
-      }
-
-      // Check if keyword contains image word (for compound matches)
-      imageWords.forEach((word) => {
-        if (word.length > 3 && keyword.includes(word)) {
-          imageScores[image] = (imageScores[image] || 0) + 4;
-        }
-      });
-    });
-  });
-
-  // Bonus for matching multiple keywords
-  keywords.forEach((keyword) => {
-    availableImages.forEach((image) => {
-      const matchCount = keywords.filter((k) => image.includes(k)).length;
-      if (matchCount > 1) {
-        imageScores[image] = (imageScores[image] || 0) + matchCount * 8;
-      }
-    });
-  });
-
-  // Find image with highest score
-  let bestMatch: string | null = null;
-  let highestScore = 0;
-
-  Object.entries(imageScores).forEach(([image, score]) => {
-    if (score > highestScore) {
-      highestScore = score;
-      bestMatch = image;
-    }
-  });
-
-  return bestMatch;
-};
-
-/**
- * Get meal image path from assets/mealsTypes/webp
- * Uses flexible keyword matching - one image can match multiple meals
- * @param mealName - The name of the meal
- * @param fallbackIcon - Fallback icon URL if no match found
- * @returns Path to the webp image or fallback
- */
-export const getMealImage = (
-  mealName: string,
-  fallbackIcon?: string,
-): string => {
-  if (!mealName) {
-    return fallbackIcon || "https://via.placeholder.com/80";
-  }
-
-  // Extract keywords from meal name
-  const keywords = extractKeywords(mealName);
-
-  if (keywords.length === 0) {
-    return fallbackIcon || "https://via.placeholder.com/80";
-  }
-
-  // Find best matching image (pass original name for exact matching)
-  const matchedImage = findBestMatch(keywords, mealName);
-
-  if (matchedImage) {
-    // Return path that Vite can resolve
-    // Using @ alias which resolves to src directory
-    return `/src/assets/mealsTypes/webp/${matchedImage}.webp`;
-  }
-
-  // Fallback to meal icon or placeholder
-  return fallbackIcon || "https://via.placeholder.com/80";
-};
-
-// Preload all meal images using Vite's glob import
-// This creates a mapping of all available images at build time
+// Vite inlines this at build time; the keys are the single source of truth for
+// what art actually exists. It used to be a hand-maintained array beside it,
+// which had drifted badly: seven names that no longer existed on disk (and so
+// could win a match and then render nothing) and twenty-six real photos —
+// cucumber-salad, beef-stew, mac-and-cheese, ceviche — that no meal could ever
+// be matched to because they were never listed.
 const mealImageModules = import.meta.glob(
   "/src/assets/mealsTypes/webp/*.webp",
-  {
-    eager: true,
-    import: "default",
-  },
+  { eager: true, import: "default" },
 ) as Record<string, string>;
 
+const PLACEHOLDER = "https://via.placeholder.com/80";
+
+const basename = (path: string): string =>
+  path.slice(path.lastIndexOf("/") + 1).replace(/\.webp$/, "");
+
+/** Lowercased and space-normalised, because matching is done by substring and
+ *  at least one file on disk is named "Tropical mango-and-pineapple-...". */
+const matchKey = (name: string): string =>
+  name.toLowerCase().replace(/\s+/g, "-");
+
+/** Match keys, e.g. "fish-tacos". */
+const availableImages = Object.keys(mealImageModules).map((path) =>
+  matchKey(basename(path)),
+);
+
+const imageUrlByKey = new Map(
+  Object.entries(mealImageModules).map(([path, url]) => [
+    matchKey(basename(path)),
+    url,
+  ]),
+);
+
 /**
- * Get meal image using Vite's asset handling
- * Returns a path that Vite will resolve correctly
- * @param mealName - The name of the meal
- * @param fallbackIcon - Fallback icon URL if no match found
- * @returns Path to the webp image or fallback
+ * The shape of the dish — which is most of what a photograph actually shows.
+ *
+ * `nameTokens` are looked for in the meal's name, `imageTokens` in the photo's
+ * filename. A form match is a hard filter, not a score.
+ */
+interface DishForm {
+  form: string;
+  nameTokens: string[];
+  imageTokens: string[];
+  /** Photos that carry `imageTokens` but aren't really this form. */
+  excludeImageTokens?: string[];
+}
+
+const DISH_FORMS: DishForm[] = [
+  { form: "taco", nameTokens: ["taco", "tacos"], imageTokens: ["taco"] },
+  {
+    form: "burrito",
+    nameTokens: ["burrito", "quesadilla", "nachos"],
+    imageTokens: ["burrito", "quesadilla", "nachos"],
+  },
+  { form: "pizza", nameTokens: ["pizza", "calzone"], imageTokens: ["pizza", "calzone"] },
+  {
+    form: "burger",
+    nameTokens: ["burger", "hamburger", "cheeseburger"],
+    imageTokens: ["burger"],
+  },
+  {
+    form: "sandwich",
+    nameTokens: ["sandwich", "sub", "baguette", "pita", "bun", "buns", "hotdog", "panini"],
+    imageTokens: ["sandwich", "baguette", "pita", "bun", "buns", "hot-dog", "philly"],
+  },
+  {
+    form: "wrap",
+    nameTokens: ["wrap", "shawarma", "roll", "rolls"],
+    imageTokens: ["wrap", "shawarma", "rolls"],
+  },
+  {
+    form: "toast",
+    nameTokens: ["toast", "bagel", "crostini", "bruschetta"],
+    imageTokens: ["toast", "bagel"],
+  },
+  {
+    form: "salad",
+    nameTokens: ["salad", "slaw", "tabbouleh", "greens"],
+    imageTokens: ["salad", "som-tam"],
+    // A "tuna salad sandwich" is a sandwich; the photo shows bread.
+    excludeImageTokens: ["sandwich", "bread", "wrap"],
+  },
+  {
+    form: "soup",
+    nameTokens: ["soup", "broth", "bisque", "chowder", "ramen", "pho"],
+    imageTokens: ["soup", "ramen", "pho"],
+  },
+  {
+    form: "stew",
+    nameTokens: ["stew", "chili", "chilli", "goulash", "gulash", "tagine", "casserole"],
+    imageTokens: ["stew", "chili", "gulash"],
+  },
+  { form: "curry", nameTokens: ["curry", "masala", "korma"], imageTokens: ["curry"] },
+  {
+    form: "pasta",
+    nameTokens: [
+      "pasta", "spaghetti", "penne", "fusilli", "linguine", "fettuccine",
+      "tagliatelle", "rigatoni", "macaroni", "lasagna", "lasagne", "ravioli",
+      "gnocchi", "carbonara", "bolognese", "orzo",
+    ],
+    imageTokens: [
+      "pasta", "spaghetti", "lasagna", "ravioli", "gnocchi", "fettuccine",
+      "macaroni", "mac-and-cheese", "limone",
+    ],
+  },
+  {
+    form: "noodles",
+    nameTokens: ["noodle", "noodles", "vermicelli", "udon", "soba", "chow", "mein"],
+    imageTokens: ["noodles", "pad-thai", "pad-see-ew", "vermicelli", "varmicelli", "stirfried"],
+  },
+  {
+    form: "sushi",
+    nameTokens: ["sushi", "sashimi", "poke", "tataki", "maki", "nigiri", "ceviche"],
+    imageTokens: ["sushi", "sashimi", "poke", "tataki", "ceviche"],
+  },
+  {
+    form: "dumpling",
+    nameTokens: ["dumpling", "dumplings", "gyoza", "wonton", "croquetas"],
+    imageTokens: ["dumplings", "gyoza", "croquetas"],
+  },
+  {
+    form: "omelette",
+    nameTokens: ["omelette", "omelet", "frittata", "shakshuka", "scramble", "scrambled"],
+    imageTokens: ["omelette", "frittata", "shakshuka", "scrambled"],
+  },
+  {
+    form: "porridge",
+    nameTokens: ["porridge", "oatmeal", "oats", "muesli", "granola", "cereal", "overnight"],
+    imageTokens: ["porridge", "oatmeal", "oats", "muesli", "granola", "cereal"],
+  },
+  {
+    form: "yogurt",
+    nameTokens: ["yogurt", "yoghurt", "parfait", "quark", "skyr"],
+    imageTokens: ["yogurt", "parfait"],
+  },
+  {
+    form: "pudding",
+    nameTokens: ["pudding", "soak", "chia"],
+    imageTokens: ["pudding", "chia"],
+  },
+  {
+    form: "smoothie",
+    nameTokens: ["smoothie", "shake", "juice"],
+    imageTokens: ["smoothie"],
+  },
+  {
+    form: "pancake",
+    nameTokens: ["pancake", "pancakes", "crepe", "crepes", "waffle", "waffles", "blini"],
+    imageTokens: ["pancake", "pancakes", "crepes", "waffles"],
+  },
+  {
+    form: "stirfry",
+    nameTokens: ["stirfry", "skillet", "teppanyaki"],
+    imageTokens: ["stir-fry", "stirfry", "stirfried", "skillet"],
+  },
+  {
+    form: "bowl",
+    nameTokens: ["bowl", "risotto", "biryani", "paella", "pilaf"],
+    imageTokens: ["bowl", "risotto", "biryani"],
+  },
+];
+
+/** Which protein the dish is built on — the strongest signal after form. */
+interface Protein {
+  key: string;
+  /** Photos of the same family read as a near-miss, not a mistake: a tuna taco
+   *  is well served by a fish taco, badly served by a turkey one. `dairy` is
+   *  the exception — cheese and yogurt garnish everything, so they never count
+   *  as somebody else's protein. */
+  family: "seafood" | "poultry" | "meat" | "plant" | "egg" | "dairy";
+  nameTokens: string[];
+  imageTokens: string[];
+}
+
+const PROTEINS: Protein[] = [
+  { key: "tuna", family: "seafood", nameTokens: ["tuna"], imageTokens: ["tuna"] },
+  { key: "salmon", family: "seafood", nameTokens: ["salmon"], imageTokens: ["salmon"] },
+  {
+    key: "whitefish",
+    family: "seafood",
+    nameTokens: ["cod", "haddock", "seabass", "halibut", "tilapia"],
+    imageTokens: ["cod"],
+  },
+  { key: "fish", family: "seafood", nameTokens: ["fish"], imageTokens: ["fish"] },
+  { key: "shrimp", family: "seafood", nameTokens: ["shrimp", "shrimps", "prawn", "prawns"], imageTokens: ["shrimp"] },
+  {
+    key: "seafood",
+    family: "seafood",
+    nameTokens: ["seafood", "mussels", "squid", "calamari", "scallop", "scallops"],
+    imageTokens: ["seafood", "mussels"],
+  },
+  { key: "chicken", family: "poultry", nameTokens: ["chicken"], imageTokens: ["chicken", "katsu"] },
+  { key: "turkey", family: "poultry", nameTokens: ["turkey"], imageTokens: ["turkey"] },
+  {
+    key: "beef",
+    family: "meat",
+    nameTokens: ["beef", "steak", "mince", "patty", "brisket", "veal"],
+    imageTokens: ["beef", "steak", "patty", "gulash", "philly"],
+  },
+  {
+    key: "pork",
+    family: "meat",
+    nameTokens: ["pork", "bacon", "ham", "sausage", "chorizo", "ribs"],
+    imageTokens: ["pork", "ribs", "hot-dog", "schnitzel"],
+  },
+  { key: "duck", family: "poultry", nameTokens: ["duck"], imageTokens: ["duck"] },
+  { key: "lamb", family: "meat", nameTokens: ["lamb", "mutton"], imageTokens: ["lamb"] },
+  { key: "tofu", family: "plant", nameTokens: ["tofu", "tempeh", "edamame"], imageTokens: ["tofu", "edamame"] },
+  {
+    key: "egg",
+    family: "egg",
+    nameTokens: ["egg", "eggs", "omelette", "omelet", "frittata", "shakshuka"],
+    imageTokens: ["egg", "eggs", "omelette", "frittata", "shakshuka"],
+  },
+  {
+    key: "legume",
+    family: "plant",
+    nameTokens: ["bean", "beans", "lentil", "lentils", "chickpea", "chickpeas", "hummus", "falafel"],
+    imageTokens: ["bean", "lentil", "chickpea", "hummus", "falafel"],
+  },
+  {
+    key: "dairy",
+    family: "dairy",
+    nameTokens: ["yogurt", "yoghurt", "cottage", "cheese", "quark", "skyr"],
+    imageTokens: ["yogurt", "cottage", "cheese"],
+  },
+];
+
+/** Words that describe seasoning or method, never the dish. */
+const STOP_WORDS = new Set([
+  "with", "and", "the", "on", "in", "for", "to", "topped", "served", "side",
+  "fresh", "homemade", "delicious", "grilled", "baked", "fried", "roasted",
+  "leftover", "quick", "easy", "simple", "whole", "lean", "spiced", "spicy",
+  "seasoned", "style", "mixed", "sheet", "bake", "plate", "pot", "seed",
+  "seeds", "power", "green", "brown", "red",
+]);
+
+const tokenize = (name: string): string[] =>
+  name
+    .toLowerCase()
+    .split(/[\s\-_,()]+/)
+    .map((w) => w.replace(/[^a-z0-9]/g, ""))
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+
+const imageHas = (image: string, tokens: string[]): boolean =>
+  tokens.some((t) => image.includes(t));
+
+/**
+ * The dish's form, taken from the *last* form word in the name — English puts
+ * the head noun at the end, so "Spiced Beef Pasta Salad" is a salad and
+ * "Chicken Noodle Soup" is a soup.
+ */
+const detectForm = (tokens: string[]): DishForm | null => {
+  let best: DishForm | null = null;
+  let bestIndex = -1;
+
+  for (const form of DISH_FORMS) {
+    for (let i = tokens.length - 1; i > bestIndex; i--) {
+      if (form.nameTokens.includes(tokens[i])) {
+        best = form;
+        bestIndex = i;
+        break;
+      }
+    }
+  }
+
+  return best;
+};
+
+const detectProtein = (tokens: string[]): Protein | null =>
+  PROTEINS.find((p) => tokens.some((t) => p.nameTokens.includes(t))) ?? null;
+
+/** Every form token any photo could carry, for the no-form-detected penalty. */
+const ALL_FORM_IMAGE_TOKENS = DISH_FORMS.flatMap((f) => f.imageTokens);
+
+/**
+ * Stable tiebreak. Two dishes that score identically should not both take the
+ * first photo in the folder — the same picture twice on one screen is exactly
+ * what makes a wrong match obvious. Keyed on the name, so a given meal always
+ * gets the same photo.
+ */
+const hash = (value: string): number => {
+  let h = 0;
+  for (let i = 0; i < value.length; i++) h = (h * 31 + value.charCodeAt(i)) | 0;
+  return Math.abs(h);
+};
+
+/**
+ * The image this meal resolves to, as a match key, or null. Exported so the
+ * mapping can be asserted directly — the failure mode here is a picture that
+ * is merely *wrong*, which no rendering test would ever catch.
+ */
+export const resolveMealImageName = (mealName: string): string | null => {
+  const tokens = tokenize(mealName);
+  if (tokens.length === 0) return null;
+
+  const form = detectForm(tokens);
+  const protein = detectProtein(tokens);
+
+  /** Shows a protein from a different family — the wrong animal on the plate. */
+  const conflicts = (image: string): boolean =>
+    !!protein &&
+    PROTEINS.some(
+      (p) =>
+        p.family !== protein.family &&
+        p.family !== "dairy" &&
+        imageHas(image, p.imageTokens),
+    );
+
+  const sameFamily = (image: string): boolean =>
+    !!protein &&
+    PROTEINS.some(
+      (p) => p.family === protein.family && imageHas(image, p.imageTokens),
+    );
+
+  // A form match is a filter, not a score — this is the whole fix.
+  let candidates = availableImages;
+  let formFiltered = false;
+
+  if (form) {
+    const inForm = availableImages.filter(
+      (img) =>
+        imageHas(img, form.imageTokens) &&
+        !(form.excludeImageTokens && imageHas(img, form.excludeImageTokens)),
+    );
+
+    // Holding the form only helps while the shortlist can also get the protein
+    // right. When we have photos of the form but every one of them shows the
+    // wrong animal, the form is the weaker claim: a chicken casserole is far
+    // better served by a photo of chicken than by a bowl of beef chili.
+    // Only when *every* photo of this form shows the wrong animal. A neutral
+    // photo — miso soup for an egg soup, veggie stir-fry for a salmon one — is
+    // a perfectly good answer and must not trigger the escape hatch.
+    const proteinIsHopeless =
+      protein !== null &&
+      inForm.length > 0 &&
+      !inForm.some(sameFamily) &&
+      inForm.every(conflicts);
+
+    if (inForm.length > 0 && !proteinIsHopeless) {
+      candidates = inForm;
+      formFiltered = true;
+    }
+  }
+
+  /** Photos that announce a form other than the one this dish is. */
+  const carriesForeignForm = (image: string): boolean =>
+    DISH_FORMS.some(
+      (f) => f !== form && imageHas(image, f.imageTokens),
+    ) && !(form && imageHas(image, form.imageTokens));
+
+  let best: { image: string; score: number } | null = null;
+
+  for (const image of candidates) {
+    let score = 0;
+
+    if (protein) {
+      if (imageHas(image, protein.imageTokens)) {
+        score += 100;
+      } else if (sameFamily(image)) {
+        score += 40;
+      } else if (conflicts(image)) {
+        // A tuna taco should not be served a turkey one.
+        score -= 60;
+      }
+    }
+
+    // Whenever the shortlist isn't already form-filtered, refuse photos that
+    // loudly announce some other form — this is what kept serving pasta for
+    // "Thyme Butter Chicken Bake".
+    if (!formFiltered) {
+      const wrongForm = form
+        ? carriesForeignForm(image)
+        : imageHas(image, ALL_FORM_IMAGE_TOKENS);
+      if (wrongForm) score -= 45;
+    }
+
+    // Remaining words break ties within an already-correct shortlist.
+    for (const token of tokens) {
+      if (image.includes(token)) score += 6;
+    }
+
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score &&
+        hash(mealName + image) > hash(mealName + best.image))
+    ) {
+      best = { image, score };
+    }
+  }
+
+  return best?.image ?? null;
+};
+
+/**
+ * Resolve a meal name to a bundled photo URL.
+ *
+ * @param mealName - The meal's name, English where available.
+ * @param fallbackIcon - Used when nothing sensible matches.
  */
 export const getMealImageVite = (
   mealName: string,
   fallbackIcon?: string,
 ): string => {
-  if (!mealName) {
-    return fallbackIcon || "https://via.placeholder.com/80";
-  }
+  if (!mealName) return fallbackIcon || PLACEHOLDER;
 
-  // Extract keywords from meal name
-  const keywords = extractKeywords(mealName);
+  const matched = resolveMealImageName(mealName);
+  if (!matched) return fallbackIcon || PLACEHOLDER;
 
-  if (keywords.length === 0) {
-    return fallbackIcon || "https://via.placeholder.com/80";
-  }
-
-  // Find best matching image (pass original name for exact matching)
-  const matchedImage = findBestMatch(keywords, mealName);
-
-  if (matchedImage) {
-    // Try to get the image from the glob import
-    const imagePath = `/src/assets/mealsTypes/webp/${matchedImage}.webp`;
-    const importedImage = mealImageModules[imagePath];
-
-    if (importedImage) {
-      return importedImage;
-    }
-
-    // Fallback to direct path (Vite will handle it)
-    return imagePath;
-  }
-
-  // Fallback to meal icon or placeholder
-  return fallbackIcon || "https://via.placeholder.com/80";
+  // Truthiness, not `??`: the test environment resolves asset imports to an
+  // empty string, and an empty src is worse than the fallback.
+  return imageUrlByKey.get(matched) || fallbackIcon || PLACEHOLDER;
 };

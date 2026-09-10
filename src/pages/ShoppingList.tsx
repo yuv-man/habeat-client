@@ -18,7 +18,12 @@ const ShoppingList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientInput[]>([]);
-  const hasFetched = useRef(false);
+  /** Which plan object the current list was built from. A meal swap replaces
+   *  the plan in the auth store, so comparing identity refetches the basket
+   *  when — and only when — the plan behind it actually changed. It used to be
+   *  a plain "have we fetched yet" flag, which meant the list a user opened
+   *  first was the list they kept for the rest of the session. */
+  const fetchedForPlan = useRef<unknown>(undefined);
 
   useEffect(() => {
     if (!loading && !token) {
@@ -27,22 +32,22 @@ const ShoppingList = () => {
   }, [loading, token, navigate]);
 
   useEffect(() => {
-    // Prevent duplicate API calls
-    if (hasFetched.current) return;
+    // Prevent duplicate API calls for the same plan
+    if (fetchedForPlan.current === plan) return;
 
     const fetchShoppingList = async () => {
       if (config.testFrontend || !plan) {
         setIngredients(mockShoppingIngredients as IngredientInput[]);
         setIsLoading(false);
-        hasFetched.current = true;
+        fetchedForPlan.current = plan;
       } else if (plan && plan._id) {
         try {
-          hasFetched.current = true;
+          fetchedForPlan.current = plan;
           const ingredients = await getShoppingList(plan._id);
           setIngredients(ingredients as IngredientInput[]);
         } catch (error) {
           console.error("Failed to fetch shopping list:", error);
-          hasFetched.current = false; // Allow retry on error
+          fetchedForPlan.current = undefined; // Allow retry on error
         } finally {
           setIsLoading(false);
         }

@@ -771,38 +771,19 @@ export default function WeeklyMealPlan() {
     return "future";
   };
 
-  const handleMealChange = (date: string, mealType: string, newMeal: IMeal) => {
-    if (!weeklyPlan || !user || !plan) return;
-
-    // Allow meal changes for all days (including past days)
-
-    // Update weeklyPlan
-    const updatedWeeklyPlan = { ...weeklyPlan };
-    if (updatedWeeklyPlan[date]) {
-      if (mealType === "snacks") {
-        // For snacks, replace the first one or add if empty
-        updatedWeeklyPlan[date] = {
-          ...updatedWeeklyPlan[date],
-          meals: {
-            ...updatedWeeklyPlan[date].meals,
-            snacks: [newMeal, ...updatedWeeklyPlan[date].meals.snacks.slice(1)],
-          },
-        };
-      } else {
-        updatedWeeklyPlan[date] = {
-          ...updatedWeeklyPlan[date],
-          meals: {
-            ...updatedWeeklyPlan[date].meals,
-            [mealType]: newMeal,
-          },
-        };
-      }
-      // Update the plan in auth store
-      useAuthStore.getState().setPlan({
-        ...plan,
-        weeklyPlan: updatedWeeklyPlan,
-      });
-    }
+  /**
+   * A swap is already persisted and already reflected in the auth store by the
+   * time this runs — `syncStoresAfterMealSwap` sets the plan the server sent
+   * back, and this view renders straight off `plan.weeklyPlan`.
+   *
+   * It used to patch the plan itself, from a `plan` captured before the swap.
+   * Running after the store had been updated, that stale copy overwrote the
+   * server's version: the meal looked right, but the ids, ingredients and
+   * macros the server had resolved were thrown away, and so was the sibling
+   * screen's update.
+   */
+  const handleMealChange = (_date: string, _mealType: string, _newMeal: IMeal) => {
+    // Intentionally empty — kept because ChangeMealModal requires the callback.
   };
 
   const handleDeleteSnack = async (snackId: string, date?: string) => {

@@ -45,9 +45,25 @@ const mockAuthState = {
   fetchFavoriteMeals: mockFetchFavoriteMeals,
 };
 
-vi.mock("@/stores/authStore", () => ({
-  useAuthStore: () => mockAuthState,
-}));
+const mockSetPlan = vi.fn();
+
+// `getState` matters as much as the hook here: a swap calls
+// `syncStoresAfterMealSwap`, which reaches the stores imperatively to bring
+// the weekly plan and the day's progress back in line.
+vi.mock("@/stores/authStore", () => {
+  const useAuthStore = () => mockAuthState;
+  useAuthStore.getState = () => ({ ...mockAuthState, setPlan: mockSetPlan });
+  return { useAuthStore };
+});
+
+vi.mock("@/stores/progressStore", () => {
+  const useProgressStore = () => ({});
+  useProgressStore.getState = () => ({
+    todayProgress: null,
+    fetchTodayProgress: vi.fn(),
+  });
+  return { useProgressStore };
+});
 
 vi.mock("@/stores/cbtStore", () => ({
   useTodayMoods: vi.fn(() => []),

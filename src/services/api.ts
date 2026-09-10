@@ -22,6 +22,8 @@ import {
   ICBTExercise,
   ICBTExerciseCompletion,
   IMealMoodCorrelation,
+  MealSource,
+  IBrainFocus,
   IEmotionalEatingInsight,
   ICBTEngagementStats,
 } from "../types/interfaces";
@@ -1053,12 +1055,16 @@ const completeMeal = async (
   userId: string,
   date: string,
   mealType: string,
-  mealId: string
+  mealId: string,
+  /** Where the food came from, when the user said. Omitted leaves whatever the
+   *  meal already carried — a tick with no answer must not erase a source
+   *  given earlier when the meal was swapped in. */
+  source?: MealSource
 ): Promise<ApiResponse<IDailyProgress>> => {
   return withErrorHandling(async () => {
     const response = await userClient.put<ApiResponse<IDailyProgress>>(
       `/progress/meal/${userId}/${mealId}`,
-      { date, mealType, mealId },
+      { date, mealType, mealId, ...(source ? { source } : {}) },
       { headers: getAuthHeaders() }
     );
     return response.data;
@@ -2020,6 +2026,29 @@ const getMealMoodHistory = async (
     });
     return { data: response.data.data.correlations };
   }, "Failed to get meal-mood history. Please try again.");
+};
+
+// ----- Brain API -----
+
+/**
+ * The Brain's current focus for this user.
+ *
+ * Returns `null` rather than throwing when the Brain has nothing it can
+ * honestly claim yet — a cold Brain is an ordinary state, not an error, and a
+ * screen should show "still learning" rather than a failure.
+ */
+const getBrainFocus = async (): Promise<ApiResponse<IBrainFocus | null>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      success: boolean;
+      data: { focus: IBrainFocus | null };
+    }>(`/brain/state`, { headers: getAuthHeaders() });
+    return { data: response.data.data.focus ?? null };
+  }, "Failed to load your focus. Please try again.");
+};
+
+export const brainAPI = {
+  getBrainFocus,
 };
 
 // ----- CBT Stats API -----

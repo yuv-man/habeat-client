@@ -8,6 +8,7 @@ import { useLanguageStore } from "@/stores/languageStore";
 import { usePatternStore } from "@/stores/patternStore";
 import { userAPI } from "@/services/api";
 import { toLocalDateString } from "@/lib/dateUtils";
+import { syncStoresAfterMealSwap } from "@/lib/mealSwapSync";
 import { formatMealName } from "@/lib/formatters";
 import Fatigue from "@/assets/quick_food.webp";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
@@ -71,6 +72,15 @@ const TiredButton = ({
           kind: "rescue-swap",
           date: dateString,
           mealType,
+        });
+
+        // The rescue endpoint rewrites the plan, the day's progress and (as of
+        // the shopping-list fix) the basket, but returns only the meal — so
+        // the plan half is patched locally while progress is read back.
+        await syncStoresAfterMealSwap({
+          date: dateString,
+          mealType,
+          newMeal,
         });
 
         // Trigger callback to update UI

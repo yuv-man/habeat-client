@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft, TrendingUp, Brain, Eye, Wind, BellOff, Sparkles, Info, ChevronDown,
+  Clock, Utensils, Heart,
 } from "lucide-react";
 import {
   useCBTStore,
@@ -753,12 +754,19 @@ function PatternsTable({
           isExample && "opacity-60"
         )}
       >
-        <table className="w-full text-left border-collapse">
+        {/* table-fixed so the widest cell can never push the table — and with
+            it the whole page — past the viewport on a phone. */}
+        <table className="w-full table-fixed text-left border-collapse">
+          <colgroup>
+            <col />
+            <col className="w-[5.5rem]" />
+            <col className="w-[5.5rem]" />
+          </colgroup>
           <thead>
             <tr className="bg-slate-50/80">
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pattern</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">How often</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right" />
+              <th className="px-3 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Pattern</th>
+              <th className="px-3 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest">How often</th>
+              <th className="px-3 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right" />
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -776,12 +784,12 @@ function PatternsTable({
                   isActive ? "bg-teal-50/50" : "hover:bg-slate-50/50",
                 )}
               >
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg">
+                <td className="px-3 py-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-lg">
                       {p.emoji}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="text-sm font-semibold text-slate-700 flex items-center gap-2 flex-wrap">
                         {p.name}
                         {isActive && (
@@ -794,11 +802,11 @@ function PatternsTable({
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-sm font-medium text-slate-600">{p.frequency}</td>
-                <td className="px-4 py-4 text-right">
+                <td className="px-3 py-4 text-sm font-medium text-slate-600">{p.frequency}</td>
+                <td className="px-3 py-4 text-right">
                   <span
                     className={cn(
-                      "px-2.5 py-1 text-[10px] font-bold rounded-full whitespace-nowrap",
+                      "inline-block px-2 py-1 text-[10px] font-bold leading-tight rounded-xl text-center",
                       IMPACT_STYLES[p.impact],
                     )}
                   >
@@ -1147,6 +1155,26 @@ export default function EmotionalEating() {
                 hinderedBy={insight?.reflectionTriggers ?? []}
               />
 
+              {/* The rest of what the Brain already worked out. Each of these
+                  renders nothing when it has no data, so the page grows as the
+                  logs do rather than showing a column of empty cards. Ordered
+                  from most concrete to most interpretive: which meal, then
+                  which hour, then which mood. */}
+              {insight && (
+                <>
+                  <MealSlotBreakdown
+                    emotional={insight.mealTypeBreakdown ?? EMPTY_SLOT_COUNTS}
+                    logged={insight.mealTypeLogged ?? EMPTY_SLOT_COUNTS}
+                    strongest={insight.strongestMealType}
+                  />
+                  <WhenItHappens
+                    triggers={insight.commonTriggers ?? []}
+                    riskWindows={insight.riskWindows ?? []}
+                  />
+                  <EmotionsSummary emotions={insight.commonEmotions ?? []} />
+                </>
+              )}
+
               {/* Patterns table */}
               <PatternsTable
                 patterns={patterns}
@@ -1176,28 +1204,421 @@ export default function EmotionalEating() {
   );
 }
 
+// ─── when patterns happen ────────────────────────────────────────────────────
+
+const hourLabel = (h: number): string => {
+  const norm = ((Math.round(h) % 24) + 24) % 24;
+  const suffix = norm < 12 ? "AM" : "PM";
+  const twelve = norm % 12 === 0 ? 12 : norm % 12;
+  return `${twelve} ${suffix}`;
+};
+
+/** Coarse bands, so a whole week of windows fits a phone without scrolling
+ *  sideways. A band is wider than the windows it holds — the point is "the
+ *  afternoon is where this lives", not a claim accurate to the hour. */
+const RISK_BANDS = [
+  { label: "Morning", start: 5, end: 11 },
+  { label: "Midday", start: 11, end: 15 },
+  { label: "Afternoon", start: 15, end: 19 },
+  { label: "Evening", start: 19, end: 24 },
+] as const;
+
+type RiskWindow = {
+  dayOfWeek: number;
+  hourStart: number;
+  hourEnd: number;
+  risk: "medium" | "high";
+};
+
+type TriggerRow = {
+  trigger: string;
+  count: number;
+  source: "observed" | "onboarding";
+  windowLabel: string | null;
+  window: { hourStart: number; hourEnd: number } | null;
+};
+
+/**
+ * The timing half of the picture.
+ *
+ * A trigger on its own is a label; a trigger with an hour attached is
+ * something a person can plan around. The server already works out both, so
+ * this reads them back rather than inventing a second opinion. Onboarding
+ * answers are kept separate — what someone expected of themselves at signup
+ * is not the same claim as what has actually been watched.
+ */
+function WhenItHappens({
+  triggers,
+  riskWindows,
+}: {
+  triggers: TriggerRow[];
+  riskWindows: RiskWindow[];
+}) {
+  const observed = triggers.filter((t) => t.source === "observed" && t.count > 0);
+  const expected = triggers.filter((t) => t.source === "onboarding");
+
+  if (observed.length === 0 && riskWindows.length === 0) return null;
+
+  const peak = observed.length ? Math.max(...observed.map((t) => t.count)) : 0;
+
+  const riskAt = (day: number, start: number, end: number): "high" | "medium" | null => {
+    let level: "medium" | null = null;
+    for (const w of riskWindows) {
+      if (w.dayOfWeek !== day) continue;
+      if (w.hourStart < end && w.hourEnd > start) {
+        if (w.risk === "high") return "high";
+        level = "medium";
+      }
+    }
+    return level;
+  };
+
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)]">
+      <div className="flex items-center gap-2 mb-1">
+        <Clock className="w-4 h-4 text-violet-500 shrink-0" />
+        <h3 className="text-lg font-bold text-slate-800">When it tends to happen</h3>
+      </div>
+      <p className="text-sm text-slate-400 mb-4">
+        Same habit, different hours. Knowing the hour is usually what makes it
+        possible to plan around.
+      </p>
+
+      {observed.length > 0 && (
+        <div className="space-y-2.5 mb-5">
+          {observed.map((t) => {
+            const meta = REFLECTION_LABELS[t.trigger] ?? { emoji: "•", label: t.trigger };
+            const when =
+              t.windowLabel ??
+              (t.window ? `${hourLabel(t.window.hourStart)}–${hourLabel(t.window.hourEnd)}` : null);
+            return (
+              <div key={t.trigger} className="flex items-center gap-2.5">
+                <span className="text-base w-5 shrink-0 text-center">{meta.emoji}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-slate-600 truncate">{meta.label}</div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    {when ?? "no clear time yet"}
+                  </div>
+                  <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-violet-400"
+                      style={{ width: `${peak > 0 ? (t.count / peak) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-slate-400 w-6 text-right tabular-nums shrink-0">
+                  {t.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {riskWindows.length > 0 && (
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+            Across the week
+          </p>
+          <div className="grid grid-cols-[3.75rem_repeat(7,minmax(0,1fr))] gap-1">
+            <div />
+            {DAY_INITIALS.map((d, i) => (
+              <div key={i} className="text-[10px] font-bold text-slate-400 text-center">
+                {d}
+              </div>
+            ))}
+            {RISK_BANDS.map((band) => (
+              <Fragment key={band.label}>
+                <div className="text-[10px] text-slate-400 leading-6 truncate">
+                  {band.label}
+                </div>
+                {DAY_INITIALS.map((_, day) => {
+                  const level = riskAt(day, band.start, band.end);
+                  return (
+                    <div
+                      key={day}
+                      title={
+                        level
+                          ? `${band.label} — ${level === "high" ? "comes up often" : "comes up sometimes"}`
+                          : `${band.label} — nothing noticed`
+                      }
+                      className={cn(
+                        "h-6 rounded",
+                        level === "high"
+                          ? "bg-amber-400"
+                          : level === "medium"
+                            ? "bg-amber-200"
+                            : "bg-slate-100"
+                      )}
+                    />
+                  );
+                })}
+              </Fragment>
+            ))}
+          </div>
+          <div className="flex items-center gap-3 mt-2.5 text-[10px] text-slate-400">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-slate-100" /> nothing noticed
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-amber-200" /> sometimes
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded bg-amber-400" /> often
+            </span>
+          </div>
+        </div>
+      )}
+
+      {observed.length === 0 && expected.length > 0 && (
+        <p className="text-[11px] text-slate-400">
+          Nothing watched yet. At signup you named{" "}
+          {expected
+            .map((t) => (REFLECTION_LABELS[t.trigger] ?? { label: t.trigger }).label.toLowerCase())
+            .join(", ")}{" "}
+          — those stay out of the counts until they actually show up in a log.
+        </p>
+      )}
+
+      <HowToRead>
+        <p>
+          Times come from the timestamps on your own logs, not from a general
+          rule about when people eat. A window only appears once the same thing
+          has landed in the same stretch of the day more than once.
+        </p>
+        <p>
+          The week grid is coarse on purpose — four blocks a day. It answers
+          "which part of which day", which is the level you can actually plan
+          at.
+        </p>
+      </HowToRead>
+    </div>
+  );
+}
+
+// ─── meal by meal ────────────────────────────────────────────────────────────
+
+const MEAL_SLOTS = [
+  { key: "breakfast", emoji: "🌅", label: "Breakfast" },
+  { key: "lunch", emoji: "🥗", label: "Lunch" },
+  { key: "dinner", emoji: "🍽️", label: "Dinner" },
+  { key: "snacks", emoji: "🍿", label: "Snacks" },
+] as const;
+
+type MealSlotCounts = {
+  breakfast: number;
+  lunch: number;
+  dinner: number;
+  snacks: number;
+};
+
+/** A server that predates these fields omits them rather than sending zeroes,
+ *  and indexing `undefined` would take the whole page down with it. */
+const EMPTY_SLOT_COUNTS: MealSlotCounts = {
+  breakfast: 0,
+  lunch: 0,
+  dinner: 0,
+  snacks: 0,
+};
+
+/**
+ * The same week, split by meal.
+ *
+ * A single score for the whole day hides the thing most people want: breakfast
+ * and dinner rarely behave the same way, and the one that needs attention is
+ * usually obvious once they're side by side. The steadiest slot is named as
+ * well as the busiest — a page that only points at the worst meal is a page
+ * people stop opening.
+ */
+function MealSlotBreakdown({
+  emotional,
+  logged,
+  strongest,
+}: {
+  emotional: MealSlotCounts;
+  logged: MealSlotCounts;
+  strongest: string | null;
+}) {
+  const rows = MEAL_SLOTS.map((slot) => ({
+    ...slot,
+    emotional: emotional[slot.key] ?? 0,
+    total: logged[slot.key] ?? 0,
+  }));
+
+  const anyData = rows.some((r) => r.total > 0 || r.emotional > 0);
+  if (!anyData) return null;
+
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)]">
+      <div className="flex items-center gap-2 mb-1">
+        <Utensils className="w-4 h-4 text-teal-600 shrink-0" />
+        <h3 className="text-lg font-bold text-slate-800">Meal by meal</h3>
+      </div>
+      <p className="text-sm text-slate-400 mb-4">
+        Every meal you logged this period, split by slot. Meals behave
+        differently depending on where they sit in the day.
+      </p>
+
+      <div className="space-y-3">
+        {rows.map((r) => {
+          const share = r.total > 0 ? (r.emotional / r.total) * 100 : 0;
+          const isStrongest =
+            strongest != null && strongest.toLowerCase() === r.key;
+          return (
+            <div key={r.key} className="flex items-center gap-2.5">
+              <span className="text-base w-5 shrink-0 text-center">{r.emoji}</span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-sm text-slate-600">{r.label}</span>
+                  {isStrongest && (
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-teal-100 text-teal-700">
+                      Steadiest
+                    </span>
+                  )}
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  {r.total > 0 ? (
+                    <>
+                      {r.total} logged
+                      {r.emotional > 0
+                        ? ` · ${r.emotional} read as emotional`
+                        : " · none read as emotional"}
+                    </>
+                  ) : (
+                    "none logged yet"
+                  )}
+                </div>
+                <div className="mt-1 h-2 rounded-full bg-slate-100 overflow-hidden flex">
+                  <div
+                    className="h-full bg-amber-400"
+                    style={{ width: `${share}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <HowToRead>
+        <p>
+          The amber part of each bar is the share of that slot's logged meals
+          that read as emotional. The rest is everything else, which includes
+          meals with no mood logged near them — those can't be read either way,
+          so they aren't counted as calm.
+        </p>
+        <p>
+          "Steadiest" is the slot where your choices held up best. It's picked
+          by the same scoring as everything else on this page.
+        </p>
+      </HowToRead>
+    </div>
+  );
+}
+
+// ─── what was around at the time ─────────────────────────────────────────────
+
+const EMOTION_LABELS: Record<string, { emoji: string; label: string }> = {
+  happy: { emoji: "😊", label: "Happy" },
+  calm: { emoji: "😌", label: "Calm" },
+  anxious: { emoji: "😰", label: "Anxious" },
+  sad: { emoji: "😢", label: "Low" },
+  angry: { emoji: "😠", label: "Frustrated" },
+  stressed: { emoji: "😫", label: "Stressed" },
+  tired: { emoji: "😴", label: "Tired" },
+  energetic: { emoji: "⚡", label: "Energetic" },
+  neutral: { emoji: "😐", label: "Neutral" },
+};
+
+/**
+ * The moods logged around eating, counted and left alone.
+ *
+ * No tone split here on purpose. "Calm" and "stressed" both belong on the same
+ * list because the useful question is which states keep showing up, not which
+ * of them count against the user.
+ */
+function EmotionsSummary({
+  emotions,
+}: {
+  emotions: { emotion: string; count: number }[];
+}) {
+  const rows = emotions.filter((e) => e.count > 0).slice(0, 6);
+  if (rows.length === 0) return null;
+
+  const peak = Math.max(...rows.map((e) => e.count));
+  const total = rows.reduce((sum, e) => sum + e.count, 0);
+
+  return (
+    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(15,118,110,0.08)]">
+      <div className="flex items-center gap-2 mb-1">
+        <Heart className="w-4 h-4 text-rose-400 shrink-0" />
+        <h3 className="text-lg font-bold text-slate-800">How you felt around eating</h3>
+      </div>
+      <p className="text-sm text-slate-400 mb-4">
+        The states you logged nearest your meals, most frequent first. Across{" "}
+        {total} check-in{total === 1 ? "" : "s"}.
+      </p>
+
+      <div className="space-y-2">
+        {rows.map((e) => {
+          const meta = EMOTION_LABELS[e.emotion] ?? { emoji: "•", label: e.emotion };
+          return (
+            <div key={e.emotion} className="flex items-center gap-2.5">
+              <span className="text-base w-5 shrink-0 text-center">{meta.emoji}</span>
+              <span className="text-sm text-slate-600 w-24 shrink-0 truncate">
+                {meta.label}
+              </span>
+              <div className="flex-1 min-w-0 h-2 rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-rose-300"
+                  style={{ width: `${peak > 0 ? (e.count / peak) * 100 : 0}%` }}
+                />
+              </div>
+              <span className="text-xs font-semibold text-slate-400 w-6 text-right tabular-nums shrink-0">
+                {e.count}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <HowToRead>
+        <p>
+          These are mood check-ins logged close enough to a meal to be read
+          alongside it. A frequent state isn't a problem by itself — it's
+          context for the patterns above.
+        </p>
+      </HowToRead>
+    </div>
+  );
+}
+
 // ─── fallback patterns when no insight data ───────────────────────────────────
 
+// Ordered so the first thing a new user reads about themselves isn't a
+// problem. The table shows examples until real rows exist, and an example
+// list that opens on stress-snacking teaches people what this page is for
+// before it has looked at anything they did.
 const DEFAULT_PATTERNS: Pattern[] = [
   {
-    emoji: "😤",
-    name: "Stress-Snacking",
-    context: "Primarily 4 PM – 6 PM",
-    frequency: "—",
-    impact: "negative",
-  },
-  {
     emoji: "☀️",
-    name: "Morning Satiety",
-    context: "Post high-protein breakfast",
+    name: "Morning satiety",
+    context: "Breakfast holds you to lunch",
     frequency: "Daily",
     impact: "positive",
   },
   {
     emoji: "👥",
-    name: "Social Dining",
-    context: "Weekend meals",
+    name: "Social dining",
+    context: "Weekend meals with others",
     frequency: "2× / week",
     impact: "neutral",
+  },
+  {
+    emoji: "😤",
+    name: "Late-afternoon snacking",
+    context: "Mostly 4 PM – 6 PM",
+    frequency: "—",
+    impact: "negative",
   },
 ];

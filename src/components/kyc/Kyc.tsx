@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,6 +15,7 @@ import ProfileStep from "./ProfileStep";
 import HealthProfileStep from "./HealthProfileStep";
 import FitnessStep from "./FitnessStep";
 import PreferencesStep from "./PreferencesStep";
+import MyDishesStep from "./MyDishesStep";
 import CookingLevelStep from "./CookingLevelStep";
 import UnrecognisedTermsDialog from "./UnrecognisedTermsDialog";
 import CompleteStep from "./CompleteStep";
@@ -49,6 +50,8 @@ export default function KYCFlow() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [flaggedTerms, setFlaggedTerms] = useState<string[]>([]);
+  /** In-flight save of the user's own dishes; awaited before the first plan. */
+  const myDishesRequest = useRef<Promise<unknown> | null>(null);
   const [checkingTerms, setCheckingTerms] = useState(false);
 
   const [authData, setAuthData] = useState<AuthData>({
@@ -69,11 +72,13 @@ export default function KYCFlow() {
     allergies: [],
     dislikes: [],
     foodPreferences: [],
+    myDishes: [],
     foodRelationship: "",
     emotionalTriggers: [],
   });
 
   const [customInputs, setCustomInputs] = useState<CustomInputs>({
+    dish: "",
     allergy: "",
     dislike: "",
     foodPreference: "",
@@ -332,6 +337,21 @@ export default function KYCFlow() {
       return;
     }
     setError("");
+    setStep("myDishes");
+  };
+
+  /**
+   * The dishes they cook go to the server now, in the background: resolving
+   * each name takes a few seconds and there is no reason to make them watch.
+   * The promise is awaited before the plan is generated, so the first week is
+   * already built around their own food.
+   */
+  const submitMyDishes = () => {
+    setError("");
+    const dishes = kycData.myDishes ?? [];
+    if (dishes.length) {
+      myDishesRequest.current = userAPI.saveMyDishes(dishes);
+    }
     setStep("healthProfile");
   };
 
@@ -407,6 +427,9 @@ export default function KYCFlow() {
           throw new Error(t("healthProfile.errors.sessionExpired"));
         }
         await authStore.updateProfile(currentUser._id, userData);
+        // Their own dishes must be stored before the first plan is built, or
+        // week one is generated without them.
+        await myDishesRequest.current;
         await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
       } else if (authData.authMethod === "google") {
         // User already authenticated via Google OAuth - update profile and generate plan
@@ -416,6 +439,8 @@ export default function KYCFlow() {
         }
         // Update user profile with KYC data
         await authStore.updateProfile(currentUser._id, userData);
+        // Their own dishes first, as on the email path.
+        await myDishesRequest.current;
         // Generate meal plan
         await authStore.generateMealPlan(userData, "Weekly Meal Plan", "en");
       } else {
@@ -515,7 +540,7 @@ export default function KYCFlow() {
   // Helper function to calculate step number and total steps
   const getStepInfo = (currentStep: string) => {
     const hasFasting = kycData.dietType === "fasting";
-    const totalSteps = hasFasting ? 9 : 8;
+    const totalSteps = hasFasting ? 10 : 9;
 
     let stepNumber = 0;
     switch (currentStep) {
@@ -543,8 +568,11 @@ export default function KYCFlow() {
       case "cooking":
         stepNumber = hasFasting ? 8 : 7;
         break;
-      case "healthProfile":
+      case "myDishes":
         stepNumber = hasFasting ? 9 : 8;
+        break;
+      case "healthProfile":
+        stepNumber = hasFasting ? 10 : 9;
         break;
       default:
         stepNumber = 0;
@@ -584,8 +612,11 @@ export default function KYCFlow() {
       case "cooking":
         setStep("preferences");
         break;
-      case "healthProfile":
+      case "myDishes":
         setStep("cooking");
+        break;
+      case "healthProfile":
+        setStep("myDishes");
         break;
       default:
         break;
@@ -678,6 +709,25 @@ export default function KYCFlow() {
           loading={loading}
           error={error}
           onSubmit={submitProfile}
+          onBack={handleBack}
+          currentStep={stepNumber}
+          totalSteps={totalSteps}
+        />
+      );
+    }
+
+    case "myDishes": {
+      const { stepNumber, totalSteps } = getStepInfo("myDishes");
+      return (
+        <MyDishesStep
+          kycData={kycData}
+          customInputs={customInputs}
+          setCustomInputs={setCustomInputs}
+          loading={loading}
+          error={error}
+          onSubmit={submitMyDishes}
+          onToggleOption={toggleOption}
+          onAddCustomItem={addCustomItem}
           onBack={handleBack}
           currentStep={stepNumber}
           totalSteps={totalSteps}

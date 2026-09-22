@@ -220,6 +220,104 @@ const validateFoodTerms = async (
   }
 };
 
+/**
+ * The dishes the user says they cook, from onboarding's "what do you cook?"
+ * step. The server resolves each name into a recipe and nutrition, and the
+ * meal planner builds the week around them.
+ *
+ * Never blocks onboarding: a failure here costs personalisation, not the
+ * account, and the dishes can be added later from the my-dishes screen.
+ */
+const saveMyDishes = async (
+  dishes: string[]
+): Promise<{ added: number; plannable: number } | null> => {
+  const names = dishes.map((d) => d.trim()).filter(Boolean);
+  if (names.length === 0) return null;
+  try {
+    const response = await userClient.post<{
+      data: { added: number; plannable: number };
+    }>(
+      "/repertoire/bulk",
+      { dishes: names.map((name) => ({ name })) },
+      { headers: getAuthHeaders() }
+    );
+    return response.data?.data ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export interface MyMealDish {
+  _id: string;
+  name: string;
+  slots: string[];
+  source: string;
+  favourite: boolean;
+  status: string;
+  icon?: string;
+  imageUrl?: string;
+  usual?: {
+    ingredients?: { name: string; amount: string }[];
+    prepMinutes?: number | null;
+    nutritionPerServing?: { calories: number; protein: number; carbs: number; fat: number } | null;
+  };
+  rhythm?: { usualPerMonth?: number | null; observedPerMonth?: number; lastCookedOn?: string | null };
+}
+
+/** The dishes this person cooks — what the meal planner builds the week around. */
+const getMyMeals = async (): Promise<MyMealDish[]> => {
+  try {
+    const response = await userClient.get<{ data: { dishes: MyMealDish[] } }>("/repertoire", {
+      headers: getAuthHeaders(),
+    });
+    return response.data?.data?.dishes ?? [];
+  } catch {
+    return [];
+  }
+};
+
+/** Dishes we noticed them cooking, waiting to be confirmed. */
+const getMyMealSuggestions = async (): Promise<
+  { key: string; name: string; kind: string; cookedCount: number }[]
+> => {
+  try {
+    const response = await userClient.get<{
+      data: { candidates: { key: string; name: string; kind: string; cookedCount: number }[] };
+    }>("/repertoire/candidates", { headers: getAuthHeaders() });
+    return response.data?.data?.candidates ?? [];
+  } catch {
+    return [];
+  }
+};
+
+const answerMyMealSuggestion = async (key: string, accept: boolean): Promise<void> => {
+  await userClient.post(
+    `/repertoire/candidates/${encodeURIComponent(key)}/${accept ? "accept" : "decline"}`,
+    {},
+    { headers: getAuthHeaders() }
+  );
+};
+
+const addMyMeal = async (name: string): Promise<MyMealDish | null> => {
+  const response = await userClient.post<{ data: { dish: MyMealDish | null } }>(
+    "/repertoire",
+    { name },
+    { headers: getAuthHeaders() }
+  );
+  return response.data?.data?.dish ?? null;
+};
+
+const setMyMealStatus = async (
+  dishId: string,
+  status: "active" | "paused" | "retired"
+): Promise<void> => {
+  await userClient.patch(
+    `/repertoire/${dishId}/status`,
+    { status },
+    { headers: getAuthHeaders() }
+  );
+};
+
 const oauthAuth = async (
   provider: string,
   action: "signin" | "signup",
@@ -2580,4 +2678,10 @@ export const userAPI = {
   // KYC
   markKYCCompleted,
   validateFoodTerms,
+  saveMyDishes,
+  getMyMeals,
+  getMyMealSuggestions,
+  answerMyMealSuggestion,
+  addMyMeal,
+  setMyMealStatus,
 };

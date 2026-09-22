@@ -1,0 +1,21 @@
+{
+  "title": "My Meals",
+  "description": "The food you actually eat. Your plans are built around this list — add what you cook, and we'll fit the week to it.",
+  "addPlaceholder": "Add a meal you cook...",
+  "add": "Add",
+  "favourite": "A favourite",
+  "perServing": "{{calories}} kcal · {{protein}}g protein · {{carbs}}g carbs · {{fat}}g fat",
+  "noDetailsYet": "We'll fill in the details next time we plan with it.",
+  "prep": "About {{minutes}} min to make",
+  "pause": "Pause",
+  "unpause": "Use again",
+  "remove": "Remove",
+  "noticed": "Noticed you've been cooking these",
+  "cookedTwice": "You've made {{dish}} more than once — add it to your meals?",
+  "askSource": "Do you make {{dish}} at home?",
+  "yes": "Yes, add it",
+  "no": "No thanks",
+  "inYourPlans": "In your plans ({{count}})",
+  "resting": "Resting",
+  "empty": "Nothing here yet. Add the meals you cook and your plans will follow them."
+}

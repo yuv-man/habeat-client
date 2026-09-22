@@ -93,6 +93,17 @@
       "listFull": "That's the maximum of {{maxItems}} items. Remove one to add another."
     }
   },
+  "myDishes": {
+    "title": "What do you usually cook?",
+    "description": "Pick the dishes you already make most weeks. We build your plan around them, so it fits your life instead of replacing it.",
+    "placeholder": "Add a dish you cook...",
+    "add": "Add",
+    "skip": "Skip for now",
+    "hint": "Tap the ones you make, or add your own. You can always change this later.",
+    "progress": "{{count}} added — a few more and we can build your week around them.",
+    "enough": "{{count}} dishes — that's plenty to work with.",
+    "saving": "Saving your dishes..."
+  },
   "cooking": {
     "title": "How much cooking are you up for?",
     "description": "We'll only plan meals you'd actually make. You can change this any time.",

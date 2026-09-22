@@ -173,4 +173,96 @@ describe("EmotionalEating", () => {
     expect(screen.getByText("Not asked yet")).toBeInTheDocument();
     expect(screen.queryByText("0%")).not.toBeInTheDocument();
   });
+
+  describe("the rest of what the Brain worked out", () => {
+    it("splits the period by meal slot and names the steadiest one", () => {
+      setInsight(
+        insight({
+          mealsLogged: 12,
+          totalMeals: 8,
+          strongestMealType: "breakfast",
+          mealTypeLogged: { breakfast: 5, lunch: 4, dinner: 3, snacks: 0 },
+          mealTypeBreakdown: { breakfast: 0, lunch: 1, dinner: 2, snacks: 0 },
+        })
+      );
+
+      render(<EmotionalEating />);
+
+      expect(screen.getByText(/meal by meal/i)).toBeInTheDocument();
+      expect(screen.getByText(/steadiest/i)).toBeInTheDocument();
+      expect(screen.getByText(/5 logged · none read as emotional/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 logged · 2 read as emotional/i)).toBeInTheDocument();
+      // A slot with nothing in it says so rather than reading as a zero score.
+      expect(screen.getByText(/none logged yet/i)).toBeInTheDocument();
+    });
+
+    it("renders the hour a trigger fires, not just its name", () => {
+      setInsight(
+        insight({
+          mealsLogged: 6,
+          totalMeals: 4,
+          commonTriggers: [
+            {
+              trigger: "stress",
+              count: 4,
+              source: "observed",
+              window: { hourStart: 15, hourEnd: 18, days: [2, 4], occurrences: 4, share: 0.6 },
+              windowLabel: "Tue & Thu, 3-6 PM",
+            },
+          ],
+        })
+      );
+
+      render(<EmotionalEating />);
+
+      expect(screen.getByText(/when it tends to happen/i)).toBeInTheDocument();
+      expect(screen.getByText("Tue & Thu, 3-6 PM")).toBeInTheDocument();
+    });
+
+    it("keeps onboarding answers out of the observed counts", () => {
+      setInsight(
+        insight({
+          mealsLogged: 2,
+          commonTriggers: [
+            { trigger: "boredom", count: 0, source: "onboarding", window: null, windowLabel: null },
+          ],
+          riskWindows: [{ dayOfWeek: 3, hourStart: 20, hourEnd: 23, risk: "high" }],
+        })
+      );
+
+      render(<EmotionalEating />);
+
+      // Named as something the user said at signup, never as watched behaviour.
+      expect(screen.getByText(/at signup you named/i)).toBeInTheDocument();
+    });
+
+    it("counts moods around eating without splitting them into good and bad", () => {
+      setInsight(
+        insight({
+          mealsLogged: 6,
+          totalMeals: 5,
+          commonEmotions: [
+            { emotion: "calm", count: 4 },
+            { emotion: "stressed", count: 2 },
+          ],
+        })
+      );
+
+      render(<EmotionalEating />);
+
+      expect(screen.getByText(/how you felt around eating/i)).toBeInTheDocument();
+      expect(screen.getByText("Calm")).toBeInTheDocument();
+      expect(screen.getByText("Stressed")).toBeInTheDocument();
+    });
+
+    it("renders no section at all when the Brain has nothing to say", () => {
+      setInsight(insight({ mealsLogged: 2 }));
+
+      render(<EmotionalEating />);
+
+      expect(screen.queryByText(/meal by meal/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/when it tends to happen/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/how you felt around eating/i)).not.toBeInTheDocument();
+    });
+  });
 });

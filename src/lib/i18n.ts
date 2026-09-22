@@ -5,7 +5,9 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import commonEn from "@/locales/en/common.json";
 import commonHe from "@/locales/he/common.json";
 import navigationEn from "@/locales/en/navigation.json";
+import myMealsEn from "@/locales/en/myMeals.json";
 import navigationHe from "@/locales/he/navigation.json";
+import myMealsHe from "@/locales/he/myMeals.json";
 import settingsEn from "@/locales/en/settings.json";
 import settingsHe from "@/locales/he/settings.json";
 import onboardingEn from "@/locales/en/onboarding.json";
@@ -41,6 +43,7 @@ const resources = {
   en: {
     common: commonEn,
     navigation: navigationEn,
+    myMeals: myMealsEn,
     settings: settingsEn,
     onboarding: onboardingEn,
     landing: landingEn,
@@ -48,6 +51,7 @@ const resources = {
   he: {
     common: commonHe,
     navigation: navigationHe,
+    myMeals: myMealsHe,
     settings: settingsHe,
     onboarding: onboardingHe,
     landing: landingHe,

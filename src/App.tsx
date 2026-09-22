@@ -28,6 +28,7 @@ const GoalDetailPage = lazy(() => import("./pages/GoalDetailPage"));
 const Recipes = lazy(() => import("./pages/Recipes"));
 const RecipeDetailPage = lazy(() => import("./pages/RecipeDetailPage"));
 const ShoppingList = lazy(() => import("./pages/ShoppingList"));
+const MyMeals = lazy(() => import("./pages/MyMeals"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Progress = lazy(() => import("./pages/Progress"));
 const ChallengesAndSummary = lazy(() => import("./pages/ChallengesAndSummary"));
@@ -118,6 +119,7 @@ const App = () => {
                   path="/recipes/:recipeId"
                   element={<RecipeDetailPage />}
                 />
+                <Route path="/my-meals" element={<MyMeals />} />
                 <Route path="/shopping-list" element={<ShoppingList />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/profile" element={<Profile />} />

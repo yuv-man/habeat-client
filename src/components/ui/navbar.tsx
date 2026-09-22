@@ -8,6 +8,7 @@ import {
   Home,
   User,
   Brain,
+  UtensilsCrossed,
 } from "lucide-react";
 import logo from "@/assets/logos/habeat-logo.png";
 import "@/styles/navbar.css";
@@ -66,6 +67,14 @@ const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
             >
               <Heart className="w-5 h-5" />
               <div className="nav-link-text">{t("nav.favoriteRecipes")}</div>
+            </Link>
+
+            <Link
+              to="/my-meals"
+              className={`nav-link ${isActive("/my-meals") ? "active" : ""}`}
+            >
+              <UtensilsCrossed className="w-5 h-5" />
+              <div className="nav-link-text">{t("nav.myMeals")}</div>
             </Link>
 
             <Link

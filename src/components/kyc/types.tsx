@@ -19,6 +19,10 @@ export interface KYCData {
   allergies: string[];
   dislikes: string[];
   foodPreferences: string[];
+  /** Dishes the user says they cook most weeks — the plan is built around
+   *  these (server: POST /repertoire/bulk). Names only; the server works out
+   *  the ingredients and nutrition. */
+  myDishes: string[];
   fastingHours?: number; // For 8-16 fasting diet type
   fastingStartTime?: string; // Time when fasting starts (e.g., "20:00")
   /** How much cooking the user is up for; caps generated prep time and
@@ -35,6 +39,7 @@ export interface KYCData {
 }
 
 export interface CustomInputs {
+  dish: string;
   allergy: string;
   dislike: string;
   foodPreference: string;
@@ -85,6 +90,38 @@ export const dislikes = [
   "Spinach",
   "Avocado",
   "Artichoke",
+];
+
+/**
+ * Everyday dishes to tap, so the "what do you cook?" step takes seconds
+ * rather than a typing exercise. Deliberately ordinary home cooking, and a
+ * spread of cuisines — anything not here can be typed.
+ */
+export const commonDishes = [
+  "Pasta with tomato sauce",
+  "Chicken and rice",
+  "Scrambled eggs on toast",
+  "Omelette with vegetables",
+  "Shakshuka",
+  "Greek yogurt with granola",
+  "Porridge with fruit",
+  "Tuna sandwich",
+  "Chicken salad",
+  "Vegetable soup",
+  "Lentil soup",
+  "Roast chicken and potatoes",
+  "Salmon and vegetables",
+  "Beef stir-fry",
+  "Spaghetti bolognese",
+  "Chicken schnitzel",
+  "Rice and beans",
+  "Couscous with vegetables",
+  "Hummus and pita",
+  "Grilled cheese sandwich",
+  "Pizza (homemade)",
+  "Stuffed vegetables",
+  "Curry with rice",
+  "Baked pasta",
 ];
 
 export const foodPreferences = [

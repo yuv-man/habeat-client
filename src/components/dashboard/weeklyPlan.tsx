@@ -42,6 +42,8 @@ import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import AddSnackModal from "@/components/modals/AddSnackModal";
 import PlanSelector from "./PlanSelector";
 import { formatMealName } from "@/lib/formatters";
+import OwnDishNote from "./OwnDishNote";
+import SideChip from "./SideChip";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import FavoriteMealsSection from "@/components/meals/FavoriteMealsSection";
 import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
@@ -233,6 +235,12 @@ const MealItem = ({
         >
           {formatMealName(meal.name)}
         </h3>
+        <OwnDishNote
+          meal={meal}
+          className={`text-xs mt-0.5 line-clamp-2 ${
+            dayStatus === "past" ? "text-gray-400" : "text-gray-600"
+          }`}
+        />
         <p
           className={`flex items-center gap-3 text-xs mt-0.5 ${
             dayStatus === "past" ? "text-gray-400" : "text-gray-500"
@@ -245,6 +253,15 @@ const MealItem = ({
             </span>
           )}
         </p>
+        {!isSnack && (
+          <SideChip
+            meal={meal}
+            date={date}
+            mealType={mealType}
+            readOnly={dayStatus === "past"}
+            className="mt-2"
+          />
+        )}
       </div>
 
       <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity flex-shrink-0">

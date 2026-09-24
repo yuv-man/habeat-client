@@ -14,6 +14,7 @@ import {
   BrainFocusCard,
   BrainFocusPending,
 } from "@/components/analytics/BrainFocusCard";
+import { PatternProgressList } from "@/components/analytics/PatternProgressList";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { CBTExercises } from "@/components/cbt/CBTExercises";
 import { cn } from "@/lib/utils";
@@ -839,6 +840,7 @@ export default function EmotionalEating() {
   // are quoting the same decision rather than each deciding for themselves.
   const brainFocus = useBrainStore((s) => s.focus);
   const brainLoaded = useBrainStore((s) => s.loaded);
+  const patternProgress = useBrainStore((s) => s.progress);
   const fetchBrainFocus = useBrainStore((s) => s.fetchFocus);
 
   useEffect(() => {
@@ -1045,6 +1047,10 @@ export default function EmotionalEating() {
                 ) : (
                   <BrainFocusPending />
                 ))}
+
+              {/* Then the rest of the picture: which way each pattern is
+                  moving since we started, and small things to try. */}
+              {brainLoaded && <PatternProgressList progress={patternProgress} />}
 
               {/* Bento row 1: Score (only when real data) + Mood chart */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4">

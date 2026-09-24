@@ -35,6 +35,8 @@ import {
   usePatternStore,
 } from "@/stores/patternStore";
 import MissedMealPanel, { MISSED_ACTION_CLASS } from "./MissedMealPanel";
+import OwnDishNote from "./OwnDishNote";
+import SideChip from "./SideChip";
 import { LATE_NIGHT_HOUR } from "@/lib/mindfulEating";
 import { toLocalDateString, formatTime12Hour } from "@/lib/dateUtils";
 
@@ -392,7 +394,16 @@ const MealCard = ({
                   <span>•</span>
                   <div className="flex items-center gap-1">
                     <Flame className="w-3 h-3 text-orange-500" />
-                    <span>{meal.calories} kcal</span>
+                    <span
+                      title={
+                        meal.nutritionEstimated
+                          ? "Estimated — we couldn't look this one up precisely"
+                          : undefined
+                      }
+                    >
+                      {meal.nutritionEstimated ? "~" : ""}
+                      {meal.calories} kcal
+                    </span>
                   </div>
                 </>
               )}
@@ -523,6 +534,10 @@ const MealCard = ({
           >
             {displayName}
           </h3>
+          <OwnDishNote
+            meal={meal}
+            className={`mb-1 ${isPast ? "text-xs text-gray-400" : "text-xs text-gray-600"}`}
+          />
           <div
             className={`flex items-center gap-2 ${
               isPast
@@ -543,6 +558,13 @@ const MealCard = ({
               </>
             )}
           </div>
+          <SideChip
+            meal={meal}
+            date={toLocalDateString(date)}
+            mealType={mealType}
+            readOnly={isPast}
+            className="mt-2"
+          />
         </div>
 
         {/* Action Buttons - Always Visible */}
@@ -604,7 +626,7 @@ const MealCard = ({
         <MissedMealPanel
           className="mt-3"
           mealLabel={mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-          hasAnswered={Boolean(priorMissAnswer)}
+          hasAnswered={Boolean(priorMissAnswer) || Boolean(meal.skipped)}
           answeredReason={priorMissAnswer?.reason ?? null}
           logSomethingElseSlot={
             <ChangeMealModal

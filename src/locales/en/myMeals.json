@@ -17,5 +17,45 @@
   "no": "No thanks",
   "inYourPlans": "In your plans ({{count}})",
   "resting": "Resting",
-  "empty": "Nothing here yet. Add the meals you cook and your plans will follow them."
+  "empty": "Nothing here yet. Add the meals you cook and your plans will follow them.",
+  "inPlan": {
+    "yourDish": "Your dish",
+    "swapFor": "A lighter take on your {{dish}}"
+  },
+  "sidePicker": {
+    "title": "Side for your {{dish}}",
+    "none": "No side",
+    "adjust": "Your other meals that day adjust to keep you on {{calories}} kcal.",
+    "adjustNoNumber": "Your other meals that day adjust to keep you on target.",
+    "save": "Save side",
+    "saved": "Side updated",
+    "saveFailed": "Couldn't change the side. Please try again.",
+    "loadFailed": "Couldn't load the sides. Please try again.",
+    "loading": "Loading sides",
+    "titlePlanned": "Side for {{dish}}",
+    "groups": {
+      "plates": "Starch & vegetables",
+      "veg": "Vegetables only"
+    }
+  },
+  "sideChip": {
+    "add": "Add side",
+    "with": "with {{side}}",
+    "addLabel": "Add a side",
+    "changeLabel": "Change side: {{side}}",
+    "short": {
+      "rice+israeli-salad": "Rice & salad",
+      "potatoes+roasted-veg": "Potatoes & veg",
+      "quinoa+green-salad": "Quinoa & greens",
+      "israeli-salad": "Israeli salad",
+      "roasted-veg": "Roasted veg",
+      "green-salad": "Green salad",
+      "bulgur+tahini-salad": "Bulgur & tahini salad",
+      "sweet-potato+green-beans": "Sweet potato & beans",
+      "couscous+roasted-veg": "Couscous & veg",
+      "pita+hummus": "Pita & hummus",
+      "green-beans": "Green beans",
+      "tahini-salad": "Tahini salad"
+    }
+  }
 }

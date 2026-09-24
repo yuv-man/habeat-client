@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@/test/test-utils";
+import { render, screen, fireEvent } from "@/test/test-utils";
 import { MoodCheckInCard, moodIndexOf } from "./MoodCheckInCard";
 
 const REFLECTION_HEADING = "What shaped your eating today?";
@@ -39,8 +39,63 @@ describe("MoodCheckInCard", () => {
   it("asks once a mood is logged and there is eating to look back on", () => {
     render(<MoodCheckInCard {...base} selectedIndex={1} showReflection />);
     expect(screen.getByText(REFLECTION_HEADING)).toBeInTheDocument();
-    expect(screen.getByText("Made it easier")).toBeInTheDocument();
-    expect(screen.getByText("Made it harder")).toBeInTheDocument();
+    expect(screen.getByText("Helped")).toBeInTheDocument();
+    expect(screen.getByText("Got in the way")).toBeInTheDocument();
+  });
+
+  it("keeps Done off until something is picked", () => {
+    render(<MoodCheckInCard {...base} selectedIndex={1} showReflection onReflectionClose={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Done" })).toBeDisabled();
+  });
+
+  it("closes with the answers on Done, says it's noted, and goes away", () => {
+    const onReflectionClose = vi.fn();
+    const answered = { easedBy: ["had-time" as const], hinderedBy: [] };
+    const { rerender } = render(
+      <MoodCheckInCard
+        {...base}
+        selectedIndex={1}
+        showReflection
+        reflection={answered}
+        onReflectionClose={onReflectionClose}
+      />
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onReflectionClose).toHaveBeenCalledWith(
+      expect.objectContaining({ easedBy: ["had-time"], hinderedBy: [] })
+    );
+
+    // The screen marks it closed; the question is gone and the thanks shows.
+    rerender(
+      <MoodCheckInCard
+        {...base}
+        selectedIndex={1}
+        showReflection
+        reflection={{ ...answered, closedAt: "2026-09-23T12:00:00Z" }}
+        onReflectionClose={onReflectionClose}
+      />
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Noted — thanks");
+  });
+
+  it("closes without answers on Skip", () => {
+    const onReflectionClose = vi.fn();
+    render(<MoodCheckInCard {...base} selectedIndex={1} showReflection onReflectionClose={onReflectionClose} />);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(onReflectionClose).toHaveBeenCalledWith(null);
+  });
+
+  it("does not come back once closed for the day", () => {
+    render(
+      <MoodCheckInCard
+        {...base}
+        selectedIndex={1}
+        showReflection
+        reflection={{ easedBy: [], hinderedBy: ["stress"], closedAt: "2026-09-23T12:00:00Z" }}
+      />
+    );
+    expect(screen.queryByText(REFLECTION_HEADING)).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("stays quiet without a change handler to save through", () => {

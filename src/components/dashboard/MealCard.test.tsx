@@ -168,4 +168,52 @@ describe("MealCard", () => {
       expect(screen.getByLabelText("Swap snack")).toBeInTheDocument();
     });
   });
+
+  describe("The user's own dish", () => {
+    const side = {
+      name: "Rice & Israeli salad",
+      calories: 430,
+      macros: { protein: 7, carbs: 81, fat: 5 },
+      ingredients: [["rice", "240 g"]] as [string, string][],
+    };
+
+    it("says what is served next to their dish", () => {
+      render(
+        <MealCard
+          {...defaultProps}
+          meal={{ ...mockBreakfast, fromRepertoire: "dish-1", side }}
+          mealType="lunch"
+        />
+      );
+      expect(screen.getByText("Your dish")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Change side: Rice & Israeli salad" })).toBeInTheDocument();
+    });
+
+    it("says which of their dishes a swap replaces", () => {
+      render(
+        <MealCard
+          {...defaultProps}
+          meal={{ ...mockBreakfast, fromRepertoire: "dish-1", tuneLevel: 1, insteadOf: "Beef burger" }}
+        />
+      );
+      expect(screen.getByText("A lighter take on your Beef burger")).toBeInTheDocument();
+    });
+
+    it("names both the swap and its side", () => {
+      render(
+        <MealCard
+          {...defaultProps}
+          meal={{ ...mockBreakfast, fromRepertoire: "dish-1", tuneLevel: 1, insteadOf: "Chicken schnitzel", side }}
+          mealType="lunch"
+        />
+      );
+      expect(screen.getByText("A lighter take on your Chicken schnitzel")).toBeInTheDocument();
+      expect(screen.getByText("with Rice & Israeli salad")).toBeInTheDocument();
+    });
+
+    it("adds nothing to an ordinary meal", () => {
+      render(<MealCard {...defaultProps} />);
+      expect(screen.queryByText(/Your dish|A lighter take|Add side/)).not.toBeInTheDocument();
+    });
+  });
 });

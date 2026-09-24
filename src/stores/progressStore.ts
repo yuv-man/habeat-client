@@ -52,6 +52,14 @@ interface ProgressActions {
     mealId: string,
     time: string
   ) => Promise<void>;
+  /** Mark a planned meal as skipped, or undo it. */
+  setMealSkipped: (
+    userId: string,
+    mealType: string,
+    mealId: string,
+    skipped: boolean,
+    reason?: string | null
+  ) => Promise<void>;
   addWaterGlass: (userId: string, date: string) => Promise<void>;
   setTodayProgress: (progress: IDailyProgress | null) => void;
   setProgressHistory: (history: IDailyProgress[]) => void;
@@ -460,6 +468,14 @@ export const useProgressStore = create<ProgressStore>()(
       set({ error: error.message || "Failed to update the meal time" });
       throw error;
     }
+  },
+
+  setMealSkipped: async (userId, mealType, mealId, skipped, reason) => {
+    if (config.testFrontend) return;
+    await userAPI.setMealSkipped(userId, mealType, mealId, skipped, reason);
+    // Skipping a ticked meal takes its calories back off the day on the
+    // server, so read the day back rather than guessing the totals here.
+    await get().fetchTodayProgress(userId, true);
   },
 
   addWaterGlass: async (userId: string, date: string) => {

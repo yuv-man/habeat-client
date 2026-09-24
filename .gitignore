@@ -31,3 +31,4 @@ dist-ssr
 .cursorignore
 
 .claude-personal
+.gstack/

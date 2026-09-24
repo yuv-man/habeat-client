@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { brainAPI } from "@/services/api";
-import { IBrainFocus } from "@/types/interfaces";
+import { IBrainFocus, IPatternProgress } from "@/types/interfaces";
 
 /**
  * The Brain's current focus, held once for the whole app.
@@ -26,6 +26,8 @@ const CACHE_TTL = 5 * 60 * 1000;
 
 interface BrainState {
   focus: IBrainFocus | null;
+  /** Every confirmed pattern and which way it is moving. */
+  progress: IPatternProgress[];
   /** Whether an answer has come back at all — see the note above. */
   loaded: boolean;
   loading: boolean;
@@ -41,6 +43,7 @@ interface BrainActions {
 
 const initialState: BrainState = {
   focus: null,
+  progress: [],
   loaded: false,
   loading: false,
   error: null,
@@ -61,6 +64,7 @@ export const useBrainStore = create<BrainState & BrainActions>()((set, get) => (
       const response = await brainAPI.getBrainFocus();
       set({
         focus: response.data ?? null,
+        progress: response.progress ?? [],
         loaded: true,
         loading: false,
         fetchedAt: Date.now(),

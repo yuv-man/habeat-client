@@ -58,6 +58,7 @@ const DailyMealScreen = () => {
   const progressLoading = useProgressStore((state) => state.loading);
   const fetchTodayProgress = useProgressStore((state) => state.fetchTodayProgress);
   const setTodayProgress = useProgressStore((state) => state.setTodayProgress);
+  const setMealSkipped = useProgressStore((state) => state.setMealSkipped);
   const addWaterGlassToStore = useProgressStore((state) => state.addWaterGlass);
 
   const fetchFavorites = useFavoritesStore((state) => state.fetchFavorites);
@@ -270,16 +271,12 @@ const DailyMealScreen = () => {
 
   /**
    * Whether "What shaped your eating today?" is a question this user can
-   * actually answer yet.
+   * actually answer yet: only once they have logged eating something.
    *
-   * Two ways it becomes answerable: something has been eaten, or the day has
-   * run far enough past their own lunch time that meals have plausibly
-   * happened whether or not they were logged — in which case "too busy" is a
-   * real answer and worth capturing.
-   *
-   * Before either, it is not a question at all. Someone opening the app at
-   * 7am to log that they feel calm has eaten nothing, and asking what shaped
-   * their eating makes the app look like it isn't listening.
+   * It used to open at lunch time with nothing eaten too, on the idea that
+   * "too busy" was worth capturing. In use it read as a question about eating
+   * put to someone who hadn't eaten — the app not listening. A skipped meal's
+   * reason is recorded by the missed-meal panel instead.
    */
   const canReflectOnEating = useMemo(() => {
     const meals = dailyProgress?.meals;
@@ -289,13 +286,8 @@ const DailyMealScreen = () => {
         meals?.dinner?.done ||
         meals?.snacks?.some((snack) => snack.done)
     );
-    if (ateSomething) return true;
-
-    const [h, m] = (mealTimes?.lunch ?? "12:30").split(":").map(Number);
-    const lunchMinutes = (Number.isFinite(h) ? h : 12) * 60 + (Number.isFinite(m) ? m : 30);
-    const now = new Date();
-    return now.getHours() * 60 + now.getMinutes() >= lunchMinutes;
-  }, [dailyProgress, mealTimes]);
+    return ateSomething;
+  }, [dailyProgress]);
 
   const addWaterGlass = async () => {
     if (user?._id) await addWaterGlassToStore(user._id, currentDate.toISOString());
@@ -350,6 +342,18 @@ const DailyMealScreen = () => {
     }, 700);
   };
 
+  /** Done or Skip: save now, and mark the question closed so it does not come
+   *  back today — including after a reload. */
+  const handleReflectionClose = (answers: IDailyReflection | null) => {
+    if (reflectionSaveRef.current) clearTimeout(reflectionSaveRef.current);
+    const closed: IDailyReflection = {
+      ...(answers ?? reflection ?? {}),
+      closedAt: new Date().toISOString(),
+    };
+    setReflection(closed);
+    if (moodEntryId) updateMood(moodEntryId, { reflection: closed }).catch(() => {});
+  };
+
   /** Merges triggers into today's reflection without clobbering what the user
    *  ticked by hand, and writes through when there's an entry to write to. */
   const mergeReflectionTriggers = (
@@ -360,6 +364,7 @@ const DailyMealScreen = () => {
 
     setReflection((prev) => {
       const merged: IDailyReflection = {
+        ...prev,
         easedBy: prev?.easedBy ?? [],
         hinderedBy: Array.from(
           new Set([...(prev?.hinderedBy ?? []), ...triggers])
@@ -383,6 +388,18 @@ const DailyMealScreen = () => {
    * trigger; not being hungry isn't a problem needing a solution.
    */
   const handleMealMissed = (mealType: MealSlot, reason: MissReason | null) => {
+    // The pattern log below is device-local and the reflection trigger only
+    // carries some reasons; this is what records on the day itself that the
+    // meal was skipped, whatever the reason.
+    const skippedMeal = dailyProgress?.meals?.[mealType];
+    const skippedMealId =
+      skippedMeal && !Array.isArray(skippedMeal) ? skippedMeal._id : undefined;
+    if (user?._id && skippedMealId) {
+      setMealSkipped(user._id, mealType, skippedMealId, true, reason).catch((error) =>
+        console.error("Failed to record skipped meal:", error)
+      );
+    }
+
     recordPattern({
       kind: "missed-meal",
       date: toLocalDateString(dailyProgress?.date ?? currentDate),
@@ -539,6 +556,7 @@ const DailyMealScreen = () => {
               onSelect={handleMoodSelect}
               reflection={reflection}
               onReflectionChange={handleReflectionChange}
+              onReflectionClose={handleReflectionClose}
               showReflection={canReflectOnEating}
             />
 
@@ -735,7 +753,7 @@ const DailyMealScreen = () => {
                       key={snack._id || index}
                       meal={snack}
                       mealType="snacks"
-                      mealTime={getMealTime("snacks")}
+                      mealTime={snack.time ? formatTime12Hour(snack.time) : getMealTime("snacks")}
                       date={dailyProgress.date}
                       snackIndex={index}
                       isSnack

@@ -4,6 +4,8 @@ import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import { formatMealName } from "@/lib/formatters";
 import { useNavigate } from "react-router-dom";
 import { useShowMacros } from "@/hooks/useShowMacros";
+import OwnDishNote from "./OwnDishNote";
+import SideChip from "./SideChip";
 
 interface TableMealItemProps {
   meal: IMeal;
@@ -47,6 +49,12 @@ const TableMealItem = ({
           >
             {formatMealName(meal.name)}
           </div>
+          <OwnDishNote
+            meal={meal}
+            className={`text-xs mt-0.5 line-clamp-2 ${
+              dayStatus === "past" ? "text-gray-400" : "text-gray-500"
+            }`}
+          />
           <div className={`flex items-center gap-3 mt-1 text-xs ${
             dayStatus === "past" ? "text-gray-400" : "text-gray-500"
           }`}>
@@ -63,6 +71,13 @@ const TableMealItem = ({
               </span>
             )}
           </div>
+          <SideChip
+            meal={meal}
+            date={date}
+            mealType={mealType}
+            readOnly={dayStatus === "past"}
+            className="mt-1.5"
+          />
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {/* Recipe button */}

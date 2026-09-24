@@ -78,7 +78,15 @@ export interface IMeal {
   category: string;
   usageCount?: number;
   prepTime: number;
+  /** When a user-added snack was eaten, 24h HH:mm. Absent → the slot's time. */
+  time?: string;
   done: boolean;
+  /** The user said they didn't eat this meal at all. */
+  skipped?: boolean;
+  /** Why, when they said. */
+  skipReason?: "time-pressure" | "stress" | "tiredness" | "not-hungry";
+  /** Nutrition is a rough estimate — the lookup was unavailable when logged. */
+  nutritionEstimated?: boolean;
   source?: MealSource;
   /** When the meal was actually eaten. Stamped when the box is ticked, and
    *  correctable by the user afterwards — see `completedAtSource`. ISO string. */
@@ -86,6 +94,23 @@ export interface IMeal {
   /** "tick" is the moment the box was ticked, "user" is a time the user
    *  corrected it to. Only the second one is the user's own claim. */
   completedAtSource?: "tick" | "user";
+  /** One of the user's own dishes (My Meals), placed by the planner. */
+  fromRepertoire?: string;
+  /** Set when this is a healthier swap: the name of their dish it replaces. */
+  insteadOf?: string;
+  tuneLevel?: number;
+  /** Served next to their own dish to fill the meal. Already counted in
+   *  `calories`, `macros` and `ingredients`. */
+  side?: {
+    /** Which option this is, e.g. "potatoes+roasted-veg". Absent on sides
+     *  saved before options had ids. */
+    id?: string;
+    name: string;
+    calories: number;
+    macros: { protein: number; carbs: number; fat: number };
+    /** [name, amount, shopping category]. */
+    ingredients: string[][];
+  };
 }
 
 export interface IDailyPlan {
@@ -819,6 +844,9 @@ export type EatingFacilitator =
 export interface IDailyReflection {
   easedBy?: EatingFacilitator[];
   hinderedBy?: EatingTrigger[];
+  /** When the user finished with the question (Done or Skip). Once set, the
+   *  question does not come back today. ISO string. */
+  closedAt?: string;
 }
 
 export interface IMoodEntry {
@@ -1178,6 +1206,26 @@ export interface IBrainFocus {
   improving: boolean;
   startedAt: string | null;
   confidence: "insufficient" | "low" | "medium" | "high";
+}
+
+/**
+ * One eating pattern and which way it is moving since the Brain first saw it.
+ * Qualitative on purpose — the server says what changed, never a score.
+ */
+export interface IPatternProgress {
+  patternId: string;
+  name: string;
+  emoji: string;
+  trend: "improving" | "steady" | "resolved";
+  /** e.g. "Happening less than when we started". */
+  trendLabel: string;
+  /** The behaviour the Brain is actively working on this week. */
+  isFocus: boolean;
+  /** The checkable observation behind it; null once resolved. */
+  evidence: string | null;
+  /** Small concrete things to try. Empty once resolved. */
+  tips: string[];
+  since: string | null;
 }
 
 /** A pattern row as the Brain stores it. Used for the fuller patterns list. */

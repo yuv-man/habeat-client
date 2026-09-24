@@ -24,6 +24,7 @@ import {
   IMealMoodCorrelation,
   MealSource,
   IBrainFocus,
+  IPatternProgress,
   IEmotionalEatingInsight,
   ICBTEngagementStats,
 } from "../types/interfaces";
@@ -239,7 +240,10 @@ const saveMyDishes = async (
     }>(
       "/repertoire/bulk",
       { dishes: names.map((name) => ({ name })) },
-      { headers: getAuthHeaders() }
+      // Each name is resolved by the model on the server — a handful of
+      // dishes can take well over a minute when models fail over. The plan
+      // waits on this call, so timing out early builds week one without them.
+      { headers: getAuthHeaders(), timeout: 180000 }
     );
     return response.data?.data ?? null;
   } catch {
@@ -755,6 +759,50 @@ const updateMealInPlan = async (
   }, "Failed to update meal. Please try again.");
 };
 
+export interface SideOption {
+  id: string;
+  name: string;
+  calories: number;
+  macros: { protein: number; carbs: number; fat: number };
+  ingredients: string[][];
+}
+
+/** The sides that suit one of the user's own dishes, and the one it has now. */
+const getSideOptions = async (
+  userId: string,
+  date: string,
+  mealType: string
+): Promise<{ current: string | null; options: SideOption[] }> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.get<{
+      data: { current: string | null; options: SideOption[] };
+    }>(`/plan/${userId}/side-options/${date}/${mealType}`, {
+      headers: getAuthHeaders(),
+    });
+    return response.data.data;
+  }, "Couldn't load the sides. Please try again.");
+};
+
+/**
+ * Put a side (or none, with `null`) next to one of the user's own dishes. The
+ * server rebalances the day's other meals, so the whole plan comes back.
+ */
+const setMealSide = async (
+  userId: string,
+  date: string,
+  mealType: string,
+  optionId: string | null
+): Promise<{ plan: IPlan }> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<{ data: { plan: IPlan } }>(
+      `/plan/${userId}/side`,
+      { date, mealType, optionId },
+      { headers: getAuthHeaders() }
+    );
+    return response.data.data;
+  }, "Couldn't change the side. Please try again.");
+};
+
 const addWaterGlass = async (
   userId: string,
   date: string,
@@ -1194,6 +1242,27 @@ const updateMealEatenTime = async (
     );
     return response.data;
   }, "Failed to update the meal time. Please try again.");
+};
+
+/** "I skipped this meal" — or undo it. Skipping a ticked meal un-ticks it. */
+const setMealSkipped = async (
+  userId: string,
+  mealType: string,
+  mealId: string,
+  skipped: boolean,
+  /** Why, when the user said ("time-pressure", "stress", …). */
+  reason?: string | null
+): Promise<ApiResponse<{ progress: IDailyProgress }>> => {
+  return withErrorHandling(async () => {
+    const response = await userClient.put<
+      ApiResponse<{ progress: IDailyProgress }>
+    >(
+      `/progress/meal-skip/${userId}/${mealId}`,
+      { mealType, skipped, ...(reason ? { reason } : {}) },
+      { headers: getAuthHeaders() }
+    );
+    return response.data;
+  }, "Failed to update the meal. Please try again.");
 };
 
 // Current mood interface for mood-aware suggestions
@@ -2135,13 +2204,20 @@ const getMealMoodHistory = async (
  * honestly claim yet — a cold Brain is an ordinary state, not an error, and a
  * screen should show "still learning" rather than a failure.
  */
-const getBrainFocus = async (): Promise<ApiResponse<IBrainFocus | null>> => {
+const getBrainFocus = async (): Promise<
+  ApiResponse<IBrainFocus | null> & { progress: IPatternProgress[] }
+> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: { focus: IBrainFocus | null };
+      data: { focus: IBrainFocus | null; progress?: IPatternProgress[] };
     }>(`/brain/state`, { headers: getAuthHeaders() });
-    return { data: response.data.data.focus ?? null };
+    return {
+      data: response.data.data.focus ?? null,
+      // How every confirmed pattern is moving — same request, same moment,
+      // so the focus card and the list below it can never disagree.
+      progress: response.data.data.progress ?? [],
+    };
   }, "Failed to load your focus. Please try again.");
 };
 
@@ -2613,6 +2689,8 @@ export const userAPI = {
   getFavoriteRecipes,
   toggleFavoriteRecipe,
   getRecipeByMealId,
+  getSideOptions,
+  setMealSide,
   // Goals
   getGoals,
   getGoalById,
@@ -2629,6 +2707,7 @@ export const userAPI = {
   updateDailyProgress,
   completeMeal,
   updateMealEatenTime,
+  setMealSkipped,
   // Meal Changes
   getAIMealSuggestions,
   changeMealInPlan,

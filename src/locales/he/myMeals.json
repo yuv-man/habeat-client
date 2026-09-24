@@ -17,5 +17,45 @@
   "no": "לא תודה",
   "inYourPlans": "בתוכניות שלכם ({{count}})",
   "resting": "בהפסקה",
-  "empty": "עוד אין כאן כלום. הוסיפו את המנות שאתם מבשלים והתוכניות יעקבו אחריהן."
+  "empty": "עוד אין כאן כלום. הוסיפו את המנות שאתם מבשלים והתוכניות יעקבו אחריהן.",
+  "inPlan": {
+    "yourDish": "המנה שלכם",
+    "swapFor": "גרסה קלילה יותר של {{dish}} שלכם"
+  },
+  "sidePicker": {
+    "title": "תוספת ל{{dish}} שלכם",
+    "none": "בלי תוספת",
+    "adjust": "שאר הארוחות באותו יום יתאימו את עצמן כדי לשמור על {{calories}} קק״ל.",
+    "adjustNoNumber": "שאר הארוחות באותו יום יתאימו את עצמן כדי לשמור על היעד.",
+    "save": "שמירת התוספת",
+    "saved": "התוספת עודכנה",
+    "saveFailed": "לא הצלחנו לשנות את התוספת. נסו שוב.",
+    "loadFailed": "לא הצלחנו לטעון את התוספות. נסו שוב.",
+    "loading": "טוען תוספות",
+    "titlePlanned": "תוספת ל{{dish}}",
+    "groups": {
+      "plates": "פחמימה וירקות",
+      "veg": "ירקות בלבד"
+    }
+  },
+  "sideChip": {
+    "add": "הוספת תוספת",
+    "with": "עם {{side}}",
+    "addLabel": "הוספת תוספת",
+    "changeLabel": "שינוי תוספת: {{side}}",
+    "short": {
+      "rice+israeli-salad": "אורז וסלט",
+      "potatoes+roasted-veg": "תפוחי אדמה וירקות",
+      "quinoa+green-salad": "קינואה וירוקים",
+      "israeli-salad": "סלט ישראלי",
+      "roasted-veg": "ירקות קלויים",
+      "green-salad": "סלט ירוק",
+      "bulgur+tahini-salad": "בורגול וסלט טחינה",
+      "sweet-potato+green-beans": "בטטה ושעועית",
+      "couscous+roasted-veg": "קוסקוס וירקות",
+      "pita+hummus": "פיתה וחומוס",
+      "green-beans": "שעועית ירוקה",
+      "tahini-salad": "סלט טחינה"
+    }
+  }
 }

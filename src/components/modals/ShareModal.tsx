@@ -50,7 +50,6 @@ const ShareModal = ({
   type,
   data,
   cardComponent,
-  userName,
 }: ShareModalProps) => {
   const { toast } = useToast();
   const cardRef = useRef<HTMLDivElement>(null);

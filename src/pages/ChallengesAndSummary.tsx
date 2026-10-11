@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/authStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ArrowLeft, Target, Award } from "lucide-react";
+import { ArrowLeft, Award } from "lucide-react";
 import MealLoader from "@/components/helper/MealLoader";
 import { EngagementCard } from "@/components/engagement";
 import { ChallengeList } from "@/components/challenges";

@@ -484,7 +484,6 @@ export const useProgressStore = create<ProgressStore>()(
 
     // Store original state for rollback
     const originalProgress = { ...todayProgress };
-    const originalWaterConsumed = todayProgress.water.consumed;
 
     // Optimistically update UI immediately
     if (todayProgress.water.consumed < todayProgress.water.goal) {

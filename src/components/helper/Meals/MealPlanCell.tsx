@@ -31,7 +31,7 @@ const MealPlanCell = memo(
     const now = new Date();
     const isPastDate = date < now;
     const [isCompleted, setIsCompleted] = useState(meal.done);
-    const { user, plan, updateMealInPlan } = useAuthStore();
+    const { user, updateMealInPlan } = useAuthStore();
     const showMacros = useShowMacros();
 
     const onComplete = useCallback(

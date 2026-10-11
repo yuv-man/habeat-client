@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Share2, Flame, Target, Award, Calendar, Brain } from "lucide-react";
+import { X, Share2, Flame, Target, Award, Brain } from "lucide-react";
 import confetti from "canvas-confetti";
 import { useEngagementStore } from "@/stores/engagementStore";
 import { useAuthStore } from "@/stores/authStore";

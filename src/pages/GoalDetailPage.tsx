@@ -18,7 +18,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useGoalsStore } from "@/stores/goalsStore";
 import { useAuthStore } from "@/stores/authStore";
 import MealLoader from "@/components/helper/MealLoader";
-import { getGoalConfig } from "@/lib/goalTypes";
 import type { Goal, Milestone } from "@/components/goals/Goals";
 import { cn } from "@/lib/utils";
 
@@ -153,7 +152,6 @@ const GoalDetailPage = () => {
     );
   }
 
-  const config = getGoalConfig(goal.icon);
   const milestones = goal.milestones || [];
   const progressHistory = goal.progressHistory || [];
   const completedMilestones = milestones.filter((m) => m.completed).length;
@@ -312,7 +310,6 @@ const GoalDetailPage = () => {
                 const previousCompleted = milestones.slice(0, index).every((m) => m.completed);
                 const canAct = milestone.completed || index === 0 || previousCompleted;
                 const isLocked = !canAct && !milestone.completed;
-                const isInProgress = !milestone.completed && canAct;
 
                 if (milestone.completed) {
                   // Completed state

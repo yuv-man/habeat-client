@@ -21,7 +21,7 @@ interface NavBarProps {
   onViewChange?: (view: "daily" | "weekly") => void;
 }
 
-const NavBar = ({ currentView = "daily", onViewChange }: NavBarProps) => {
+const NavBar = ({ currentView = "daily" }: NavBarProps) => {
   const { t } = useTranslation("navigation");
   const location = useLocation();
   const { user } = useAuthStore();

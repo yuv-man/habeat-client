@@ -412,7 +412,7 @@ export interface AuthActions {
     action: "signin" | "signup",
     userId?: string,
     accessToken?: string
-  ) => Promise<{ isNewUser?: boolean }>;
+  ) => Promise<{ isNewUser: boolean }>;
   guestSignin: (userData: IUser) => void;
   generateMealPlan: (
     userData: IUser,

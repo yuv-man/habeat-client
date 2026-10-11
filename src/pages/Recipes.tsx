@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, BookOpen, Camera } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import "@/styles/recipes.css";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuthStore } from "@/stores/authStore";
@@ -15,7 +14,6 @@ import config from "@/services/config";
 import { mockRecipes } from "@/mocks/recipesMock";
 
 const Recipes = () => {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const {

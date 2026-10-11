@@ -1,4 +1,4 @@
-import { IPlan, IDailyPlan, IMeal, IUser } from "@/types/interfaces";
+import { IPlan, IMeal, IUser } from "@/types/interfaces";
 
 const createMeal = (
   name: string,

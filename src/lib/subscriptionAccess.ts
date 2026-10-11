@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import type { IUser } from "@/types/interfaces";
 import {
   type FeatureKey,
-  type SubscriptionTier,
   FEATURE_DESCRIPTIONS,
   getRequiredTier,
   hasFeatureAccess,

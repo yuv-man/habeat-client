@@ -1,4 +1,4 @@
-const CircularProgress = ({ progress, value, label, color, size = 80, icon, isChanged }: { 
+const CircularProgress = ({ progress, value, label, color, size = 80, icon }: { 
     progress: number; 
     value: string; 
     label: string; 

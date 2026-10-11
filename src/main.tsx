@@ -21,6 +21,7 @@ window.addEventListener("error", (event) => {
     console.warn("Suppressed browser extension error:", event.message);
     return false;
   }
+  return undefined;
 });
 
 // Also catch unhandled promise rejections
@@ -35,6 +36,7 @@ window.addEventListener("unhandledrejection", (event) => {
     console.warn("Suppressed browser extension promise rejection:", event.reason);
     return false;
   }
+  return undefined;
 });
 
 // Initialize Social Login plugin for native platforms

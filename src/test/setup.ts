@@ -54,3 +54,9 @@ window.scrollTo = vi.fn();
 
 // Mock fetch
 global.fetch = vi.fn();
+
+// Real translations, in English. Components render through `t()`; without an
+// initialised i18n instance they render raw keys ("signup.title"), and a test
+// asserting on visible copy can't tell a broken screen from a working one.
+import i18n from "@/lib/i18n";
+await i18n.changeLanguage("en");

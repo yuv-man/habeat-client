@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { shallow } from "zustand/shallow";
+import { useShallow } from "zustand/react/shallow";
 import { userAPI } from "../services/api";
 import { IChallenge, IChallengeClaimResult } from "../types/interfaces";
 import { asArray } from "@/lib/safe";
@@ -248,13 +248,10 @@ export const useChallengeStore = create<ChallengeState>()(
 // Selectors for optimized re-renders
 export const useChallenges = () => useChallengeStore((state) => state.challenges);
 export const useActiveChallenges = () =>
+  // `filter` returns a new array every call; zustand 5 dropped the equality
+  // argument, so without useShallow this re-renders forever.
   useChallengeStore(
-    (state) => state.challenges.filter((c) => c.status === "active"),
-    (a, b) => {
-      // Custom equality check: compare array lengths and IDs to prevent unnecessary re-renders
-      if (a.length !== b.length) return false;
-      return a.every((challenge, index) => challenge._id === b[index]?._id);
-    }
+    useShallow((state) => state.challenges.filter((c) => c.status === "active"))
   );
 export const useClaimableChallenges = () =>
   useChallengeStore((state) => state.claimableChallenges);
@@ -262,11 +259,10 @@ export const useChallengeLoading = () => useChallengeStore((state) => state.load
 // Use shallow comparison to prevent infinite loops when returning objects
 export const useChallengeClaimCelebration = () =>
   useChallengeStore(
-    (state) => ({
+    useShallow((state) => ({
       show: state.showClaimCelebration,
       data: state.claimedChallenge,
-    }),
-    shallow
+    }))
   );
 
 // Helper to get challenge progress percentage

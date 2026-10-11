@@ -66,7 +66,7 @@ describe("OAuthCallback", () => {
 
   it("navigates to daily-tracker when user has plan", async () => {
     mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
-    mockAuthState.user = mockUser;
+    mockAuthState.user = { ...mockUser, kycCompleted: true };
     mockAuthState.plan = mockPlan;
 
     render(<OAuthCallback />);
@@ -78,13 +78,25 @@ describe("OAuthCallback", () => {
 
   it("navigates to weekly-overview when user exists but no plan", async () => {
     mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
-    mockAuthState.user = mockUser;
+    mockAuthState.user = { ...mockUser, kycCompleted: true };
     mockAuthState.plan = null;
 
     render(<OAuthCallback />);
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith("/weekly-overview");
+    });
+  });
+
+  it("sends an existing account that never finished onboarding to register", async () => {
+    mockHandleOAuthCallback.mockResolvedValue({ isNewUser: false });
+    mockAuthState.user = { ...mockUser, kycCompleted: false };
+    mockAuthState.plan = mockPlan;
+
+    render(<OAuthCallback />);
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith("/register");
     });
   });
 

@@ -1403,6 +1403,9 @@ const deleteSnack = async (
 // CHAT API
 // ============================================================================
 
+/** Mirrors the server's chat action types (habeat-server interfaces.ts). */
+type ChatActionType = "meal_swap" | "workout_change" | "add_snack" | "none";
+
 interface ChatHistoryResponse {
   success: boolean;
   data: {
@@ -1412,7 +1415,7 @@ interface ChatHistoryResponse {
       content: string;
       timestamp: string;
       proposedAction?: {
-        type: string;
+        type: ChatActionType;
         payload: Record<string, unknown>;
         status: "pending" | "accepted" | "rejected";
       };
@@ -1426,7 +1429,7 @@ interface ChatMessageResponse {
   data: {
     response: string;
     proposedAction?: {
-      type: string;
+      type: ChatActionType;
       payload: Record<string, unknown>;
       status: "pending" | "accepted" | "rejected";
       messageId?: string;
@@ -2043,11 +2046,11 @@ const getMoodSummary = async (
 
 const getThoughts = async (
   limit: number = 20
-): Promise<ApiResponse<IThoughtEntry[]>> => {
+): Promise<ApiResponse<{ thoughts: IThoughtEntry[] }>> => {
   return withErrorHandling(async () => {
     const response = await userClient.get<{
       success: boolean;
-      data: IThoughtEntry[];
+      data: { thoughts: IThoughtEntry[] };
     }>(`/cbt/thoughts`, {
       params: { limit },
       headers: getAuthHeaders(),

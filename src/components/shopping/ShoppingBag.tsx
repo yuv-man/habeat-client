@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Check, Trash2 } from "lucide-react";
 import { IngredientInput } from "@/lib/shoppingHelpers";
 import { getCategoryIcon } from "@/lib/shoppingCategoryIcons";

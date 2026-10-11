@@ -238,7 +238,7 @@ export function CBTExercises({
     ).slice(0, 3);
   }, []);
 
-  const handleExerciseComplete = (completion: ICBTExerciseCompletion) => {
+  const handleExerciseComplete = (_completion: ICBTExerciseCompletion) => {
     setActiveExercise(null);
     // Could show a toast or celebration here
   };

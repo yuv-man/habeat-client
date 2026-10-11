@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { shallow } from "zustand/shallow";
+import { useShallow } from "zustand/react/shallow";
 import { userAPI } from "../services/api";
 import { IEngagementStats, IEngagementResult, IBadge } from "../types/interfaces";
 
@@ -187,10 +187,9 @@ export const useWeeklyConsistency = () => useEngagementStore((state) => state.st
 // Use shallow comparison to prevent infinite loops when returning objects
 export const useEngagementCelebration = () =>
   useEngagementStore(
-    (state) => ({
+    useShallow((state) => ({
       show: state.showCelebration,
       type: state.celebrationType,
       data: state.celebrationData,
-    }),
-    shallow
+    }))
   );

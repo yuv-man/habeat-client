@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { GlassWater, Plus } from "lucide-react";
+import { GlassWater } from "lucide-react";
 import ProgressBar from "@/components/helper/ProgressBar";
 import addCircle from "@/assets/add_circle.svg";
 import waterIcon from "@/assets/water.svg";
@@ -16,7 +15,6 @@ interface WaterCardProps {
 const WaterCard = ({ current, goal, onAddGlass }: WaterCardProps) => {
   const [showDrop, setShowDrop] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
-  const progress = (current / goal) * 100;
 
   useEffect(() => {
     // Check if goal is reached
@@ -25,6 +23,7 @@ const WaterCard = ({ current, goal, onAddGlass }: WaterCardProps) => {
       const timer = setTimeout(() => setShowCelebration(false), 500);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [current, goal]);
 
   const addGlassClicked = () => {

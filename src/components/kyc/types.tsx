@@ -1,4 +1,3 @@
-import React from "react";
 import type { CookingLevel } from "@/lib/cookingLevels";
 
 export interface AuthData {

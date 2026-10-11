@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronRight, Flame, Target, TrendingUp, Award, Calendar, CheckCircle2, BarChart3, Share2 } from "lucide-react";
+import { ChevronRight, Flame, Target, TrendingUp, Calendar, CheckCircle2, BarChart3, Share2 } from "lucide-react";
 import { useEngagementStore } from "../../stores/engagementStore";
 import { useAuthStore } from "../../stores/authStore";
 import { cn } from "../../lib/utils";

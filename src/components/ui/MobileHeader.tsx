@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, BarChart3, User } from "lucide-react";
+import { User } from "lucide-react";
 import logo from "@/assets/logos/habeat-logo.png";
 import { useAuthStore } from "@/stores/authStore";
 import { ChatButton } from "@/components/chat";
@@ -36,19 +36,6 @@ const MobileHeader = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
-
-  const menuItems = [
-    {
-      icon: User,
-      label: "Profile & Settings",
-      path: "/profile",
-    },
-    {
-      icon: BarChart3,
-      label: "Analytics",
-      path: "/progress?tab=analytics",
-    },
-  ];
 
   return (
     <div

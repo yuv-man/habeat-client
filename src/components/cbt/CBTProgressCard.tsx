@@ -11,7 +11,6 @@ interface CBTProgressCardProps {
 
 export function CBTProgressCard({ className, compact = false }: CBTProgressCardProps) {
   const navigate = useNavigate();
-  const loading = useCBTStore((s) => s.loading);
   const cbtStats = useCBTStats();
   const todayMoods = useTodayMoods();
 

@@ -8,11 +8,7 @@ import {
   IMealMoodCorrelation,
   ICBTEngagementStats,
   IEmotionalEatingInsight,
-  MoodLevel,
-  MoodCategory,
-  MoodTrigger,
-  CBTExerciseType,
-} from "../types/interfaces";
+  } from "../types/interfaces";
 import { asArray } from "../lib/safe";
 
 interface CBTState {
@@ -247,8 +243,8 @@ export const useCBTStore = create<CBTStore>()(
 
         try {
           const response = await cbtAPI.getThoughts(limit);
-          const raw = response.data;
-          const thoughtEntries = Array.isArray(raw) ? raw : (raw?.thoughts && Array.isArray(raw.thoughts) ? raw.thoughts : []);
+          // The server wraps the list: `{ data: { thoughts } }`.
+          const thoughtEntries = response.data?.thoughts ?? [];
           set({
             thoughtEntries,
             loading: false,

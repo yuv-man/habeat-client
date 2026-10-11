@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LocalNotifications, ScheduleOptions, LocalNotificationSchema, PermissionStatus } from "@capacitor/local-notifications";
+import { LocalNotifications, LocalNotificationSchema } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 import { userAPI } from "../services/api";
 import { INotificationPreferences, INotificationPayload } from "../types/interfaces";

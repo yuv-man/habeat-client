@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { persist } from "zustand/middleware";
 import { IRecipe } from "@/types/interfaces";
 import { userAPI } from "@/services/api";
 import config from "@/services/config";
@@ -53,13 +53,14 @@ export const useFavoritesStore = create<FavoritesStore>()(
             userAPI.getFavoritesByUserId(userId),
           ]);
 
-          // Backend returns favoriteMeals array (not mealIds)
+          // `data` is the favourite meals themselves. This used to read
+          // `data.favoriteMeals` off that array — always undefined — so every
+          // fetch wiped the ids and no meal ever showed as a favourite.
           set({
-            //favoriteRecipes: recipesResponse.data.recipes || [],
-            favoriteMealIds:
-              mealsResponse.data.favoriteMeals ||
-              mealsResponse.data.mealIds ||
-              [],
+            favoriteMealIds: (mealsResponse.data ?? [])
+              .map((meal) => meal._id)
+              .filter((id): id is string => Boolean(id))
+              .map(String),
             loading: false,
           });
         } catch (error: any) {
@@ -79,7 +80,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           if (isFavorite) {
             set({
               favoriteRecipes: favoriteRecipes.filter(
-                (recipe) => recipe.id !== recipeId
+                (recipe) => recipe._id !== recipeId
               ),
             });
           } else {
@@ -96,7 +97,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
           if (isFavorite) {
             set({
               favoriteRecipes: favoriteRecipes.filter(
-                (recipe) => recipe.id !== recipeId
+                (recipe) => recipe._id !== recipeId
               ),
             });
           } else {
@@ -140,7 +141,7 @@ export const useFavoritesStore = create<FavoritesStore>()(
       },
 
       isRecipeFavorite: (recipeId: string) => {
-        return get().favoriteRecipes.some((recipe) => recipe.id === recipeId);
+        return get().favoriteRecipes.some((recipe) => recipe._id === recipeId);
       },
 
       isMealFavorite: (mealId: string) => {

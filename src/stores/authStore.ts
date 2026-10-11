@@ -341,7 +341,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         get().setPlan(fetchedPlan);
       }
       set({ loading: false });
-      return { isNewUser };
+      return { isNewUser: Boolean(isNewUser) };
     } catch (error) {
       set({ loading: false });
       throw error;

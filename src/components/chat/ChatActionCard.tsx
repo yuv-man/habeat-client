@@ -2,7 +2,6 @@ import { Check, X, Utensils, Dumbbell, Cookie, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { useChatStore, ChatProposedAction } from "@/stores/chatStore";
-import { cn } from "@/lib/utils";
 
 interface ChatActionCardProps {
   action: ChatProposedAction;

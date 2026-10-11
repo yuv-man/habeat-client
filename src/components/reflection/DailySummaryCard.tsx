@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, Star, Utensils, Droplets, Dumbbell, X } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Star, Utensils, Droplets, X } from "lucide-react";
 import { userAPI } from "../../services/api";
 import { IDailySummary } from "../../types/interfaces";
 import { cn } from "../../lib/utils";

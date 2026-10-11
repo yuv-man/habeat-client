@@ -6,6 +6,7 @@ import config from "@/services/config";
 import {
   getCachedDataSync,
   setCachedDataSync,
+  removeCachedDataSync,
   DEFAULT_TTL,
 } from "@/lib/cache";
 

@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Heart, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { IRecipe } from "@/types/interfaces";
 import RecipeItem from "@/components/recipes/RecipeItem";
-import MealLoader from "@/components/helper/MealLoader";
 import { toast } from "sonner";
 
 interface FavoriteMealsSectionProps {
@@ -16,7 +14,6 @@ const FavoriteMealsSection = ({
   className = "",
   maxVisible = 4,
 }: FavoriteMealsSectionProps) => {
-  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const {
     user,

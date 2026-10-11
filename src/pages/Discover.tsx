@@ -44,7 +44,11 @@ const Discover = () => {
       setIsLoading(true);
       try {
         // Get users the current user is following
-        const followingRes = await socialAPI.getFollowing(user._id);
+        // The current user comes from the token; the arguments are page and
+        // limit. Passing the user id here sent it as the page number, which
+        // the server parsed to a page far past the end — an empty list, so
+        // everyone you follow showed a "Follow" button.
+        const followingRes = await socialAPI.getFollowing();
         setFollowing(followingRes.data.users || []);
 
         // Initialize follow state

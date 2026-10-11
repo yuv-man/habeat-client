@@ -2,9 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   mockUser,
   mockPlan,
-  mockLoginResponse,
-  mockSignupResponse,
-} from "@/test/mocks";
+  } from "@/test/mocks";
 
 // Mock the API
 const mockUserAPI = {
@@ -178,12 +176,28 @@ describe("AuthStore", () => {
       mockUserAPI.fetchUser.mockRejectedValue(error401);
 
       const { useAuthStore } = await import("./authStore");
-      const store = useAuthStore.getState();
+      // Logout only fires for the token that's still active, so make it so.
+      useAuthStore.getState().setToken("invalid_token");
+      vi.clearAllMocks();
 
-      await store.fetchUser("invalid_token");
+      await useAuthStore.getState().fetchUser("invalid_token");
 
       // Should call logout (which removes token)
       expect(localStorageMock.removeItem).toHaveBeenCalled();
+    });
+
+    it("should NOT logout on a 401 for a token that was already replaced", async () => {
+      // A slow request for the old session must not sign out a fresh login.
+      const error401 = { response: { status: 401 }, message: "Unauthorized" };
+      mockUserAPI.fetchUser.mockRejectedValue(error401);
+
+      const { useAuthStore } = await import("./authStore");
+      useAuthStore.getState().setToken("fresh_token");
+      vi.clearAllMocks();
+
+      await useAuthStore.getState().fetchUser("stale_token");
+
+      expect(localStorageMock.removeItem).not.toHaveBeenCalledWith("token");
     });
 
     it("should NOT logout on network error", async () => {
@@ -236,7 +250,7 @@ describe("AuthStore", () => {
 
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
         "habeat_user",
-        expect.stringContaining(mockUser._id)
+        expect.stringContaining(mockUser._id!)
       );
     });
 

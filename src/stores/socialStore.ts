@@ -45,7 +45,7 @@ interface SocialState {
   clearFeed: () => void;
 }
 
-export const useSocialStore = create<SocialState>((set, get) => ({
+export const useSocialStore = create<SocialState>((set) => ({
   // Initial state
   posts: [],
   feedPagination: null,

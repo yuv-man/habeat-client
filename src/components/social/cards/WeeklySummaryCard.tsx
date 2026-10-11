@@ -22,7 +22,6 @@ const WeeklySummaryCard = forwardRef<HTMLDivElement, WeeklySummaryCardProps>(
       avgCalories,
       avgWaterGlasses,
       calorieGoalHitDays,
-      waterGoalHitDays,
       userName,
       weekStart,
       weekEnd,

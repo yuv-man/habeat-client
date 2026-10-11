@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, TrendingUp, Heart, Filter, Trash2, Edit2, X, Check, MoreVertical } from "lucide-react";
+import { ArrowLeft, Calendar, Heart, Trash2, Edit2, X, Check, MoreVertical } from "lucide-react";
 import { useCBTStore, useMoodHistory, useTodayMoods } from "@/stores/cbtStore";
 import { IMoodEntry, MoodCategory, MoodLevel } from "@/types/interfaces";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { MoodTracker, MOOD_IMAGES } from "@/components/cbt/MoodTracker";
 import { MoodHistoryChart } from "@/components/cbt/MoodHistoryChart";
 import DashboardLayout from "@/components/layout/DashboardLayout";

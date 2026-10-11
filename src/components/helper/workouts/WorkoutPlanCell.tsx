@@ -1,10 +1,9 @@
-import React from 'react';
 import timeIcon from '@/assets/clock.svg';
 import caloriesIcon from '@/assets/fire.svg';
 import "@/styles/mealPlanCell.css";
 
 
-const WorkoutPlanCell = ({workouts, isEditMode, isToday, date}: {workouts: {name: string, duration: number, caloriesBurned: number}[], isEditMode: boolean, isToday: boolean, date: Date}) => {
+const WorkoutPlanCell = ({workouts, isToday}: {workouts: {name: string, duration: number, caloriesBurned: number}[], isEditMode: boolean, isToday: boolean, date: Date}) => {
     return (
         <div className={`grid-cell border-l ${isToday ? 'today' : ''}`}>
             {workouts.map((workout, index) => (

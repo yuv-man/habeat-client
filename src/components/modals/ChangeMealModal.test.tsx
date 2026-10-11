@@ -4,12 +4,16 @@ import userEvent from "@testing-library/user-event";
 import ChangeMealModal from "./ChangeMealModal";
 import { mockBreakfast, mockDinner } from "@/test/mocks";
 import { IMeal } from "@/types/interfaces";
+import type { SubscriptionTier } from "@/lib/subscription";
 
 const { mockFavoriteMeals, mockUser } = vi.hoisted(() => ({
   mockUser: {
     _id: "test_user_123",
     name: "Test User",
     favoriteMeals: ["fav_meal_1", "fav_meal_2"],
+    // AI suggestions are a Plus feature; most of this suite exercises them.
+    // The free-tier gate has its own test below.
+    subscriptionTier: "plus" as SubscriptionTier,
   },
   mockFavoriteMeals: [
     {
@@ -134,6 +138,7 @@ describe("ChangeMealModal", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthState.user = mockUser;
     mockAuthState.favoriteMealsData = mockFavoriteMeals;
     mockAuthState.favoriteMealsLoaded = true;
   });
@@ -231,6 +236,19 @@ describe("ChangeMealModal", () => {
         screen.getByPlaceholderText(/High protein, low carb/i)
       ).toBeInTheDocument();
       expect(screen.getByText("Get AI Suggestions")).toBeInTheDocument();
+    });
+
+    it("keeps free users out of the AI view and points them at plans", () => {
+      mockAuthState.user = { ...mockUser, subscriptionTier: "free" as SubscriptionTier };
+      render(<ChangeMealModal {...defaultProps} />);
+      fireEvent.click(screen.getByText("Change Meal"));
+
+      fireEvent.click(screen.getByText("AI Suggestion"));
+
+      expect(
+        screen.queryByPlaceholderText(/High protein, low carb/i)
+      ).not.toBeInTheDocument();
+      expect(screen.getByText("Manual Entry")).toBeInTheDocument();
     });
 
     it("switches to Favorites view when clicked", async () => {

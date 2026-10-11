@@ -17,6 +17,7 @@ export function ChallengeClaimCelebration() {
       }, 5000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [show, dismissClaimCelebration]);
 
   if (!show || !data) return null;

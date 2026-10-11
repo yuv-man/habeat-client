@@ -57,8 +57,7 @@ describe("MyDishesStep", () => {
 
   it("takes a dish that is not on the list", () => {
     render(<MyDishesStep {...props} customInputs={{ ...customInputs, dish: "Mum's chicken soup" }} />);
-    // i18n is not initialised in tests, so components render translation keys.
-    fireEvent.keyPress(screen.getByPlaceholderText("myDishes.placeholder"), {
+    fireEvent.keyPress(screen.getByPlaceholderText("Add a dish you cook..."), {
       key: "Enter",
       code: "Enter",
       charCode: 13,
@@ -68,7 +67,7 @@ describe("MyDishesStep", () => {
 
   it("lets someone move on without naming a dish", () => {
     render(<MyDishesStep {...props} />);
-    const button = screen.getByText("myDishes.skip");
+    const button = screen.getByText("Skip for now");
     fireEvent.click(button);
     expect(onSubmit).toHaveBeenCalled();
   });

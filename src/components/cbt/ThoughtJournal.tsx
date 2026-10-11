@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BookOpen, Plus, ChevronDown, ChevronUp, Calendar, Brain, Scale, Sparkles, AlertTriangle } from "lucide-react";
+import { BookOpen, Plus, ChevronDown, Calendar, Brain, Scale, Sparkles, AlertTriangle } from "lucide-react";
 import { useCBTStore, useThoughtEntries } from "@/stores/cbtStore";
 import { IThoughtEntry, CognitiveDistortionType } from "@/types/interfaces";
 import { cn } from "@/lib/utils";

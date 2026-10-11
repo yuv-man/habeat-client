@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import { Target, ChevronDown, ChevronUp, Gift } from "lucide-react";
+import { ChevronDown, ChevronUp, Gift } from "lucide-react";
 import {
   useChallengeStore,
-  getChallengeProgress,
-} from "../../stores/challengeStore";
+  } from "../../stores/challengeStore";
 import { useEngagementStore } from "../../stores/engagementStore";
 import { cn } from "../../lib/utils";
 
@@ -32,10 +31,6 @@ export function ChallengesBanner({ className }: ChallengesBannerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Use individual selectors to avoid object creation on every render
-  const fetchChallenges = useChallengeStore((state) => state.fetchChallenges);
-  const fetchClaimableChallenges = useChallengeStore(
-    (state) => state.fetchClaimableChallenges
-  );
   const claimReward = useChallengeStore((state) => state.claimReward);
   const loading = useChallengeStore((state) => state.loading);
   const challenges = useChallengeStore((state) => state.challenges);
@@ -48,7 +43,6 @@ export function ChallengesBanner({ className }: ChallengesBannerProps) {
   const dailyChallenges = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split("T")[0];
 
     return challenges.filter((c) => {
       // Must be active status

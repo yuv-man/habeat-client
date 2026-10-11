@@ -110,7 +110,7 @@ export function MoodHistoryChart({
     return { direction: "neutral", value: 0 };
   }, [chartData]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload || !payload.length) return null;
     const data = payload[0].payload;
     if (data.avgLevel === null) return null;

@@ -105,7 +105,6 @@ const WeeklyPlanTable = ({
                 Meal
               </th>
               {dates.slice(0, 5).map((date) => {
-                const dayData = weeklyPlan[date];
                 const dayStatus = getDayStatus(date);
                 const getHeaderStyles = () => {
                   if (dayStatus === "current") {

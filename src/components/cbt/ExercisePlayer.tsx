@@ -31,7 +31,6 @@ export function ExercisePlayer({
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
-  const totalSteps = exercise.instructions.length + 3; // intro + instructions + reflection + complete
 
   // Timer effect
   useEffect(() => {

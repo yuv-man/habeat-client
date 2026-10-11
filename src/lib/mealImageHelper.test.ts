@@ -43,6 +43,25 @@ describe("meal image matching", () => {
     expect(shapeOf("Salmon Coconut Curry Skillet")).not.toMatch(/beef|chicken|turkey/);
   });
 
+  it("does not swap one fish for another", () => {
+    // Tuna is red, salmon is orange — the substitution is visible at a glance.
+    expect(shapeOf("Tuna Garlic Pasta Salad")).toContain("salad");
+    expect(shapeOf("Tuna Garlic Pasta Salad")).not.toMatch(/salmon|cod|chicken|turkey|fruit/);
+    expect(shapeOf("Glazed Tuna Rice Bowl")).toContain("tuna");
+  });
+
+  it("never shows meat for a dish that names none", () => {
+    for (const name of ["Orange And Almonds", "Apple With Peanut Butter", "Banana"]) {
+      expect(shapeOf(name)).not.toMatch(
+        /chicken|beef|steak|pork|turkey|lamb|duck|salmon|tuna|fish|shrimp/,
+      );
+    }
+  });
+
+  it("falls back rather than guess when nothing matches", () => {
+    expect(resolveMealImageName("Orange And Almonds")).toBeNull();
+  });
+
   it("gives different dishes different pictures", () => {
     const names = [
       "Mustard Dill Tuna Tacos",

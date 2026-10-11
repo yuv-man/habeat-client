@@ -183,6 +183,10 @@ interface Protein {
    *  the exception — cheese and yogurt garnish everything, so they never count
    *  as somebody else's protein. */
   family: "seafood" | "poultry" | "meat" | "plant" | "egg" | "dairy";
+  /** "fish", "seafood": no particular animal, so any of the family will do.
+   *  Specific fish are not interchangeable — tuna is red, salmon is orange,
+   *  and a salmon fillet on a "tuna salad" reads as a mistake at a glance. */
+  generic?: boolean;
   nameTokens: string[];
   imageTokens: string[];
 }
@@ -196,11 +200,12 @@ const PROTEINS: Protein[] = [
     nameTokens: ["cod", "haddock", "seabass", "halibut", "tilapia"],
     imageTokens: ["cod"],
   },
-  { key: "fish", family: "seafood", nameTokens: ["fish"], imageTokens: ["fish"] },
+  { key: "fish", family: "seafood", generic: true, nameTokens: ["fish"], imageTokens: ["fish"] },
   { key: "shrimp", family: "seafood", nameTokens: ["shrimp", "shrimps", "prawn", "prawns"], imageTokens: ["shrimp"] },
   {
     key: "seafood",
     family: "seafood",
+    generic: true,
     nameTokens: ["seafood", "mussels", "squid", "calamari", "scallop", "scallops"],
     imageTokens: ["seafood", "mussels"],
   },
@@ -239,6 +244,24 @@ const PROTEINS: Protein[] = [
     nameTokens: ["yogurt", "yoghurt", "cottage", "cheese", "quark", "skyr"],
     imageTokens: ["yogurt", "cottage", "cheese"],
   },
+];
+
+/** Close enough to stand in for one another on a plate. */
+const interchangeable = (a: Protein, b: Protein): boolean =>
+  a.key === b.key ||
+  (a.family === b.family &&
+    (a.family !== "seafood" || !!a.generic || !!b.generic));
+
+/** Animal on the plate — what a dish that names no protein must never show. */
+const ANIMAL_FAMILIES = new Set<Protein["family"]>(["seafood", "poultry", "meat"]);
+
+/** Photos of sweet food. A savoury protein dish never wants one, even when
+ *  it's the only thing left in the right form — fruit salad for a tuna salad. */
+const SWEET_IMAGE_TOKENS = [
+  "fruit", "berry", "berries", "banana", "mango", "pineapple", "kiwi",
+  "strawberr", "honey", "syrup", "granola", "muesli", "chia", "smoothie",
+  "pancake", "waffle", "crepe", "muffin", "croissant", "porridge", "oatmeal",
+  "cereal", "parfait",
 ];
 
 /** Words that describe seasoning or method, never the dish. */
@@ -312,20 +335,27 @@ export const resolveMealImageName = (mealName: string): string | null => {
   const form = detectForm(tokens);
   const protein = detectProtein(tokens);
 
-  /** Shows a protein from a different family — the wrong animal on the plate. */
+  /** Shows a protein that can't stand in for this one — the wrong animal on
+   *  the plate. */
   const conflicts = (image: string): boolean =>
     !!protein &&
     PROTEINS.some(
       (p) =>
-        p.family !== protein.family &&
         p.family !== "dairy" &&
+        !interchangeable(p, protein) &&
         imageHas(image, p.imageTokens),
     );
 
   const sameFamily = (image: string): boolean =>
     !!protein &&
     PROTEINS.some(
-      (p) => p.family === protein.family && imageHas(image, p.imageTokens),
+      (p) => interchangeable(p, protein) && imageHas(image, p.imageTokens),
+    );
+
+  /** Shows meat or fish, for a dish that named neither. */
+  const showsAnimal = (image: string): boolean =>
+    PROTEINS.some(
+      (p) => ANIMAL_FAMILIES.has(p.family) && imageHas(image, p.imageTokens),
     );
 
   // A form match is a filter, not a score — this is the whole fix.
@@ -378,6 +408,12 @@ export const resolveMealImageName = (mealName: string): string | null => {
         // A tuna taco should not be served a turkey one.
         score -= 60;
       }
+      if (protein.family !== "dairy" && imageHas(image, SWEET_IMAGE_TOKENS)) {
+        score -= 30;
+      }
+    } else if (showsAnimal(image)) {
+      // "Orange and Almonds" names no meat; a chicken leg is never the answer.
+      score -= 60;
     }
 
     // Whenever the shortlist isn't already form-filtered, refuse photos that
@@ -405,7 +441,15 @@ export const resolveMealImageName = (mealName: string): string | null => {
     }
   }
 
-  return best?.image ?? null;
+  if (!best) return null;
+
+  // Outside a form-matched shortlist, a photo has to earn its place. With
+  // nothing positive to go on, the best-scoring photo is just the least wrong
+  // one — and a wrong photo is worse than the meal-type icon the callers fall
+  // back to. This is what was serving a steak for "Orange and Almonds".
+  if (!formFiltered && best.score <= 0) return null;
+
+  return best.image;
 };
 
 /**

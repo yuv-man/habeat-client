@@ -237,6 +237,60 @@ describe("ChangeMealModal free alternatives", () => {
     }
   });
 
+  it("leads with the two free routes and keeps the rest under More ways", () => {
+    renderModal();
+    fireEvent.click(screen.getByText("Swap"));
+    const buttons = screen.getAllByRole("button").map((b) => b.textContent ?? "");
+    const at = (label: string) => buttons.findIndex((t) => t.includes(label));
+    expect(at("My Meals")).toBeLessThan(at("AI Suggestion"));
+    expect(at("Something Quicker")).toBeLessThan(at("AI Suggestion"));
+    expect(screen.getByText("More ways")).toBeInTheDocument();
+    // Paid routes still say so for a free user.
+    expect(screen.getByText("AI Suggestion").closest("button")).toHaveTextContent("Plus");
+    expect(screen.getByText("Take Photo").closest("button")).toHaveTextContent("Premium");
+  });
+
+  it("asks why on the first screen, and sends the reason whichever way the user swaps", async () => {
+    // Without a reason two swaps drop the dish from future plans, so routes
+    // other than the free lists must be able to carry one too.
+    renderModal();
+    fireEvent.click(screen.getByText("Swap"));
+    fireEvent.click(screen.getByRole("button", { name: "Not in the mood" }));
+    fireEvent.click(screen.getByText("Manual Entry"));
+    fireEvent.change(screen.getByPlaceholderText("E.g., Chicken Salad"), { target: { value: "Leftover pizza" } });
+    fireEvent.click(screen.getByText("Save Meal"));
+
+    await waitFor(() => expect(api.changeMealInPlan).toHaveBeenCalled());
+    expect(api.changeMealInPlan.mock.calls[0][6]).toEqual({ via: "manual", reason: "not_in_mood" });
+  });
+
+  it("says a 'Don't like it' swap will change future plans, with a way to manage it", async () => {
+    renderModal();
+    fireEvent.click(screen.getByText("Swap"));
+    fireEvent.click(screen.getByRole("button", { name: "Don't like it" }));
+    fireEvent.click(screen.getByText("My Meals"));
+    fireEvent.click(await screen.findByText("Chicken And Rice"));
+
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+    const [, opts] = toastSuccess.mock.calls[0];
+    expect(opts.description).toBe("We'll suggest Beef Tomato Garlic Tacos less.");
+    expect(opts.cancel.label).toBe("Manage");
+    expect(opts.action.label).toBe("Undo");
+  });
+
+  it("doesn't claim to learn anything from other reasons", async () => {
+    renderModal();
+    fireEvent.click(screen.getByText("Swap"));
+    fireEvent.click(screen.getByRole("button", { name: "No time" }));
+    fireEvent.click(screen.getByText("My Meals"));
+    fireEvent.click(await screen.findByText("Chicken And Rice"));
+
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalled());
+    const [, opts] = toastSuccess.mock.calls[0];
+    expect(opts.description).toBeUndefined();
+    expect(opts.cancel).toBeUndefined();
+  });
+
   it("shows a way to add dishes when none suit the meal", async () => {
     api.getMealOptions.mockResolvedValue({ data: { options: [], current: null, latencyMs: 5 } });
     renderModal();

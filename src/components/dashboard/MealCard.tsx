@@ -326,13 +326,10 @@ const MealCard = ({
     }
   };
 
+  // ChangeMealModal confirms the swap itself, with Undo; a second toast here
+  // stacked on top of it.
   const handleMealChange = (newMeal: IMeal) => {
-    if (onMealChange) {
-      onMealChange(newMeal);
-      toast.success(`Meal changed to ${formatMealName(newMeal.name)}`, {
-        duration: 2000,
-      });
-    }
+    onMealChange?.(newMeal);
   };
 
   // Determine card styling based on status

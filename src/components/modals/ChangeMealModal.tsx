@@ -375,12 +375,18 @@ const ChangeMealModal = ({
       previous.name !== chosen.name &&
       !!previous.calories &&
       Array.isArray(previous.ingredients);
-    toast.success(
-      `Swapped to ${formatMealName(chosen.name)}`,
-      canUndo
-        ? { duration: 6000, action: { label: "Undo", onClick: () => void undoSwap(previous!) } }
-        : undefined,
-    );
+    // "Don't like it" changes future plans, so say so, and where to change it.
+    const learnedDislike = swapReason === "dont_like" && !quickMode && !!previous?.name;
+    toast.success(`Swapped to ${formatMealName(chosen.name)}`, {
+      ...(canUndo || learnedDislike ? { duration: 6000 } : {}),
+      ...(learnedDislike
+        ? {
+            description: `We'll suggest ${formatMealName(previous!.name)} less.`,
+            cancel: { label: "Manage", onClick: () => navigate("/my-meals#learned") },
+          }
+        : {}),
+      ...(canUndo ? { action: { label: "Undo", onClick: () => void undoSwap(previous!) } } : {}),
+    });
   };
 
   const handleSaveManual = async () => {
@@ -669,7 +675,7 @@ const ChangeMealModal = ({
 
   const savedCount = favoriteMealsData?.length ?? 0;
 
-  /** The four ways out of this modal, styled to the swap-meal design. The
+  /** The ways out of this modal, styled to the swap-meal design. The
    *  forest/sage hexes are written inline rather than added to the Tailwind
    *  theme: they are this screen's palette, not (yet) the app's. */
   const swapOptions = [
@@ -752,6 +758,40 @@ const ChangeMealModal = ({
       badge: { label: "Manual", tone: "bg-slate-100/80 text-slate-500" },
     },
   ];
+  const primaryOptions = swapOptions.filter((o) => o.id === "mine" || o.id === "quicker");
+  const moreOptions = swapOptions.filter((o) => o.id !== "mine" && o.id !== "quicker");
+
+  /** Asked once, at the top, whichever way the user goes on to swap. A swap
+   *  without a reason counts toward dropping the dish (two do), so the chips
+   *  can't live only in the two free lists. */
+  const reasonChips = (
+    <fieldset>
+      <legend className="text-xs font-medium text-gray-500 mb-2">
+        Why swap? <span className="font-normal">(optional)</span>
+      </legend>
+      <div className="flex flex-wrap gap-2">
+        {SWAP_REASON_CHIPS.map((chip) => {
+          const selected = swapReason === chip.value;
+          return (
+            <button
+              key={chip.value}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => setSwapReason(selected ? null : chip.value)}
+              disabled={isSaving}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                selected
+                  ? "bg-[#3F6652] text-white border-[#3F6652]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-[#86D2C1]"
+              }`}
+            >
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
 
   return (
     <>
@@ -860,12 +900,58 @@ const ChangeMealModal = ({
               </div>
             )}
 
-            {/* Option Selection - Full grid. Scrolls: six tiles don't fit a
-                phone-height sheet, and the last row used to be cut off. */}
+            {/* Option Selection. The two free routes lead; the rest sit in a
+                compact row below. Six equal tiles didn't fit a phone-height
+                sheet and gave the paid routes the same weight as the free
+                ones. Still scrolls, for short screens. */}
             {!activeTab && (!quickMode || showAllOptions) && (
               <div className="px-6 pb-6 overflow-y-auto max-h-[calc(90vh-9rem)]">
-                <div className="grid grid-cols-2 gap-3.5">
-                  {swapOptions.map((option) => {
+                {!quickMode && <div className="mb-4">{reasonChips}</div>}
+
+                <div className="space-y-2.5">
+                  {primaryOptions.map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => handleSelectTab(option.id)}
+                        disabled={isSaving}
+                        className={`group w-full text-left p-4 rounded-2xl border transition-all duration-200 flex items-center gap-3.5 focus:outline-none focus:ring-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${option.surface} ${option.ring}`}
+                      >
+                        <div
+                          className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform ${option.iconTile}`}
+                        >
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3
+                              className={`text-[15px] font-semibold text-slate-800 leading-tight transition-colors ${option.titleHover}`}
+                            >
+                              {option.label}
+                            </h3>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${option.badge.tone}`}
+                            >
+                              {option.badge.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-normal mt-1 leading-snug">
+                            {option.description}
+                          </p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[#3F6652] flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="mt-5 mb-2 text-[11px] font-semibold tracking-wider text-slate-400 uppercase">
+                  More ways
+                </p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {moreOptions.map((option) => {
                     const Icon = option.icon;
                     const feature =
                       tabFeatures[option.id as Exclude<TabType, null>];
@@ -879,51 +965,31 @@ const ChangeMealModal = ({
                         type="button"
                         onClick={() => handleSelectTab(option.id)}
                         disabled={isSaving}
-                        className={`group text-left p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between relative overflow-hidden focus:outline-none focus:ring-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${option.surface} ${option.ring}`}
+                        className={`group text-left px-3 py-2.5 rounded-xl border transition-all duration-200 flex items-center gap-2.5 focus:outline-none focus:ring-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${option.surface} ${option.ring}`}
                       >
-                        <div className="w-full">
-                          <div className="flex items-center justify-between mb-3">
-                            <div
-                              className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform ${option.iconTile}`}
-                            >
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            {/* The tier badge only claims to be a paywall when
-                                it actually is one — otherwise it just names
-                                the route, as the design does. */}
-                            <span
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide ${
-                                locked
-                                  ? "bg-amber-50 text-amber-800 border border-amber-100"
-                                  : option.badge.tone
-                              }`}
-                            >
-                              {locked && <Lock className="w-2.5 h-2.5" />}
-                              {locked
-                                ? feature === "photoRecognition"
-                                  ? "Premium"
-                                  : "Plus"
-                                : option.badge.label}
-                            </span>
-                          </div>
-
+                        <div
+                          className={`w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 ${option.iconTile}`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0">
                           <h3
-                            className={`text-sm font-semibold text-slate-800 leading-tight transition-colors ${option.titleHover}`}
+                            className={`text-xs font-semibold text-slate-700 leading-tight transition-colors ${option.titleHover}`}
                           >
                             {option.label}
                           </h3>
-                          <p className="text-xs text-slate-400 font-normal mt-1 leading-snug line-clamp-3">
-                            {locked
-                              ? `Upgrade to unlock ${option.label.toLowerCase()}.`
-                              : option.description}
-                          </p>
-                        </div>
-
-                        <div
-                          className={`mt-3.5 pt-2 border-t flex items-center text-[11px] font-medium group-hover:translate-x-0.5 transition-transform ${option.footer}`}
-                        >
-                          <span>{locked ? "See plans" : option.cta}</span>
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                          {/* The tier badge only claims to be a paywall when
+                              it actually is one. */}
+                          {locked ? (
+                            <span className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-semibold text-amber-800">
+                              <Lock className="w-2.5 h-2.5" />
+                              {feature === "photoRecognition" ? "Premium" : "Plus"}
+                            </span>
+                          ) : (
+                            <span className="mt-0.5 block text-[10px] text-slate-400 truncate">
+                              {option.cta}
+                            </span>
+                          )}
                         </div>
                       </button>
                     );
@@ -1376,32 +1442,7 @@ const ChangeMealModal = ({
                 {/* Free alternatives: own dishes and quicker options */}
                 {(activeTab === "mine" || activeTab === "quicker") && (
                   <div className="space-y-4">
-                    <fieldset>
-                      <legend className="text-xs font-medium text-gray-500 mb-2">
-                        Why swap? <span className="font-normal">(optional)</span>
-                      </legend>
-                      <div className="flex flex-wrap gap-2">
-                        {SWAP_REASON_CHIPS.map((chip) => {
-                          const selected = swapReason === chip.value;
-                          return (
-                            <button
-                              key={chip.value}
-                              type="button"
-                              aria-pressed={selected}
-                              onClick={() => setSwapReason(selected ? null : chip.value)}
-                              disabled={isSaving}
-                              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
-                                selected
-                                  ? "bg-[#3F6652] text-white border-[#3F6652]"
-                                  : "bg-white text-gray-600 border-gray-200 hover:border-[#86D2C1]"
-                              }`}
-                            >
-                              {chip.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </fieldset>
+                    {reasonChips}
 
                     {optionsLoading ? (
                       <div className="flex flex-col items-center justify-center py-8 gap-2">

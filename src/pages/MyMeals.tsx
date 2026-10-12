@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Pause, Play, Trash2, Heart, X } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -26,6 +26,7 @@ interface Suggestion {
 
 const MyMeals = () => {
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { token, loading } = useAuthStore();
   const { t } = useTranslation("myMeals");
 
@@ -68,6 +69,15 @@ const MyMeals = () => {
   useEffect(() => {
     if (token) refresh();
   }, [token, refresh]);
+
+  // "Manage" on the swap toast links here; the section renders only once the
+  // learned preferences arrive.
+  const hasLearned = learned.enjoyed.length > 0 || learned.avoided.length > 0;
+  useEffect(() => {
+    if (hash === "#learned" && hasLearned) {
+      document.getElementById("learned")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [hash, hasLearned]);
 
   const addDish = async () => {
     const name = newDish.trim();
@@ -233,8 +243,8 @@ const MyMeals = () => {
           </section>
         )}
 
-        {(learned.enjoyed.length > 0 || learned.avoided.length > 0) && (
-          <section className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3">
+        {hasLearned && (
+          <section id="learned" className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3 scroll-mt-20">
             <div>
               <h2 className="font-semibold text-gray-900 text-sm">{t("learned.title")}</h2>
               <p className="text-xs text-gray-500 mt-0.5">{t("learned.description")}</p>

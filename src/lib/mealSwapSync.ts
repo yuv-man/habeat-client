@@ -1,6 +1,15 @@
 import { useAuthStore } from "@/stores/authStore";
 import { useProgressStore } from "@/stores/progressStore";
-import type { IMeal, IPlan } from "@/types/interfaces";
+import type { IDailyProgress, IMeal, IPlan } from "@/types/interfaces";
+import { toLocalDateString } from "@/lib/dateUtils";
+
+/**
+ * The progress record's day as "YYYY-MM-DD". `date` is midnight as a full
+ * timestamp ("2026-10-10T21:00:00.000Z" for Oct 11 in Israel), so comparing it
+ * to a plan date never matched and no swap ever refreshed the Today screen.
+ */
+export const progressDateKey = (progress: Pick<IDailyProgress, "date" | "dateKey">): string =>
+  progress.dateKey || toLocalDateString(new Date(progress.date));
 
 /**
  * Bring every client cache back in line after a meal is swapped.
@@ -66,7 +75,7 @@ export async function syncStoresAfterMealSwap({
   // this is a read-back rather than a push — it also picks up the `done` reset
   // and the consumed-calorie adjustment that go with replacing a meal.
   const { todayProgress, fetchTodayProgress } = useProgressStore.getState();
-  if (user?._id && todayProgress?.date === date) {
+  if (user?._id && todayProgress && progressDateKey(todayProgress) === date) {
     await fetchTodayProgress(user._id, true);
   }
 }

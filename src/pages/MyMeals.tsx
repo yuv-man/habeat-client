@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Pause, Play, Trash2, Heart } from "lucide-react";
+import { Plus, Pause, Play, Trash2, Heart, X } from "lucide-react";
+import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
-import { userAPI, MyMealDish } from "@/services/api";
+import { userAPI, MyMealDish, LearnedPreferences } from "@/services/api";
 
 /**
  * My Meals — the food this person actually eats.
@@ -33,6 +34,8 @@ const MyMeals = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [newDish, setNewDish] = useState("");
   const [busy, setBusy] = useState(false);
+  // Inferred from what they ate and swapped — shown so they can correct it.
+  const [learned, setLearned] = useState<LearnedPreferences>({ enjoyed: [], avoided: [] });
 
   useEffect(() => {
     if (!loading && !token) navigate("/");
@@ -46,7 +49,21 @@ const MyMeals = () => {
     setDishes(mine);
     setSuggestions(proposed);
     setIsLoading(false);
+    // Secondary: the page is complete without it.
+    userAPI.getLearnedPreferences().then(setLearned).catch(() => {});
   }, []);
+
+  const forget = async (kind: "enjoyed" | "avoided", name: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      setLearned(await userAPI.forgetLearnedPreference(kind, name));
+    } catch {
+      toast.error(t("learned.failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (token) refresh();
@@ -213,6 +230,59 @@ const MyMeals = () => {
                 </div>
               ))}
             </div>
+          </section>
+        )}
+
+        {(learned.enjoyed.length > 0 || learned.avoided.length > 0) && (
+          <section className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3">
+            <div>
+              <h2 className="font-semibold text-gray-900 text-sm">{t("learned.title")}</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{t("learned.description")}</p>
+            </div>
+            {learned.enjoyed.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-gray-600 mb-2">{t("learned.enjoyed")}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {learned.enjoyed.map((e) => (
+                    <span key={e.name} className="inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-green-50 border border-green-100 rounded-full text-xs text-gray-800">
+                      {e.name}
+                      <button
+                        type="button"
+                        onClick={() => forget("enjoyed", e.name)}
+                        disabled={busy}
+                        aria-label={`${t("learned.removeEnjoyed")}: ${e.name}`}
+                        title={t("learned.removeEnjoyed")}
+                        className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {learned.avoided.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium text-gray-600 mb-2">{t("learned.avoided")}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {learned.avoided.map((name) => (
+                    <span key={name} className="inline-flex items-center gap-1 pl-3 pr-1 py-1 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-700">
+                      {name}
+                      <button
+                        type="button"
+                        onClick={() => forget("avoided", name)}
+                        disabled={busy}
+                        aria-label={`${t("learned.removeAvoided")}: ${name}`}
+                        title={t("learned.removeAvoided")}
+                        className="p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 

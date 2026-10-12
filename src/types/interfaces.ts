@@ -207,7 +207,10 @@ export interface IProgress {
 }
 
 export interface IDailyProgress {
+  /** Midnight of the day as a full timestamp — not comparable to a plan date. */
   date: string;
+  /** The day as "YYYY-MM-DD" in the user's calendar. Compare plan dates to this. */
+  dateKey?: string;
   planId: string;
   userId: string;
   water: {

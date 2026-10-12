@@ -1,17 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { IMeal } from "@/types/interfaces";
-import { useAuthStore } from "@/stores/authStore";
-import { useLanguageStore } from "@/stores/languageStore";
-import { usePatternStore } from "@/stores/patternStore";
-import { userAPI } from "@/services/api";
-import { toLocalDateString } from "@/lib/dateUtils";
-import { syncStoresAfterMealSwap } from "@/lib/mealSwapSync";
-import { formatMealName } from "@/lib/formatters";
+import ChangeMealModal from "@/components/modals/ChangeMealModal";
 import Fatigue from "@/assets/quick_food.webp";
-import { handleSubscriptionApiError } from "@/lib/subscriptionAccess";
 
 interface TiredButtonProps {
   meal: IMeal;
@@ -21,6 +10,14 @@ interface TiredButtonProps {
   className?: string;
 }
 
+/**
+ * "No time" / "I'm tired": quicker alternatives for this meal.
+ *
+ * It used to swap in an AI meal the moment it was tapped — no choice, and the
+ * user's own quick dishes were never considered. It now opens the quicker
+ * options (own dishes first) with "No time" already given as the reason; the
+ * user picks one, and can undo it.
+ */
 const TiredButton = ({
   meal,
   mealType,
@@ -28,130 +25,43 @@ const TiredButton = ({
   onMealChange,
   className = "",
 }: TiredButtonProps) => {
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const { user, plan } = useAuthStore();
-  const language = useLanguageStore((state) => state.language);
-  const recordPattern = usePatternStore((state) => state.record);
-
-  const handleTiredClick = async () => {
-    if (!user?._id || !plan?._id) {
-      toast.error("Please log in to use this feature");
-      return;
-    }
-
-    if (isLoading) return;
-
-    setIsLoading(true);
-
-    // Show optimistic toast immediately
-    const toastId = toast.loading("Finding a quick meal for you...", {
-      description: "Hang tight, this will only take a moment",
-    });
-
-    try {
-      const dateString = toLocalDateString(date);
-
-      const response = await userAPI.getRescueMeal(
-        user._id,
-        plan._id,
-        dateString,
-        mealType,
-        meal.calories,
-        meal.macros,
-        language
-      );
-
-      if (response.data && response.data?.rescueMeal) {
-        const newMeal = response.data.rescueMeal;
-
-        // Reaching for the rescue is itself the signal worth keeping — one swap
-        // is a busy evening, but a run of them says the plan is asking for more
-        // time than this user's week actually has.
-        recordPattern({
-          kind: "rescue-swap",
-          date: dateString,
-          mealType,
-        });
-
-        // The rescue endpoint rewrites the plan, the day's progress and (as of
-        // the shopping-list fix) the basket, but returns only the meal — so
-        // the plan half is patched locally while progress is read back.
-        await syncStoresAfterMealSwap({
-          date: dateString,
-          mealType,
-          newMeal,
-        });
-
-        // Trigger callback to update UI
-        onMealChange(newMeal);
-
-        // Success toast with meal info
-        toast.success(`Swapped to ${formatMealName(newMeal.name)}!`, {
-          id: toastId,
-          description: `${newMeal.prepTime} min prep • ${newMeal.calories} kcal`,
-          duration: 3000,
-        });
-      } else {
-        throw new Error("Failed to get rescue meal");
-      }
-    } catch (error: unknown) {
-      if (handleSubscriptionApiError(error, navigate)) {
-        toast.dismiss(toastId);
-        return;
-      }
-      console.error("Rescue meal error:", error);
-      toast.error("Couldn't find a quick meal", {
-        id: toastId,
-        description: "Please try again or swap manually",
-        duration: 4000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Don't show button for breakfast (morning)
   if (mealType === "breakfast") {
     return null;
   }
 
-  // Get button text based on meal type
-  const getButtonText = () => {
-    if (mealType === "lunch") return "No time";
-    return "I'm Tired";
-  };
-
-  const buttonText = getButtonText();
+  const buttonText = mealType === "lunch" ? "No time" : "I'm Tired";
   const ariaLabel =
     mealType === "lunch"
-      ? "No time - swap to quick meal"
-      : "I am tired - swap to quick meal";
+      ? "No time - show quicker options"
+      : "I am tired - show quicker options";
 
   return (
-    <button
-      onClick={handleTiredClick}
-      disabled={isLoading}
-      className={`
-        flex items-center gap-1.5 px-2.5 py-1.5
-        bg-amber-50 hover:bg-amber-100
-        border border-amber-200
-        text-amber-700 text-xs font-medium
-        rounded-lg transition-all duration-200
-        disabled:opacity-60 disabled:cursor-not-allowed
-        ${isLoading ? "animate-pulse" : ""}
-        ${className}
-      `}
-      aria-label={ariaLabel}
-      title="Swap to a quick 10-minute meal"
+    <ChangeMealModal
+      currentMeal={meal}
+      mealType={mealType}
+      date={date}
+      onMealChange={onMealChange}
+      initialTab="quicker"
+      initialReason="no_time"
     >
-      {isLoading ? (
-        <Loader2 className="w-8 h-8 animate-spin" />
-      ) : (
-        <img src={Fatigue} alt="Fatigue" className="w-8 h-8" />
-      )}
-      <span className="sm:inline">{isLoading ? "Finding..." : buttonText}</span>
-    </button>
+      <button
+        type="button"
+        className={`
+          flex items-center gap-1.5 px-2.5 py-1.5
+          bg-amber-50 hover:bg-amber-100
+          border border-amber-200
+          text-amber-700 text-xs font-medium
+          rounded-lg transition-all duration-200
+          ${className}
+        `}
+        aria-label={ariaLabel}
+        title="See quicker options"
+      >
+        <img src={Fatigue} alt="" className="w-8 h-8" />
+        <span className="sm:inline">{buttonText}</span>
+      </button>
+    </ChangeMealModal>
   );
 };
 

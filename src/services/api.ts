@@ -1303,13 +1303,29 @@ const getAIMealSuggestions = async (
 };
 
 // Change meal in plan (for weekly/daily view)
+/** Why a planned meal didn't work. Only "dont_like" is about the dish itself. */
+export type SwapReason = "no_time" | "missing_ingredients" | "not_in_mood" | "dont_like";
+
+/** Which feature made a swap. Mirrors SWAP_VIAS on the server. */
+export type SwapVia =
+  | "swap_modal" | "my_meals" | "quicker" | "favorites" | "manual" | "ai_suggestion"
+  | "photo" | "chat" | "undo";
+
+export interface SwapExtras {
+  reason?: SwapReason;
+  via?: SwapVia;
+  /** Putting back the meal a previous swap replaced. */
+  undo?: boolean;
+}
+
 const changeMealInPlan = async (
   userId: string,
   planId: string,
   date: string,
   mealType: string,
   newMeal: IMeal,
-  snackIndex?: number
+  snackIndex?: number,
+  extras: SwapExtras = {}
 ): Promise<ApiResponse<{ plan: IPlan }>> => {
   return withErrorHandling(async () => {
     const response = await userClient.put<ApiResponse<{ plan: IPlan }>>(
@@ -1319,6 +1335,9 @@ const changeMealInPlan = async (
         mealType,
         newMeal,
         ...(snackIndex !== undefined && { snackIndex }),
+        ...(extras.reason && { reason: extras.reason }),
+        ...(extras.via && { via: extras.via }),
+        ...(extras.undo && { undo: true }),
       },
       { headers: getAuthHeaders() }
     );
@@ -1326,33 +1345,61 @@ const changeMealInPlan = async (
   }, "Failed to change meal. Please try again.");
 };
 
-// Get quick rescue meal ("I'm Tired" button feature)
-const getRescueMeal = async (
+/** What Habeat has inferred from the user's choices, for them to check. */
+export interface LearnedPreferences {
+  enjoyed: Array<{ name: string; evidence: string }>;
+  avoided: string[];
+}
+
+const getLearnedPreferences = async (): Promise<LearnedPreferences> => {
+  const response = await userClient.get(`/users/me/learned-preferences`, { headers: getAuthHeaders() });
+  return response.data?.data ?? { enjoyed: [], avoided: [] };
+};
+
+const forgetLearnedPreference = async (kind: "enjoyed" | "avoided", name: string): Promise<LearnedPreferences> => {
+  const response = await userClient.post(
+    `/users/me/learned-preferences/forget`,
+    { kind, name },
+    { headers: getAuthHeaders() },
+  );
+  return response.data?.data ?? { enjoyed: [], avoided: [] };
+};
+
+export type MealOptionsMode = "mine" | "quicker";
+
+/** An alternative for a planned meal. Nothing changes until it is applied
+ *  with changeMealInPlan. */
+export interface MealOption {
+  meal: IMeal;
+  source: "own" | "library" | "ai";
+  /** One line on why it's offered, e.g. "Your dish · 25 min". */
+  reason: string;
+}
+
+const getMealOptions = async (
   userId: string,
   planId: string,
   date: string,
-  mealType: "breakfast" | "lunch" | "dinner",
-  targetCalories: number,
-  targetMacros?: { protein: number; carbs: number; fat: number },
-  language?: string
-): Promise<ApiResponse<{ rescueMeal: IMeal; originalMealName: string }>> => {
+  mealType: string,
+  mode: MealOptionsMode,
+  snackIndex?: number
+): Promise<ApiResponse<{
+  options: MealOption[];
+  current: { name: string; prepTime?: number } | null;
+  latencyMs: number;
+  /** Send back with meal_help_resolved so request, offer and outcome join up. */
+  requestId?: string;
+}>> => {
   return withErrorHandling(async () => {
-    const response = await mealGenerationClient.post<
-      ApiResponse<{ rescueMeal: IMeal; originalMealName: string }>
-    >(
-      `/generate/rescue-meal/${userId}/${planId}`,
-      {
-        date,
-        mealType,
-        targetCalories,
-        targetMacros,
-        language,
-      },
-      { headers: getAuthHeaders() }
-    );
+    // The generation client: "quicker" may wait on the model.
+    const response = await mealGenerationClient.get(`/generate/meal-options/${userId}/${planId}`, {
+      params: { date, mealType, mode, ...(snackIndex !== undefined && { snackIndex }) },
+      headers: getAuthHeaders(),
+    });
     return response.data;
-  }, "Failed to get rescue meal. Please try again.");
+  }, "Couldn't load alternatives. Please try again.");
 };
+
 
 // Add snack to plan
 const addSnack = async (
@@ -2714,7 +2761,9 @@ export const userAPI = {
   // Meal Changes
   getAIMealSuggestions,
   changeMealInPlan,
-  getRescueMeal,
+  getMealOptions,
+  getLearnedPreferences,
+  forgetLearnedPreference,
   addSnack,
   deleteSnack,
   // Chat

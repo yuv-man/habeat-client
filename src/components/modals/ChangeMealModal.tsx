@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,19 +12,30 @@ import {
   Brain,
   Lock,
   ChevronRight,
+  ChefHat,
+  Timer,
 } from "lucide-react";
 import { IMeal, MealSource } from "@/types/interfaces";
 import { useAuthStore } from "@/stores/authStore";
 import { useLanguageStore } from "@/stores/languageStore";
 import { usePatternStore, MealSlot } from "@/stores/patternStore";
 import MealSourcePicker from "@/components/meals/MealSourcePicker";
-import { userAPI, MealCriteria, cbtAPI, MoodMealRecommendations } from "@/services/api";
+import {
+  userAPI,
+  MealCriteria,
+  cbtAPI,
+  MoodMealRecommendations,
+  type MealOption,
+  type SwapReason,
+  type SwapVia,
+} from "@/services/api";
 import { useTodayMoods } from "@/stores/cbtStore";
 import { getMealImageVite } from "@/lib/mealImageHelper";
 import { toLocalDateString } from "@/lib/dateUtils";
 import { formatMealName } from "@/lib/formatters";
 import { toast } from "sonner";
 import { syncStoresAfterMealSwap } from "@/lib/mealSwapSync";
+import { trackEvent } from "@/lib/analytics";
 import MealLoader from "@/components/helper/MealLoader";
 import PhotoMealTab from "@/components/meal/PhotoMealTab";
 import type { FeatureKey } from "@/lib/subscription";
@@ -45,9 +56,22 @@ interface ChangeMealModalProps {
   snackIndex?: number; // Index of the snack being changed (for snacks only)
   onMealChange: (meal: IMeal) => void;
   quickMode?: boolean;
+  /** Open straight on a list of alternatives instead of the option grid. */
+  initialTab?: "mine" | "quicker";
+  /** Pre-select why the meal is being swapped ("I'm tired" means no time). */
+  initialReason?: SwapReason;
 }
 
-type TabType = "manual" | "ai" | "favorites" | "photo" | null;
+type TabType = "mine" | "quicker" | "manual" | "ai" | "favorites" | "photo" | null;
+
+/** Optional, one tap, never required. Only "Don't like it" says anything about
+ *  the dish; the others keep it in future plans. */
+const SWAP_REASON_CHIPS: { value: SwapReason; label: string }[] = [
+  { value: "no_time", label: "No time" },
+  { value: "missing_ingredients", label: "Missing ingredients" },
+  { value: "not_in_mood", label: "Not in the mood" },
+  { value: "dont_like", label: "Don't like it" },
+];
 
 const ChangeMealModal = ({
   children,
@@ -57,6 +81,8 @@ const ChangeMealModal = ({
   snackIndex,
   onMealChange,
   quickMode = false,
+  initialTab,
+  initialReason,
 }: ChangeMealModalProps) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -64,6 +90,35 @@ const ChangeMealModal = ({
   const [showAllOptions, setShowAllOptions] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Free alternatives ("My meals", "Something quicker") and why the user is
+  // swapping. Options are fetched, shown, and only applied when picked.
+  const [swapReason, setSwapReason] = useState<SwapReason | null>(null);
+  const [options, setOptions] = useState<MealOption[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [optionsError, setOptionsError] = useState<string | null>(null);
+  // An offer the user has seen and not yet answered — reported once, as
+  // accepted, adapted (swapped some other way) or dismissed.
+  const helpRequest = useRef<{ requestId?: string; entry: "mine" | "quicker"; offered: number } | null>(null);
+  // Read through a ref so the reporter is stable and sees the latest answer.
+  const swapReasonRef = useRef(swapReason);
+  swapReasonRef.current = swapReason;
+  const resolveHelp = useCallback(
+    (outcome: "accepted" | "adapted" | "dismissed", extra: Record<string, unknown> = {}) => {
+      const pending = helpRequest.current;
+      if (!pending) return;
+      helpRequest.current = null;
+      trackEvent("meal_help_resolved", {
+        request_id: pending.requestId ?? null,
+        entry: pending.entry,
+        offered: pending.offered,
+        outcome,
+        reason: swapReasonRef.current ?? null,
+        ...extra,
+      });
+    },
+    [],
+  );
 
   // Manual form state
   const [manualMeal, setManualMeal] = useState({
@@ -176,7 +231,10 @@ const ChangeMealModal = ({
     setIsOpen(true);
     setError(null);
     setAiError(null);
-    setActiveTab(null as any);
+    setActiveTab(initialTab ?? null);
+    setSwapReason(initialReason ?? null);
+    setOptions([]);
+    setOptionsError(null);
     setShowAllOptions(false);
     setMealSource(null);
     if (currentMeal) {
@@ -192,6 +250,7 @@ const ChangeMealModal = ({
   };
 
   const handleClose = () => {
+    resolveHelp("dismissed");
     setIsOpen(false);
     setActiveTab(null as any);
     setAiRules("");
@@ -201,6 +260,9 @@ const ChangeMealModal = ({
     setAiError(null);
     setNutritionLookupError(null);
     setMealSource(null);
+    setSwapReason(null);
+    setOptions([]);
+    setOptionsError(null);
   };
 
   /** Stamps the answer onto the meal. No answer means no field — an unanswered
@@ -223,7 +285,7 @@ const ChangeMealModal = ({
   };
 
   // API call to change the meal in the plan
-  const changeMealAPI = async (newMeal: IMeal) => {
+  const changeMealAPI = async (newMeal: IMeal, via: SwapVia) => {
     if (!user?._id || !plan?._id) {
       throw new Error("User not authenticated or no plan found");
     }
@@ -238,6 +300,8 @@ const ChangeMealModal = ({
         mealType,
         newMeal,
         mealType === "snacks" ? snackIndex : undefined,
+        // Logging what was actually eaten isn't a verdict on the planned meal.
+        { via, ...(swapReason && !quickMode ? { reason: swapReason } : {}) },
       );
 
       // The swap writes the plan, the day's progress and the shopping list on
@@ -255,6 +319,68 @@ const ChangeMealModal = ({
       console.error("Failed to change meal via API:", error);
       throw error;
     }
+  };
+
+  /** Put back the meal a swap replaced, id and all, and take back what the
+   *  swap taught the profile (the server does that for `undo`). */
+  const undoSwap = async (previous: IMeal) => {
+    if (!user?._id || !plan?._id) return;
+    const dateString = toLocalDateString(date);
+    const index = mealType === "snacks" ? snackIndex : undefined;
+    try {
+      const response = await userAPI.changeMealInPlan(
+        user._id,
+        plan._id,
+        dateString,
+        mealType,
+        previous,
+        index,
+        { undo: true, via: "undo" },
+      );
+      await syncStoresAfterMealSwap({
+        date: dateString,
+        mealType,
+        snackIndex: index,
+        newMeal: previous,
+        updatedPlan: response?.data?.plan ?? null,
+      });
+      onMealChange(previous);
+      toast.success(`Back to ${formatMealName(previous.name)}`);
+    } catch {
+      toast.error("Couldn't undo the swap. Please try again.");
+    }
+  };
+
+  /**
+   * The meal being replaced, complete. On Today the card's meal comes from the
+   * day's progress snapshot, which has no ingredients — and a swap without
+   * ingredients is treated as "generate this for me". The plan has the whole
+   * meal, so undo restores that. (`plan` here is this render's, i.e. pre-swap.)
+   */
+  const mealBeingReplaced = (): IMeal | undefined => {
+    if (!currentMeal) return undefined;
+    const day = plan?.weeklyPlan?.[toLocalDateString(date)];
+    const fromPlan: IMeal | undefined =
+      mealType === "snacks" ? day?.meals?.snacks?.[snackIndex ?? 0] : day?.meals?.[mealType as "breakfast"];
+    return fromPlan && fromPlan.name === currentMeal.name ? { ...currentMeal, ...fromPlan } : currentMeal;
+  };
+
+  /** Confirms a swap, with Undo whenever there is a planned meal to go back to. */
+  const announceSwap = (chosen: IMeal, via?: SwapVia) => {
+    // Saw our options, then swapped another way: that's still help, adapted.
+    if (via) resolveHelp("adapted", { chosen_via: via });
+    const previous = mealBeingReplaced();
+    const canUndo =
+      !!previous &&
+      previous.name !== chosen.name &&
+      !!previous.calories &&
+      Array.isArray(previous.ingredients);
+    toast.success(
+      `Swapped to ${formatMealName(chosen.name)}`,
+      canUndo
+        ? { duration: 6000, action: { label: "Undo", onClick: () => void undoSwap(previous!) } }
+        : undefined,
+    );
   };
 
   const handleSaveManual = async () => {
@@ -277,10 +403,10 @@ const ChangeMealModal = ({
     setError(null);
 
     try {
-      await changeMealAPI(newMeal);
+      await changeMealAPI(newMeal, "manual");
       recordSource();
       onMealChange(newMeal);
-      toast.success("Meal changed successfully!");
+      announceSwap(newMeal, "manual");
       handleClose();
     } catch (err: any) {
       setError(err.message || "Failed to change meal. Please try again.");
@@ -423,10 +549,10 @@ const ChangeMealModal = ({
     const chosen = withSource(meal);
 
     try {
-      await changeMealAPI(chosen);
+      await changeMealAPI(chosen, "favorites");
       recordSource();
       onMealChange(chosen);
-      toast.success("Meal changed successfully!");
+      announceSwap(chosen, "favorites");
       handleClose();
     } catch (err: any) {
       setError(err.message || "Failed to change meal. Please try again.");
@@ -443,10 +569,10 @@ const ChangeMealModal = ({
     const chosen = withSource(meal);
 
     try {
-      await changeMealAPI(chosen);
+      await changeMealAPI(chosen, "ai_suggestion");
       recordSource();
       onMealChange(chosen);
-      toast.success("Meal changed successfully!");
+      announceSwap(chosen, "ai_suggestion");
       handleClose();
     } catch (err: any) {
       setError(err.message || "Failed to change meal. Please try again.");
@@ -463,10 +589,10 @@ const ChangeMealModal = ({
     const photoMeal = withSource(meal);
 
     try {
-      await changeMealAPI(photoMeal);
+      await changeMealAPI(photoMeal, "photo");
       recordSource();
       onMealChange(photoMeal);
-      toast.success("Meal changed successfully!");
+      announceSwap(photoMeal, "photo");
       handleClose();
     } catch (err: any) {
       setError(err.message || "Failed to change meal. Please try again.");
@@ -476,12 +602,103 @@ const ChangeMealModal = ({
     }
   };
 
+  const handleSelectOption = async (option: MealOption, rank: number) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      await changeMealAPI(option.meal, activeTab === "mine" ? "my_meals" : "quicker");
+      resolveHelp("accepted", { chosen_source: option.source, option_rank: rank });
+      // Reaching for something quicker is itself a signal: one is a busy
+      // evening, a run of them says the plan asks for more time than this
+      // user's week has (patterns.ts).
+      if (activeTab === "quicker" && mealType !== "snacks") {
+        recordPattern({ kind: "rescue-swap", date: toLocalDateString(date), mealType: mealType as MealSlot });
+      }
+      onMealChange(option.meal);
+      announceSwap(option.meal);
+      handleClose();
+    } catch (err: any) {
+      setError(err.message || "Failed to change meal. Please try again.");
+      toast.error("Failed to change meal");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Load the alternatives when one of the free lists is opened.
+  useEffect(() => {
+    if (!isOpen || (activeTab !== "mine" && activeTab !== "quicker")) return;
+    if (!user?._id || !plan?._id) return;
+    let cancelled = false;
+    setOptionsLoading(true);
+    setOptionsError(null);
+    setOptions([]);
+    userAPI
+      .getMealOptions(
+        user._id,
+        plan._id,
+        toLocalDateString(date),
+        mealType,
+        activeTab,
+        mealType === "snacks" ? snackIndex : undefined,
+      )
+      .then((response) => {
+        if (cancelled) return;
+        const offered = response.data?.options ?? [];
+        setOptions(offered);
+        // A second list replaces the first offer; the first was passed over.
+        resolveHelp("dismissed");
+        helpRequest.current = {
+          requestId: response.data?.requestId,
+          entry: activeTab,
+          offered: offered.length,
+        };
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setOptionsError(err instanceof Error && err.message ? err.message : "Couldn't load alternatives.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setOptionsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, activeTab, user?._id, plan?._id, date, mealType, snackIndex, resolveHelp]);
+
   const savedCount = favoriteMealsData?.length ?? 0;
 
   /** The four ways out of this modal, styled to the swap-meal design. The
    *  forest/sage hexes are written inline rather than added to the Tailwind
    *  theme: they are this screen's palette, not (yet) the app's. */
   const swapOptions = [
+    {
+      id: "mine" as TabType,
+      label: "My Meals",
+      icon: ChefHat,
+      description: "Dishes you already cook that suit this meal.",
+      cta: "Pick one of yours",
+      surface: "bg-[#F3FAF6] border-[#CFE9DC] hover:border-[#86D2C1]",
+      iconTile: "bg-white text-[#3F6652] border-[#CFE9DC]",
+      titleHover: "group-hover:text-[#3F6652]",
+      footer: "border-[#CFE9DC] text-[#3F6652]",
+      ring: "focus:ring-[#3F6652]/20",
+      badge: { label: "Yours", tone: "bg-[#3F6652]/10 text-[#3F6652]" },
+    },
+    {
+      id: "quicker" as TabType,
+      label: "Something Quicker",
+      icon: Timer,
+      description: "Faster options, your own dishes first.",
+      cta: "Show quick options",
+      surface: "bg-[#F3FAF6] border-[#CFE9DC] hover:border-[#86D2C1]",
+      iconTile: "bg-white text-[#3F6652] border-[#CFE9DC]",
+      titleHover: "group-hover:text-[#3F6652]",
+      footer: "border-[#CFE9DC] text-[#3F6652]",
+      ring: "focus:ring-[#3F6652]/20",
+      badge: { label: "Fast", tone: "bg-[#3F6652]/10 text-[#3F6652]" },
+    },
     {
       id: "ai" as TabType,
       label: "AI Suggestion",
@@ -643,9 +860,10 @@ const ChangeMealModal = ({
               </div>
             )}
 
-            {/* Option Selection - Full 4-tab grid */}
+            {/* Option Selection - Full grid. Scrolls: six tiles don't fit a
+                phone-height sheet, and the last row used to be cut off. */}
             {!activeTab && (!quickMode || showAllOptions) && (
-              <div className="px-6 pb-6">
+              <div className="px-6 pb-6 overflow-y-auto max-h-[calc(90vh-9rem)]">
                 <div className="grid grid-cols-2 gap-3.5">
                   {swapOptions.map((option) => {
                     const Icon = option.icon;
@@ -1150,6 +1368,98 @@ const ChangeMealModal = ({
                             </div>
                           </button>
                         ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Free alternatives: own dishes and quicker options */}
+                {(activeTab === "mine" || activeTab === "quicker") && (
+                  <div className="space-y-4">
+                    <fieldset>
+                      <legend className="text-xs font-medium text-gray-500 mb-2">
+                        Why swap? <span className="font-normal">(optional)</span>
+                      </legend>
+                      <div className="flex flex-wrap gap-2">
+                        {SWAP_REASON_CHIPS.map((chip) => {
+                          const selected = swapReason === chip.value;
+                          return (
+                            <button
+                              key={chip.value}
+                              type="button"
+                              aria-pressed={selected}
+                              onClick={() => setSwapReason(selected ? null : chip.value)}
+                              disabled={isSaving}
+                              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
+                                selected
+                                  ? "bg-[#3F6652] text-white border-[#3F6652]"
+                                  : "bg-white text-gray-600 border-gray-200 hover:border-[#86D2C1]"
+                              }`}
+                            >
+                              {chip.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+
+                    {optionsLoading ? (
+                      <div className="flex flex-col items-center justify-center py-8 gap-2">
+                        <MealLoader size="small" />
+                        <p className="text-xs text-gray-400">Finding options…</p>
+                      </div>
+                    ) : optionsError ? (
+                      <p className="text-sm text-red-600 py-4">{optionsError}</p>
+                    ) : options.length > 0 ? (
+                      <div className="space-y-2">
+                        {options.map((option, rank) => (
+                          <button
+                            key={`${option.source}-${option.meal.name}`}
+                            type="button"
+                            onClick={() => handleSelectOption(option, rank)}
+                            disabled={isSaving}
+                            className="w-full flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:border-emerald-400 hover:bg-emerald-50 transition text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <img
+                              src={getMealImageVite(option.meal.nameEn || option.meal.name)}
+                              alt=""
+                              className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-gray-900 break-words">
+                                {formatMealName(option.meal.name)}
+                              </div>
+                              <div className="text-xs text-[#3F6652] mt-0.5">{option.reason}</div>
+                              {showMacros && (
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  {option.meal.calories} cal • {option.meal.macros?.protein || 0}g protein
+                                </div>
+                              )}
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <ChefHat className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">
+                          {activeTab === "mine"
+                            ? "None of your dishes suit this meal yet."
+                            : "No quicker options right now."}
+                        </p>
+                        {activeTab === "mine" && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleClose();
+                              navigate("/my-meals");
+                            }}
+                            className="text-sm font-medium text-[#3F6652] mt-2 underline-offset-2 hover:underline"
+                          >
+                            Add the dishes you cook
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

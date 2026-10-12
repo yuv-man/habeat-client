@@ -15,6 +15,15 @@
   "askSource": "Do you make {{dish}} at home?",
   "yes": "Yes, add it",
   "no": "No thanks",
+  "learned": {
+    "title": "What we've learned from your choices",
+    "description": "Your plans and suggestions use this. Tap ✕ if we got it wrong.",
+    "enjoyed": "You keep coming back to",
+    "avoided": "We're keeping out of your plans",
+    "removeEnjoyed": "Not really a favourite",
+    "removeAvoided": "Put it back in my plans",
+    "failed": "Couldn't update that. Please try again."
+  },
   "inYourPlans": "In your plans ({{count}})",
   "resting": "Resting",
   "empty": "Nothing here yet. Add the meals you cook and your plans will follow them.",

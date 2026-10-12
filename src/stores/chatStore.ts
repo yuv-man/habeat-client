@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { userAPI } from "@/services/api";
 import { useAuthStore } from "./authStore";
+import { useProgressStore } from "./progressStore";
 import { asArray } from "@/lib/safe";
 
 export interface ChatProposedAction {
@@ -221,6 +222,10 @@ export const useChatStore = create<ChatStore>()((set) => ({
         if (response.data?.plan) {
           useAuthStore.getState().setPlan(response.data.plan);
         }
+        // An accepted action rewrites the day's progress on the server too
+        // (swap, snack, workout). Without this read-back the Today screen kept
+        // showing the meal the user had just replaced.
+        await useProgressStore.getState().fetchTodayProgress(userId, true);
       } else {
         set({ isLoading: false });
       }

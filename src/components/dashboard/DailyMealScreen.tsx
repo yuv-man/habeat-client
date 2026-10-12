@@ -549,6 +549,75 @@ const DailyMealScreen = () => {
               )}
             </div>
 
+            {/* ── Today's Meals ────────────────────────────────────────── */}
+            {/* First, because the next meal is what people open the app to
+                decide. Mood, challenges and nutrients follow; on a phone
+                they used to push the meals below the fold. */}
+            <section>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold text-gray-500">Today's Meals</h3>
+                <button
+                  onClick={() => navigate("/weekly-overview")}
+                  className="flex items-center gap-1 text-xs font-semibold text-habeat transition-opacity hover:opacity-70"
+                >
+                  See All <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {/* Fasting window badge — shown once at the top when any main meal is skipped */}
+                {user?.fastingHours && user?.fastingStartTime && !activeSlots.has("breakfast") && (() => {
+                  const [fh, fm] = user.fastingStartTime.split(":").map(Number);
+                  const eatStartMin = ((fh ?? 0) * 60 + (fm ?? 0) + user.fastingHours * 60) % 1440;
+                  const eatH = Math.floor(eatStartMin / 60).toString().padStart(2, "0");
+                  const eatM = (eatStartMin % 60).toString().padStart(2, "0");
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
+                      <span className="text-base">⏳</span>
+                      <span>
+                        Fasting until <strong>{eatH}:{eatM}</strong> · {user.fastingHours}:{24 - user.fastingHours} schedule
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {(["breakfast", "lunch", "dinner"] as const).map((slot) => {
+                  const meal = dailyProgress.meals[slot];
+                  if (!meal) return null;
+                  // Hide meals outside the fasting window
+                  if (!activeSlots.has(slot)) return null;
+                  return (
+                    <MealCard
+                      key={slot}
+                      meal={meal}
+                      mealType={slot}
+                      mealTime={getMealTime(slot)}
+                      date={dailyProgress.date}
+                      mealStatus={getMealStatus(meal, slot)}
+                      onMealMissed={handleMealMissed}
+                      // The swap already refreshed the progress store, and
+                      // this screen mirrors it — nothing to do here.
+                      onMealChange={() => {}}
+                    />
+                  );
+                })}
+
+                {activeSlots.has("snacks") && dailyProgress.meals.snacks?.length > 0 &&
+                  dailyProgress.meals.snacks.map((snack, index) => (
+                    <MealCard
+                      key={snack._id || index}
+                      meal={snack}
+                      mealType="snacks"
+                      mealTime={snack.time ? formatTime12Hour(snack.time) : getMealTime("snacks")}
+                      date={dailyProgress.date}
+                      snackIndex={index}
+                      isSnack
+                      promptMoodCheck={promptMoodCheckOnSnackIndex === index}
+                      onMealChange={() => {}}
+                    />
+                  ))}
+              </div>
+            </section>
+
             {/* ── Mood Check-in ────────────────────────────────────────── */}
             <MoodCheckInCard
               firstName={user?.name?.split(" ")[0]}
@@ -697,72 +766,6 @@ const DailyMealScreen = () => {
                 </section>
               );
             })()}
-
-            {/* ── Today's Meals ────────────────────────────────────────── */}
-            <section>
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-semibold text-gray-500">Today's Meals</h3>
-                <button
-                  onClick={() => navigate("/weekly-overview")}
-                  className="flex items-center gap-1 text-xs font-semibold text-habeat transition-opacity hover:opacity-70"
-                >
-                  See All <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <div className="space-y-3">
-                {/* Fasting window badge — shown once at the top when any main meal is skipped */}
-                {user?.fastingHours && user?.fastingStartTime && !activeSlots.has("breakfast") && (() => {
-                  const [fh, fm] = user.fastingStartTime.split(":").map(Number);
-                  const eatStartMin = ((fh ?? 0) * 60 + (fm ?? 0) + user.fastingHours * 60) % 1440;
-                  const eatH = Math.floor(eatStartMin / 60).toString().padStart(2, "0");
-                  const eatM = (eatStartMin % 60).toString().padStart(2, "0");
-                  return (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700">
-                      <span className="text-base">⏳</span>
-                      <span>
-                        Fasting until <strong>{eatH}:{eatM}</strong> · {user.fastingHours}:{24 - user.fastingHours} schedule
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {(["breakfast", "lunch", "dinner"] as const).map((slot) => {
-                  const meal = dailyProgress.meals[slot];
-                  if (!meal) return null;
-                  // Hide meals outside the fasting window
-                  if (!activeSlots.has(slot)) return null;
-                  return (
-                    <MealCard
-                      key={slot}
-                      meal={meal}
-                      mealType={slot}
-                      mealTime={getMealTime(slot)}
-                      date={dailyProgress.date}
-                      mealStatus={getMealStatus(meal, slot)}
-                      onMealMissed={handleMealMissed}
-                      // The swap already refreshed the progress store, and
-                      // this screen mirrors it — nothing to do here.
-                      onMealChange={() => {}}
-                    />
-                  );
-                })}
-
-                {activeSlots.has("snacks") && dailyProgress.meals.snacks?.length > 0 &&
-                  dailyProgress.meals.snacks.map((snack, index) => (
-                    <MealCard
-                      key={snack._id || index}
-                      meal={snack}
-                      mealType="snacks"
-                      mealTime={snack.time ? formatTime12Hour(snack.time) : getMealTime("snacks")}
-                      date={dailyProgress.date}
-                      snackIndex={index}
-                      isSnack
-                      promptMoodCheck={promptMoodCheckOnSnackIndex === index}
-                      onMealChange={() => {}}
-                    />
-                  ))}
-              </div>
-            </section>
 
             {/* ── Active Beats (Workouts) ──────────────────────────────── */}
             <section>

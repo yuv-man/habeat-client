@@ -452,6 +452,36 @@ export const resolveMealImageName = (mealName: string): string | null => {
   return best.image;
 };
 
+const FILLER_WORDS = new Set(["and", "with", "on", "in", "the", "a", "of", "homemade"]);
+const wordStem = (w: string) => w.replace(/(es|s)$/, "");
+
+/** Every meaningful word of the name appears in the image's name. Exported
+ *  for tests. */
+export const findMealImageKeyIsExact = (mealName: string, imageKey: string): boolean => {
+  const imageWords = new Set(imageKey.split("-").map(wordStem));
+  return mealName
+    .toLowerCase()
+    .replace(/\(.*?\)/g, "")
+    .split(/[^a-z]+/)
+    .filter((w) => w && !FILLER_WORDS.has(w))
+    .every((w) => imageWords.has(wordStem(w)));
+};
+
+/**
+ * The bundled photo for a meal name, or undefined when nothing fits — for
+ * callers with a better fallback than the placeholder.
+ *
+ * `exact` accepts only an image whose name contains every word of the meal's
+ * (plurals aside). The plain match is loose on purpose for planned meals, but
+ * on someone's own dish a near miss is a wrong picture: "Rice and beans"
+ * would show baked cod.
+ */
+export const findMealImage = (mealName: string, opts: { exact?: boolean } = {}): string | undefined => {
+  const matched = mealName ? resolveMealImageName(mealName) : null;
+  if (!matched || (opts.exact && !findMealImageKeyIsExact(mealName, matched))) return undefined;
+  return imageUrlByKey.get(matched) || undefined;
+};
+
 /**
  * Resolve a meal name to a bundled photo URL.
  *

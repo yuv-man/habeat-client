@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { KYCData, CustomInputs, commonDishes } from "./types";
 import { MAX_TERM_LENGTH } from "@/lib/termInput";
 import KycLayout from "./KycLayout";
+import DishPicture from "@/components/meals/DishPicture";
 
 /** Matches the server's dishSlug (habeat-server/src/repertoire/dish-images.ts). */
 const dishSlug = (name: string): string =>
@@ -83,16 +84,11 @@ export default function MyDishesStep({
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                 }`}
               >
-                {/* Hidden if the picture is missing, so a chip never shows a
-                    broken image while the set is being filled in. */}
-                <img
-                  src={`/images/dishes/${dishSlug(item)}.webp`}
-                  alt=""
-                  loading="lazy"
+                {/* Nothing shows if no picture loads, so a chip is never broken. */}
+                <DishPicture
+                  name={item}
+                  imageUrl={`/images/dishes/${dishSlug(item)}.webp`}
                   className="w-7 h-7 rounded-full object-cover bg-white/40"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
                 />
                 {item}
               </button>

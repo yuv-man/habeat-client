@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/authStore";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MealLoader from "@/components/helper/MealLoader";
+import DishPicture from "@/components/meals/DishPicture";
 import { userAPI, MyMealDish, LearnedPreferences } from "@/services/api";
 
 /**
@@ -125,13 +126,13 @@ const MyMeals = () => {
         className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
       >
         <div className="h-28 bg-gray-50 flex items-center justify-center overflow-hidden">
-          {dish.imageUrl ? (
-            <img src={dish.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-          ) : (
-            <span className="text-4xl" aria-hidden="true">
-              {dish.icon ?? "🍽️"}
-            </span>
-          )}
+          <DishPicture
+            name={dish.name}
+            imageUrl={dish.imageUrl}
+            icon={dish.icon ?? "🍽️"}
+            className="w-full h-full object-cover"
+            iconClassName="text-4xl"
+          />
         </div>
 
         <div className="p-3 flex-1 flex flex-col gap-1">

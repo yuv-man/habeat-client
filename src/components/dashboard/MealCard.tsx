@@ -348,7 +348,9 @@ const MealCard = ({
     : isPast
       ? "bg-gray-50 border border-gray-200 rounded-lg p-3 shadow-sm opacity-75"
       : isCurrent
-        ? "bg-white border-2 border-green-200 rounded-lg pl-2 p-5 shadow-md"
+        ? // The meal people open the app to decide on: tinted, ringed and
+          // labelled so it reads as "this one" without moving anything.
+          "bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-300 ring-4 ring-emerald-100/70 rounded-xl p-5 shadow-md"
         : "bg-white border border-gray-200 rounded-lg p-4 shadow-sm opacity-90";
 
   if (isSnack) {
@@ -508,12 +510,18 @@ const MealCard = ({
           src={getMealImageVite(meal.nameEn || meal.name, meal.icon)}
           alt={displayName}
           className={`rounded-lg object-cover flex-shrink-0 ${
-            isPast ? "w-16 h-16" : isCurrent ? "w-20 h-20" : "w-[72px] h-[72px]"
+            isPast ? "w-16 h-16" : isCurrent ? "w-20 h-20 shadow-sm" : "w-[72px] h-[72px]"
           }`}
         />
 
         {/* Meal Details */}
         <div className="flex-1 min-w-0">
+          {isCurrent && (
+            <span className="inline-flex items-center gap-1.5 mb-1.5 px-2 py-0.5 rounded-full bg-habeat text-white text-[11px] font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" aria-hidden />
+              Now · {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+            </span>
+          )}
           <h3
             onClick={() => setIsTitleExpanded(!isTitleExpanded)}
             className={`font-bold break-words cursor-pointer transition-colors hover:text-gray-900 mb-1 ${
@@ -522,7 +530,7 @@ const MealCard = ({
               isPast
                 ? "text-gray-500 text-sm"
                 : isCurrent
-                  ? "text-gray-900 text-base"
+                  ? "text-gray-900 text-lg leading-snug"
                   : "text-gray-700 text-sm"
             }`}
             title={
@@ -536,7 +544,7 @@ const MealCard = ({
             className={`mb-1 ${isPast ? "text-xs text-gray-400" : "text-xs text-gray-600"}`}
           />
           <div
-            className={`flex items-center gap-2 ${
+            className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 whitespace-nowrap ${
               isPast
                 ? "text-xs text-gray-400"
                 : isCurrent

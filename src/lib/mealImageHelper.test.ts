@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveMealImageName } from "./mealImageHelper";
+import { findMealImageKeyIsExact, resolveMealImageName } from "./mealImageHelper";
 
 /**
  * These assert the *shape* of the dish, not one exact filename — the art
@@ -82,4 +82,26 @@ describe("meal image matching", () => {
     expect(resolveMealImageName("")).toBeNull();
     expect(resolveMealImageName("אורז")).toBeNull();
   });
+});
+
+describe("findMealImage exact, for a person's own dishes", () => {
+  // Resolve the key directly: asset URLs are empty strings under test.
+  const exactKey = (name: string) => {
+    const key = resolveMealImageName(name);
+    return key && findMealImageKeyIsExact(name, key) ? key : null;
+  };
+
+  it.each(["Spaghetti bolognese", "Chicken and rice", "Scrambled eggs on toast", "Turkey tacos"])(
+    "pictures %s",
+    (name) => {
+      expect(exactKey(name)).not.toBeNull();
+    },
+  );
+
+  it.each(["Rice and beans", "Grilled cheese sandwich", "Hummus and pita", "Chicken schnitzel", "Roast chicken and potatoes"])(
+    "leaves %s to its icon rather than a near miss",
+    (name) => {
+      expect(exactKey(name)).toBeNull();
+    },
+  );
 });

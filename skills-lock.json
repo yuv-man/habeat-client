@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "design-mobile-apps": {
+      "source": "designed-by-ai/skills",
+      "sourceType": "github",
+      "skillPath": "skills/design-mobile-apps/SKILL.md",
+      "computedHash": "6d6ed68c53ac9f5564aea489ededb387b8cdf29ffa6f78f2a1fa449f86f19e16"
+    },
+    "design-taste-frontend": {
+      "source": "leonxlnx/taste-skill",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill/SKILL.md",
+      "computedHash": "18f81679d2b0247ce9da298b03ed8e47ecd3c206f2951d70eefb1b65d3219345"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",
